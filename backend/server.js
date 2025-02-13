@@ -2,6 +2,7 @@ import express from "express";
 import authRoutes from "./routes/auth_routes.js";
 import userRoutes from "./routes/user_routes.js";
 import postRoutes from "./routes/post_routes.js"
+import notificationRoutes from "./routes/notification_routes.js"
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connect_mongodb from "./database/connect_mongodb.js";
@@ -26,6 +27,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/post", postRoutes)
+app.use("/api/notifications", notificationRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
