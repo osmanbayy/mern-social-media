@@ -9,14 +9,33 @@ import {
 } from "react-icons/lu";
 import { Link } from "react-router-dom";
 import OSSvg from "../svgs/OS";
-import defaultProfilePicture from "../../assets/avatar-placeholder.png"
+import defaultProfilePicture from "../../assets/avatar-placeholder.png";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const Sidebar = () => {
-  const data = {
-    fullName: "Osman Bay",
-    username: "osmanbayy",
-    profileImg: "/avatars/boy1.png",
-  };
+  const queryClient = useQueryClient();
+  const { mutate: logout } = useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await fetch("/api/auth/logout", {
+          method: "POST",
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
+        }
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: () => {
+      toast.promise("Çıkış yapılıyor.");
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+  });
+
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 
   return (
     <>
@@ -29,16 +48,30 @@ const Sidebar = () => {
 
           <div className="items-center flex gap-2 flex-col mb-16">
             <div>
-              <Link to={`/profile/${data?.username}`}>
-                <img src={defaultProfilePicture} alt="" className="w-32 h-32 rounded-full border-4 border-gray-500" />
+              <Link to={`/profile/${authUser?.username}`}>
+                <img
+                  src={defaultProfilePicture}
+                  alt=""
+                  className="w-32 h-32 rounded-full border-4 border-gray-500"
+                />
               </Link>
             </div>
             <div className=" w-full flex flex-col items-center gap-2">
-              <p>Osman Bay</p>
-              <p className="whitespace-nowrap">Full Stack Developer</p>
+              <p>{authUser?.fullname}</p>
+              <p className="whitespace-nowrap">{authUser?.bio}</p>
               <div className="flex gap-2">
-              <p className="text-sm text-cyan-500"><span className="text-gray-200">1</span> Takip</p>
-              <p className="text-sm text-cyan-500"><span className="text-gray-200">3</span> Takipçi</p>
+                <p className="text-sm text-cyan-500">
+                  <span className="text-gray-200">
+                    {authUser?.following.length}
+                  </span>{" "}
+                  Takip
+                </p>
+                <p className="text-sm text-cyan-500">
+                  <span className="text-gray-200">
+                    {authUser?.followers.length}
+                  </span>{" "}
+                  Takipçi
+                </p>
               </div>
             </div>
           </div>
@@ -64,7 +97,7 @@ const Sidebar = () => {
             </li>
             <li className="flex justify-center md:justify-start">
               <Link
-                to={`/profile/${data?.username}`}
+                to={`/profile/${authUser?.username}`}
                 className="flex gap-3 items-center hover:text-indigo-300 transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
               >
                 <LuBookmark className="w-7 h-7" />
@@ -73,7 +106,7 @@ const Sidebar = () => {
             </li>
             <li className="flex justify-center md:justify-start">
               <Link
-                to={`/profile/${data?.username}`}
+                to={`/profile/${authUser?.username}`}
                 className="flex gap-3 items-center hover:text-indigo-300 transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
               >
                 <LuUser className="w-7 h-7" />
@@ -82,24 +115,34 @@ const Sidebar = () => {
             </li>
           </ul>
 
-          {data && (
+          {authUser && (
             <Link
-              to={`/profile/${data.username}`}
+              to={`/profile/${authUser.username}`}
               className="mt-auto mb-10 flex gap-2 items-start transition-all duration-300 hover:bg-[#181818] py-2 px-4 rounded-full"
             >
               <div className="avatar hidden md:inline-flex">
                 <div className="w-8 rounded-full">
-                  <img src={data?.profileImg || "/avatar-placeholder.png"} />
+                  <img
+                    src={authUser?.profileImg || "/avatar-placeholder.png"}
+                  />
                 </div>
               </div>
               <div className="flex justify-between flex-1 items-center">
                 <div className="hidden md:block">
                   <p className="text-white font-bold text-sm w-20 truncate">
-                    {data?.fullName}
+                    {authUser?.fullname}
                   </p>
-                  <p className="text-slate-500 text-sm">@{data?.username}</p>
+                  <p className="text-slate-500 text-sm">
+                    @{authUser?.username}
+                  </p>
                 </div>
-                <LuLogOut className="w-5 h-5 cursor-pointer" />
+                <LuLogOut
+                  className="w-5 h-5 cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    logout();
+                  }}
+                />
               </div>
             </Link>
           )}
@@ -117,14 +160,11 @@ const Sidebar = () => {
         <Link to="/post" className="flex flex-col items-center ">
           <LuSquarePlus className="w-7 h-7" />
         </Link>
-        <Link
-          to="/notifications"
-          className="flex flex-col items-center "
-        >
+        <Link to="/notifications" className="flex flex-col items-center ">
           <LuBell className="w-7 h-7" />
         </Link>
         <Link
-          to={`/profile/${data.username}`}
+          to={`/profile/${authUser.username}`}
           className="flex flex-col items-center "
         >
           <LuUser className="w-7 h-7" />

@@ -6,25 +6,51 @@ import { GoLock } from "react-icons/go";
 import { ImPencil2 } from "react-icons/im";
 import OSSvg from "../../../components/svgs/OS";
 import { FaUserPlus } from "react-icons/fa6";
+import { useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
-const SignUpPage = () => {
+const SignUpPage = ({ refetchAuth }) => {
   const [formData, setFormData] = useState({
     email: "",
     username: "",
-    fullName: "",
+    fullname: "",
     password: "",
   });
 
+  const { mutate, isError, error, isPending } = useMutation({
+    mutationFn: async ({ email, username, fullname, password }) => {
+      try {
+        const response = await fetch("api/auth/signup", {
+          method: "POST",
+          headers: {
+            "Content-type": "application/json",
+          },
+          body: JSON.stringify({ email, username, fullname, password }),
+        });
+        const data = await response.json();
+        if (!response.ok)
+          throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
+
+        return data;
+      } catch (error) {
+        console.error(error);
+        throw error;
+      }
+    },
+    onSuccess: async() => {
+      toast.success("Hesabın oluşturuldu.");
+      await refetchAuth();
+    },
+  });
+
   const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log(formData);
+    e.preventDefault(); // page won't reload
+    mutate(formData);
   };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
-  const isError = false;
 
   return (
     <div className="max-w-screen-xl mx-auto flex h-screen px-10">
@@ -69,10 +95,10 @@ const SignUpPage = () => {
               type="text"
               className="grow"
               placeholder="Ad Soyad"
-              name="fullName"
+              name="fullname"
               autoComplete="off"
               onChange={handleInputChange}
-              value={formData.fullName}
+              value={formData.fullname}
             />
           </label>
 
@@ -88,11 +114,9 @@ const SignUpPage = () => {
             />
           </label>
           <button className="btn rounded-full btn-outline w-full">
-            <FaUserPlus /> Hesap Oluştur
+            <FaUserPlus /> {isPending ? "Yükleniyor..." : "Hesap Oluştur"}
           </button>
-          {isError && (
-            <p className="text-red-500">Hay aksi. Bir şeyler yanlış gitti.</p>
-          )}
+          {isError && <p className="text-red-500">{error.message}</p>}
         </form>
         <div className="flex flex-col lg:w-2/3 gap-2 mt-4">
           <p className=" text-lg">Zaten bir hesabın var mı?</p>
