@@ -18,7 +18,7 @@ const HomePage = () => {
           >
             Senin İçin
             {feedType === "forYou" && (
-              <div className="absolute bottom-0 w-10  h-1 rounded-full"></div>
+              <div className="absolute bottom-0 w-10 bg-indigo-500 h-1 rounded-full"></div>
             )}
           </div>
           <div
@@ -27,7 +27,7 @@ const HomePage = () => {
           >
             Takip Ettiklerin
             {feedType === "following" && (
-              <div className="absolute bottom-0 w-10 h-1 rounded-full"></div>
+              <div className="absolute bottom-0 bg-indigo-500 w-10 h-1 rounded-full"></div>
             )}
           </div>
         </div>
@@ -36,7 +36,7 @@ const HomePage = () => {
         <CreatePost />
 
         {/* POSTS */}
-        <Posts />
+        <Posts feedType={feedType} />
       </div>
     </>
   );
