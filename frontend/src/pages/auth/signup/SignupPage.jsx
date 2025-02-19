@@ -6,16 +6,17 @@ import { GoLock } from "react-icons/go";
 import { ImPencil2 } from "react-icons/im";
 import OSSvg from "../../../components/svgs/OS";
 import { FaUserPlus } from "react-icons/fa6";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
-const SignUpPage = ({ refetchAuth }) => {
+const SignUpPage = () => {
   const [formData, setFormData] = useState({
     email: "",
     username: "",
     fullname: "",
     password: "",
   });
+  const queryClient = useQueryClient();
 
   const { mutate, isError, error, isPending } = useMutation({
     mutationFn: async ({ email, username, fullname, password }) => {
@@ -39,7 +40,7 @@ const SignUpPage = ({ refetchAuth }) => {
     },
     onSuccess: async() => {
       toast.success("Hesabın oluşturuldu.");
-      await refetchAuth();
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
     },
   });
 

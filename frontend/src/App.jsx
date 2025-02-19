@@ -21,7 +21,6 @@ function App() {
         if (!response.ok) {
           throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
         }
-        console.log(data)
         return data;
       } catch (error) {
         throw new Error(error);

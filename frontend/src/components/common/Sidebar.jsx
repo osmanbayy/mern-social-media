@@ -7,11 +7,12 @@ import {
   LuLogOut,
   LuBookmark,
 } from "react-icons/lu";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import OSSvg from "../svgs/OS";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { useEffect } from "react";
 
 const Sidebar = () => {
   const queryClient = useQueryClient();
@@ -25,25 +26,43 @@ const Sidebar = () => {
         if (!response.ok) {
           throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
         }
+        return data;
       } catch (error) {
         throw new Error(error);
       }
     },
     onSuccess: () => {
-      toast.promise("Çıkış yapılıyor.");
+      toast.success("Çıkış yapıldı.");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+    onError: (error) => {
+      console.error("Çıkış hatası:", error.message);
+      toast.error(error.message || "Çıkış sırasında hata oluştu.");
     },
   });
 
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 
+  useEffect(() => {
+    if (!authUser) {
+      <Navigate to={"/login"} />;
+    }
+  }, [authUser]);
+
   return (
     <>
-      {/* Sidebar - Tablet ve Masaüstü İçin */}
+      {/* Sidebar - For Tablet and Desktop */}
       <div className="hidden md:flex flex-[2_2_0] max-w-18 md:max-w-52">
         <div className="sticky top-0 left-0 h-screen flex flex-col border-r border-gray-700 w-18 md:w-full">
           <Link to="/" className="flex justify-center md:justify-start mb-12">
-            <OSSvg className="px-2 w-12 h-12 rounded-full hover:bg-stone-900" />
+            <OSSvg
+              onClick={() =>
+                queryClient.invalidateQueries({
+                  queryKey: ["posts"],
+                })
+              }
+              className="px-2 w-12 h-12 rounded-full hover:bg-stone-900"
+            />
           </Link>
 
           <div className="items-center flex gap-2 flex-col mb-16">
@@ -62,13 +81,13 @@ const Sidebar = () => {
               <div className="flex gap-2">
                 <p className="text-sm text-cyan-500">
                   <span className="text-gray-200">
-                    {authUser?.following.length}
+                    {authUser?.following.length || 0}
                   </span>{" "}
                   Takip
                 </p>
                 <p className="text-sm text-cyan-500">
                   <span className="text-gray-200">
-                    {authUser?.followers.length}
+                    {authUser?.followers.length || 0}
                   </span>{" "}
                   Takipçi
                 </p>
@@ -149,7 +168,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Bottom Navigation - Mobil İçin */}
+      {/* Bottom Navigation - For Mobile */}
       <div className="md:hidden z-10 fixed bottom-0 left-0 w-full backdrop-blur-3xl border-t border-gray-700 py-5 rounded-t-2xl shadow-lg flex justify-around items-center">
         <Link to="/" className="flex flex-col items-center">
           <LuHouse className="w-7 h-7" />

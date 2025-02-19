@@ -7,7 +7,7 @@ const Posts = ({ feedType }) => {
   const getPostEndpoint = (feedType) => {
     switch (feedType) {
       case "forYou":
-        return "/api/post/all";
+        return "api/post/all";
       case "following":
         return "api/post/following";
       default:
@@ -15,7 +15,7 @@ const Posts = ({ feedType }) => {
     }
   };
 
-  const POST_ENDPOINT = getPostEndpoint();
+  const POST_ENDPOINT = getPostEndpoint(feedType);
 
   const {
     data: posts,
