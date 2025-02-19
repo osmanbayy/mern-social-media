@@ -2,31 +2,54 @@ import { CiImageOn } from "react-icons/ci";
 import { BsEmojiSmileFill } from "react-icons/bs";
 import { useRef, useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
-import profileImg from "../../assets/myProfile.jpeg";
 import EmojiPicker from "emoji-picker-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 
 const CreatePost = () => {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
 
   const [showPicker, setShowPicker] = useState(false);
+  const imgRef = useRef(null);
+
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const queryClient = useQueryClient();
 
   const handleEmojiClick = (emojiObject) => {
     setText((prevText) => prevText + emojiObject.emoji);
   };
 
-  const imgRef = useRef(null);
-
-  const isPending = false;
-  const isError = false;
-
-  const data = {
-    profileImg: profileImg,
-  };
+  const { mutate: createPost,isPending, isError, error } = useMutation({
+    mutationFn: async ({ text, img }) => {
+      try {
+        const response = await fetch("/api/post/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text, img }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
+        }
+        return data;
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      setText("");
+      setImg(null);
+      toast.success("Gönderi paylaşıldı.");
+      queryClient.invalidateQueries("posts");
+    }
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Post created successfully");
+    createPost({ text, img });
   };
 
   const handleImgChange = (e) => {
@@ -44,10 +67,13 @@ const CreatePost = () => {
     <div className="flex p-4 items-start gap-4 border-b border-gray-700">
       <div className="avatar">
         <div className="w-8 rounded-full">
-          <img src={data.profileImg || "../../assets/avatar-placeholder.png"} />
+          <img src={authUser?.profileImg || "../../assets/avatar-placeholder.png"} />
         </div>
       </div>
-      <form className="relative flex flex-col gap-2 w-full" onSubmit={handleSubmit}>
+      <form
+        className="relative flex flex-col gap-2 w-full"
+        onSubmit={handleSubmit}
+      >
         <textarea
           className="textarea w-full p-0 text-lg resize-none border-none outline-none focus:outline-none border-gray-800"
           placeholder="Neler oluyor?!"
@@ -98,7 +124,7 @@ const CreatePost = () => {
           </button>
         </div>
         {isError && (
-          <div className="text-red-500">Bir şeyler yanlış gitti.</div>
+          <div className="text-red-500">{error.message}</div>
         )}
       </form>
     </div>
