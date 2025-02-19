@@ -29,7 +29,7 @@ const RightPanel = () => {
   return (
     <div className="hidden lg:block my-4 mx-2">
       <div className="p-4 rounded-md sticky top-2">
-        <p className="font-bold">Kimi takip etmeli?</p>
+        <p className="font-bold mb-5">Kimi takip etmeli?</p>
         <div className="flex flex-col gap-4">
           {/* item */}
           {isLoading && (
