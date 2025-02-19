@@ -69,9 +69,9 @@ const Sidebar = () => {
             <div>
               <Link to={`/profile/${authUser?.username}`}>
                 <img
-                  src={defaultProfilePicture}
+                  src={authUser.profileImage || defaultProfilePicture}
                   alt=""
-                  className="w-32 h-32 rounded-full border-4 border-gray-500"
+                  className="object-cover w-32 h-32 rounded-full border-4 border-gray-500"
                 />
               </Link>
             </div>
@@ -142,7 +142,8 @@ const Sidebar = () => {
               <div className="avatar hidden md:inline-flex">
                 <div className="w-8 rounded-full">
                   <img
-                    src={authUser?.profileImg || "/avatar-placeholder.png"}
+                    src={authUser?.profileImage || defaultProfilePicture}
+                    className="w-8 rounded-full"
                   />
                 </div>
               </div>
