@@ -24,7 +24,6 @@ const useFollow = () => {
         queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] }),
         queryClient.invalidateQueries({ queryKey: ["authUser"] }),
       ]);
-      toast.success("Takip edildi.");
     },
     onError: (error) => {
       toast.error(error.message);

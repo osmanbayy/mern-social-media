@@ -11,18 +11,29 @@ import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMemberSinceDate } from "../../utils/date";
+import useFollow from "../../hooks/useFollow";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import toast from "react-hot-toast";
 
 const ProfilePage = () => {
   const [coverImg, setCoverImg] = useState(null);
-  const [profileImg, setProfileImg] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
   const [feedType, setFeedType] = useState("posts");
 
   const coverImgRef = useRef(null);
   const profileImgRef = useRef(null);
 
   const { username } = useParams();
+
+  const { follow, isPending } = useFollow();
+
+  const queryClient = useQueryClient();
+
+  const { data: authUser } = useQuery({
+    queryKey: ["authUser"],
+  });
 
   const {
     data: user,
@@ -45,8 +56,43 @@ const ProfilePage = () => {
     },
   });
 
-  const isMyProfile = true;
+  const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await fetch(`/api/user/update`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            coverImg,
+            profileImage,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Bir hata oluştu.");
+        }
+        return data;
+      } catch (error) {
+        throw new Error(error.message || "Bir hata oluştu.");
+      }
+    },
+    onSuccess: () => {
+      toast.success("Profil güncellendi.");
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
+        queryClient.invalidateQueries({ queryKey: ["user"] }),
+      ]);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const isMyProfile = authUser._id === user?._id;
   const memberSinceDate = formatMemberSinceDate(user?.createdAt);
+  let amIFollowing = authUser?.following.includes(user?._id);
 
   const handleImgChange = (e, state) => {
     const file = e.target.files[0];
@@ -54,10 +100,20 @@ const ProfilePage = () => {
       const reader = new FileReader();
       reader.onload = () => {
         state === "coverImg" && setCoverImg(reader.result);
-        state === "profileImg" && setProfileImg(reader.result);
+        state === "profileImage" && setProfileImage(reader.result);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleProfileImageClick = (e) => {
+    e.stopPropagation();
+    document.getElementById("profile_image_modal" + user._id).showModal();
+  };
+
+  const handleCoverImageClick = (e) => {
+    e.stopPropagation();
+    document.getElementById("cover_image_modal" + user._id).showModal();
   };
 
   useEffect(() => {
@@ -92,6 +148,7 @@ const ProfilePage = () => {
                   src={coverImg || user?.coverImg}
                   className="h-52 w-full object-cover"
                   alt="cover image"
+                  onClick={handleCoverImageClick}
                 />
                 {isMyProfile && (
                   <div
@@ -118,8 +175,8 @@ const ProfilePage = () => {
                 />
                 {/* USER AVATAR */}
                 <div className="avatar absolute -bottom-16 left-4">
-                  <div className="w-32 rounded-full relative group/avatar">
-                    <img src={profileImg || user?.profileImage} />
+                  <div className="w-32 rounded-full relative group/avatar border-4">
+                    <img src={profileImage || user?.profileImage} onClick={handleProfileImageClick} />
                     <div className="absolute top-5 right-3 p-1 bg-primary rounded-full group-hover/avatar:opacity-100 opacity-0 cursor-pointer">
                       {isMyProfile && (
                         <MdEdit
@@ -132,21 +189,23 @@ const ProfilePage = () => {
                 </div>
               </div>
               <div className="flex justify-end px-4 mt-5">
-                {isMyProfile && <EditProfileModal />}
+                {isMyProfile && <EditProfileModal authUser={authUser} />}
                 {!isMyProfile && (
                   <button
                     className="btn btn-outline rounded-full btn-sm"
-                    onClick={() => alert("Takip edildi.")}
+                    onClick={() => follow(user?._id)}
                   >
-                    Takip Et
+                    {isPending && <LoadingSpinner size="sm" />}
+                    {!isPending && amIFollowing && "Takibi Bırak"}
+                    {!isPending && !amIFollowing && "Takip Et"}
                   </button>
                 )}
-                {(coverImg || profileImg) && (
+                {(coverImg || profileImage) && (
                   <button
                     className="btn btn-primary rounded-full btn-sm text-white px-4 ml-2"
-                    onClick={() => alert("Güncellendi.")}
+                    onClick={() => updateProfile()}
                   >
-                    Güncelle
+                    {isUpdatingProfile ? "Güncelleniyor..." : "Güncelle"}
                   </button>
                 )}
               </div>
@@ -224,6 +283,32 @@ const ProfilePage = () => {
           <Posts feedType={feedType} username={username} userId={user?._id} />
         </div>
       </div>
+
+      {/* Profile Image Modal */}
+      <dialog
+        id={`profile_image_modal${user?._id}`}
+        className="modal border-none outline-none"
+      >
+        <div className="modal-box p-0 max-w-screen-sm">
+          <img src={user?.profileImage} className="w-full object-contain" alt="" />
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button className="outline-none">close</button>
+        </form>
+      </dialog>
+
+      {/* Cover Image Modal */}
+      <dialog
+        id={`cover_image_modal${user?._id}`}
+        className="modal border-none outline-none"
+      >
+        <div className="modal-box p-0 max-w-screen-sm">
+          <img src={user?.coverImg} className="w-full object-contain" alt="" />
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button className="outline-none">close</button>
+        </form>
+      </dialog>
     </>
   );
 };
