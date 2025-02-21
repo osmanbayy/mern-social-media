@@ -1,33 +1,49 @@
 import { Link } from "react-router-dom";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { LuHeart, LuSettings, LuUser } from "react-icons/lu";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 
 const NotificationPage = () => {
-  const isLoading = false;
-  const notifications = [
-    {
-      _id: "1",
-      from: {
-        _id: "1",
-        username: "johndoe",
-        profileImg: "/avatars/boy2.png",
-      },
-      type: "follow",
+  const queryClient = useQueryClient();
+  const { data: notifications, isLoading } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/notifications");
+        const data = await response.json();
+        if (!response.ok)
+          throw new Error(data.message || "Bir şeyler yanlış gitti");
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
     },
-    {
-      _id: "2",
-      from: {
-        _id: "2",
-        username: "janedoe",
-        profileImg: "/avatars/girl1.png",
-      },
-      type: "like",
-    },
-  ];
+  });
 
-  const deleteNotifications = () => {
-    alert("All notifications deleted");
-  };
+  const { mutate: deleteNotifications } = useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await fetch("/api/notifications", {
+          method: "DELETE",
+        });
+        const data = await response.json();
+        if (!response.ok)
+          throw new Error(data.message || "Bir şeyler yanlış gitti");
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ["notifications"]});
+      toast.success("Bildirimler silindi");
+    },
+    onError: () => {
+      toast.error("Bildirimler silinemedi");
+    },
+  });
 
   return (
     <>
@@ -54,13 +70,13 @@ const NotificationPage = () => {
           </div>
         )}
         {notifications?.length === 0 && (
-          <div className="text-center p-4 font-bold">No notifications 🤔</div>
+          <div className="text-center p-4 font-bold">Hiç bildirim yok. 🤔</div>
         )}
         {notifications?.map((notification) => (
           <div className="border-b border-gray-700" key={notification._id}>
             <div className="flex gap-2 p-4">
               {notification.type === "follow" && (
-                <LuUser className="w-7 h-7 text-primary" />
+                <LuUser className="w-7 h-7 text-indigo-500" />
               )}
               {notification.type === "like" && (
                 <LuHeart className="w-7 h-7 text-red-500" />
@@ -70,8 +86,7 @@ const NotificationPage = () => {
                   <div className="w-8 rounded-full">
                     <img
                       src={
-                        notification.from.profileImg ||
-                        "/avatar-placeholder.png"
+                        notification.from.profileImg || defaultProfilePicture
                       }
                     />
                   </div>
