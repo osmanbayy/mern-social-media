@@ -15,6 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { formatMemberSinceDate } from "../../utils/date";
 import useFollow from "../../hooks/useFollow";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import defaultProfilePicture from "../../assets/avatar-placeholder.png";
+import defaultCoverPicture from "../../assets/cover-placeholder.png";
 import useUpdateProfile from "../../hooks/useUpdateProfile";
 
 const ProfilePage = () => {
@@ -70,7 +72,6 @@ const ProfilePage = () => {
       };
       reader.readAsDataURL(file);
     }
-    console.log(coverImg, profileImage);
   };
 
   const handleProfileImageClick = (e) => {
@@ -263,12 +264,21 @@ const ProfilePage = () => {
         id={`profile_image_modal${user?._id}`}
         className="modal border-none outline-none"
       >
-        <div className="modal-box p-0 max-w-screen-sm">
+        <div className="modal-box p-0 max-w-screen-sm relative">
           <img
-            src={user?.profileImage}
+            src={user?.profileImage || defaultProfilePicture}
             className="w-full object-contain"
             alt=""
           />
+          <button
+            onClick={async () => {
+              await profileImgRef.current.click();
+              document.getElementById("profile_image_modal" + user._id).close();
+            }}
+            className="absolute top-3 right-3 flex items-center gap-1 bg-neutral p-3 rounded-full text-white"
+          >
+            <MdEdit className="w-6 h-6" />
+          </button>
         </div>
         <form method="dialog" className="modal-backdrop">
           <button className="outline-none">close</button>
@@ -281,7 +291,20 @@ const ProfilePage = () => {
         className="modal border-none outline-none"
       >
         <div className="modal-box p-0 max-w-screen-sm">
-          <img src={user?.coverImg} className="w-full object-contain" alt="" />
+          <img
+            src={user?.coverImg || defaultCoverPicture}
+            className="w-full object-contain"
+            alt=""
+          />
+          <button
+            onClick={async () => {
+              await coverImgRef.current.click();
+              document.getElementById("cover_image_modal" + user._id).close();
+            }}
+            className="absolute top-3 right-3 flex items-center gap-1 bg-neutral p-3 rounded-full text-white"
+          >
+            <MdEdit className="w-6 h-6" />
+          </button>
         </div>
         <form method="dialog" className="modal-backdrop">
           <button className="outline-none">close</button>

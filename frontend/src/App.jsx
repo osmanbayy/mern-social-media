@@ -9,6 +9,7 @@ import NotificationPage from "./pages/notification/NotificationPage";
 import { Toaster } from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
 import LoadingSpinner from "./components/common/LoadingSpinner";
+import PostCreate from "./components/common/PostCreate";
 
 function App() {
   const { data: authUser, isLoading } = useQuery({
@@ -58,6 +59,10 @@ function App() {
         <Route
           path="/profile/:username"
           element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/create-post" 
+          element={authUser ? <PostCreate /> : <Navigate to="/login" />}
         />
       </Routes>
       {authUser && <RightPanel />}

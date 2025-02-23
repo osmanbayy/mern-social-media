@@ -1,7 +1,6 @@
 import {
   LuBell,
   LuUser,
-  LuSearch,
   LuSquarePlus,
   LuHouse,
   LuLogOut,
@@ -34,6 +33,7 @@ const Sidebar = () => {
     onSuccess: () => {
       toast.success("Çıkış yapıldı.");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      window.location.reload();
     },
     onError: (error) => {
       console.error("Çıkış hatası:", error.message);
@@ -79,14 +79,14 @@ const Sidebar = () => {
               <p>{authUser?.fullname}</p>
               <p className="whitespace-nowrap">{authUser?.bio}</p>
               <div className="flex gap-2">
-                <p className="text-sm text-cyan-500">
-                  <span className="text-gray-200">
+                <p className="text-sm">
+                  <span className="text-accent">
                     {authUser?.following.length || 0}
                   </span>{" "}
                   Takip
                 </p>
-                <p className="text-sm text-cyan-500">
-                  <span className="text-gray-200">
+                <p className="text-sm">
+                  <span className="text-accent">
                     {authUser?.followers.length || 0}
                   </span>{" "}
                   Takipçi
@@ -149,7 +149,7 @@ const Sidebar = () => {
               </div>
               <div className="flex justify-between flex-1 items-center">
                 <div className="hidden md:block">
-                  <p className="text-white font-bold text-sm w-20 truncate">
+                  <p className="text-accent font-bold text-sm w-20 truncate">
                     {authUser?.fullname}
                   </p>
                   <p className="text-slate-500 text-sm">
@@ -170,14 +170,11 @@ const Sidebar = () => {
       </div>
 
       {/* Bottom Navigation - For Mobile */}
-      <div className="md:hidden z-10 fixed bottom-0 left-0 w-full backdrop-blur-3xl border-t border-gray-700 py-5 rounded-t-2xl shadow-lg flex justify-around items-center">
+      <div className="md:hidden z-10 fixed bottom-0 left-0 w-full bg-neutral border-t border-gray-600 py-5 rounded-t-2xl shadow-lg flex justify-around items-center">
         <Link to="/" className="flex flex-col items-center">
           <LuHouse className="w-7 h-7" />
         </Link>
-        <Link to="/" className="flex flex-col items-center">
-          <LuSearch className="w-7 h-7" />
-        </Link>
-        <Link to="/post" className="flex flex-col items-center ">
+        <Link to="/create-post" className="flex flex-col items-center ">
           <LuSquarePlus className="w-7 h-7" />
         </Link>
         <Link to="/notifications" className="flex flex-col items-center ">
@@ -188,6 +185,15 @@ const Sidebar = () => {
           className="flex flex-col items-center "
         >
           <LuUser className="w-7 h-7" />
+        </Link>
+        <Link
+          onClick={(e) => {
+            e.preventDefault();
+            logout();
+          }}
+          className="flex flex-col items-center"
+        >
+          <LuLogOut className="w-7 h-7" />
         </Link>
       </div>
     </>

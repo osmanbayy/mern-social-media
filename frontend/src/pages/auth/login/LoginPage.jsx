@@ -31,14 +31,12 @@ const LoginPage = () => {
         }
         return data;
       } catch (error) {
-        console.error(error);
-        throw error;
+        throw new Error(error.message);
       }
     },
-    onSuccess: async() => {
-      queryClient.invalidateQueries({ queryKey: ["authUser"]});
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
       toast.success("Hoşgeldin!");
-      ;
     },
   });
 

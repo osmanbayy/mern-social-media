@@ -6,9 +6,10 @@ import { LiaTelegram } from "react-icons/lia";
 import EmojiPicker from "emoji-picker-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 
-const CreatePost = () => {
+const PostCreate = () => {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
 
@@ -21,6 +22,8 @@ const CreatePost = () => {
   const handleEmojiClick = (emojiObject) => {
     setText((prevText) => prevText + emojiObject.emoji);
   };
+
+  const navigate = useNavigate();
 
   const { mutate: createPost,isPending, isError, error } = useMutation({
     mutationFn: async ({ text, img }) => {
@@ -46,6 +49,7 @@ const CreatePost = () => {
       setImg(null);
       toast.success("Gönderi paylaşıldı.");
       queryClient.invalidateQueries("posts");
+      navigate("/");
     }
   });
 
@@ -66,7 +70,7 @@ const CreatePost = () => {
   };
 
   return (
-    <div className="flex p-4 items-start gap-4 border-b border-gray-700">
+    <div className="w-full flex p-4 items-start gap-4 border-b border-gray-700">
       <div className="avatar">
         <div className="w-8 rounded-full">
           <img src={authUser?.profileImage || defaultProfilePicture} />
@@ -132,4 +136,4 @@ const CreatePost = () => {
     </div>
   );
 };
-export default CreatePost;
+export default PostCreate;

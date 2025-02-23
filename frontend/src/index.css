@@ -2,11 +2,18 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: nord --default, dark --prefersdark, dark;
+  themes: nord --default, sunset --prefersdark, dark;
 }
 
+@font-face {
+  font-family: billabong;
+  src: url('../src/assets/fonts/Billabong.otf');
+  font-weight: bold;
+}
+
+
 * {
-  font-family: BlinkMacSystemFont, "Inter 24pt 24pt", sans-serif;
+  font-family: "Inter 28pt 28pt", sans-serif;
 }
 
 body {
