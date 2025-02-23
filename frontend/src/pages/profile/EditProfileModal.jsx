@@ -1,11 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useState } from "react";
-import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import useUpdateProfile from "../../hooks/useUpdateProfile";
 
 const EditProfileModal = ({ authUser }) => {
-  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     fullname: "",
     username: "",
@@ -15,40 +12,8 @@ const EditProfileModal = ({ authUser }) => {
     newPassword: "",
     currentPassword: "",
   });
-  const navigate = useNavigate();
-  const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`/api/user/update`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir hata oluştu.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message || "Bir hata oluştu.");
-      }
-    },
-    onSuccess: () => {
-      toast.success("Profil güncellendi.");
-      if (formData.username !== authUser.username) {
-        navigate(`/profile/${formData.username}`);
-      }
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-        queryClient.invalidateQueries({ queryKey: ["user"] }),
-      ]);
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+
+  const { updateProfile, isUpdatingProfile } = useUpdateProfile();
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -85,7 +50,7 @@ const EditProfileModal = ({ authUser }) => {
             className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              updateProfile();
+              updateProfile(formData);
             }}
           >
             <div className="flex flex-wrap gap-2">

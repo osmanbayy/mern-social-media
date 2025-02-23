@@ -11,11 +11,11 @@ import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { formatMemberSinceDate } from "../../utils/date";
 import useFollow from "../../hooks/useFollow";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-import toast from "react-hot-toast";
+import useUpdateProfile from "../../hooks/useUpdateProfile";
 
 const ProfilePage = () => {
   const [coverImg, setCoverImg] = useState(null);
@@ -28,8 +28,6 @@ const ProfilePage = () => {
   const { username } = useParams();
 
   const { follow, isPending } = useFollow();
-
-  const queryClient = useQueryClient();
 
   const { data: authUser } = useQuery({
     queryKey: ["authUser"],
@@ -56,39 +54,7 @@ const ProfilePage = () => {
     },
   });
 
-  const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`/api/user/update`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            coverImg,
-            profileImage,
-          }),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir hata oluştu.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message || "Bir hata oluştu.");
-      }
-    },
-    onSuccess: () => {
-      toast.success("Profil güncellendi.");
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-        queryClient.invalidateQueries({ queryKey: ["user"] }),
-      ]);
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  const { updateProfile, isUpdatingProfile } = useUpdateProfile();
 
   const isMyProfile = authUser._id === user?._id;
   const memberSinceDate = formatMemberSinceDate(user?.createdAt);
@@ -104,6 +70,7 @@ const ProfilePage = () => {
       };
       reader.readAsDataURL(file);
     }
+    console.log(coverImg, profileImage);
   };
 
   const handleProfileImageClick = (e) => {
@@ -171,12 +138,15 @@ const ProfilePage = () => {
                   hidden
                   accept="image/*"
                   ref={profileImgRef}
-                  onChange={(e) => handleImgChange(e, "profileImg")}
+                  onChange={(e) => handleImgChange(e, "profileImage")}
                 />
                 {/* USER AVATAR */}
                 <div className="avatar absolute -bottom-16 left-4">
                   <div className="w-32 rounded-full relative group/avatar border-4">
-                    <img src={profileImage || user?.profileImage} onClick={handleProfileImageClick} />
+                    <img
+                      src={profileImage || user?.profileImage}
+                      onClick={handleProfileImageClick}
+                    />
                     <div className="absolute top-5 right-3 p-1 bg-primary rounded-full group-hover/avatar:opacity-100 opacity-0 cursor-pointer">
                       {isMyProfile && (
                         <MdEdit
@@ -203,7 +173,11 @@ const ProfilePage = () => {
                 {(coverImg || profileImage) && (
                   <button
                     className="btn btn-primary rounded-full btn-sm text-white px-4 ml-2"
-                    onClick={() => updateProfile()}
+                    onClick={async () => {
+                      await updateProfile({ coverImg, profileImage });
+                      setCoverImg(null);
+                      setProfileImage(null);
+                    }}
                   >
                     {isUpdatingProfile ? "Güncelleniyor..." : "Güncelle"}
                   </button>
@@ -290,7 +264,11 @@ const ProfilePage = () => {
         className="modal border-none outline-none"
       >
         <div className="modal-box p-0 max-w-screen-sm">
-          <img src={user?.profileImage} className="w-full object-contain" alt="" />
+          <img
+            src={user?.profileImage}
+            className="w-full object-contain"
+            alt=""
+          />
         </div>
         <form method="dialog" className="modal-backdrop">
           <button className="outline-none">close</button>
