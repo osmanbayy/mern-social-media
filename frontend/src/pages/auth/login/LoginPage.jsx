@@ -85,7 +85,7 @@ const LoginPage = () => {
               value={formData.password}
             />
           </label>
-          <button className="btn rounded-full w-full btn-outline">
+          <button className="btn btn-accent rounded-full w-full btn-outline">
             <FiLogIn /> {isPending ? "Yükleniyor..." : "Giriş Yap"}
           </button>
           {isError && <p className="text-red-500">{error.message}</p>}
@@ -93,7 +93,7 @@ const LoginPage = () => {
         <div className="flex flex-col lg:w-2/3 gap-2 mt-4">
           <p className="text-lg">Hesabın yok mu?</p>
           <Link to="/signup">
-            <button className="btn rounded-full btn-outline w-full">
+            <button className="btn btn-primary rounded-full btn-outline w-full">
               <FaUserPlus /> Hesap Oluştur
             </button>
           </Link>

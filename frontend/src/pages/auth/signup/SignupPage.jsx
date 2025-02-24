@@ -114,7 +114,7 @@ const SignUpPage = () => {
               value={formData.password}
             />
           </label>
-          <button className="btn rounded-full btn-outline w-full">
+          <button className="btn btn-accent rounded-full btn-outline w-full">
             <FaUserPlus /> {isPending ? "Yükleniyor..." : "Hesap Oluştur"}
           </button>
           {isError && <p className="text-red-500">{error.message}</p>}
@@ -122,7 +122,7 @@ const SignUpPage = () => {
         <div className="flex flex-col lg:w-2/3 gap-2 mt-4">
           <p className=" text-lg">Zaten bir hesabın var mı?</p>
           <Link to="/login">
-            <button className="btn rounded-full btn-outline w-full">
+            <button className="btn btn-primary rounded-full btn-outline w-full">
               <FiLogIn /> Giriş Yap
             </button>
           </Link>
