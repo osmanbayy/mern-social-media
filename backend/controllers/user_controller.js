@@ -162,3 +162,27 @@ export const update_user_profile = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const get_followers = async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username }).populate('followers');
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+    res.status(200).json(user.followers);
+  } catch (error) {
+    res.status(500).json({ message: 'Takipçiler alınırken hata oluştu.', error: error.message });
+  }
+};
+
+export const get_following = async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username }).populate('following');
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+    res.status(200).json(user.following);
+  } catch (error) {
+    res.status(500).json({ message: 'Takip edilenler alınırken hata oluştu.', error: error.message });
+  }
+};

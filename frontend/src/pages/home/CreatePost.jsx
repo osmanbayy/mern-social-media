@@ -7,10 +7,13 @@ import EmojiPicker from "emoji-picker-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
+import { useNavigate } from "react-router-dom";
 
 const CreatePost = () => {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
+
+  const navigate = useNavigate();
 
   const [showPicker, setShowPicker] = useState(false);
   const imgRef = useRef(null);
@@ -68,7 +71,7 @@ const CreatePost = () => {
   return (
     <div className="flex p-4 items-start gap-4 border-b border-gray-700">
       <div className="avatar">
-        <div className="w-8 rounded-full">
+        <div className="w-8 rounded-full" onClick={() => navigate(`profile/${authUser.username}`)}>
           <img src={authUser?.profileImage || defaultProfilePicture} />
         </div>
       </div>

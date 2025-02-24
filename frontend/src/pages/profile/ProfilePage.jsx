@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
@@ -23,11 +23,14 @@ const ProfilePage = () => {
   const [coverImg, setCoverImg] = useState(null);
   const [profileImage, setProfileImage] = useState(null);
   const [feedType, setFeedType] = useState("posts");
+  const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
+  const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
 
   const coverImgRef = useRef(null);
   const profileImgRef = useRef(null);
 
   const { username } = useParams();
+  const navigate = useNavigate();
 
   const { follow, isPending } = useFollow();
 
@@ -36,9 +39,55 @@ const ProfilePage = () => {
   });
 
   const {
+    data: followers,
+    isLoading: isFollowersLoading,
+    refetch: refetchFollowers,
+  } = useQuery({
+    queryKey: ["followers", username],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/user/followers/${username}`);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Takipçiler alınırken bir hata oluştu."
+          );
+        }
+        return data;
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    enabled: isFollowersModalOpen,
+  });
+
+  const {
+    data: followings,
+    isLoading: isFollowingLoading,
+    refetch: refetchFollowings,
+  } = useQuery({
+    queryKey: ["followings", username],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/user/following/${username}`);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Takip edilenler alınırken bir hata oluştu."
+          );
+        }
+        return data;
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    enabled: isFollowingModalOpen,
+  });
+
+  const {
     data: user,
     isLoading,
-    refetch,
+    refetch: refetchUser,
     isRefetching,
   } = useQuery({
     queryKey: ["user"],
@@ -84,9 +133,21 @@ const ProfilePage = () => {
     document.getElementById("cover_image_modal" + user._id).showModal();
   };
 
+  const handleFollowersClick = (e) => {
+    e.stopPropagation();
+    setIsFollowersModalOpen(true);
+    document.getElementById("followers_modal" + user._id).showModal();
+  };
+
+  const handleFollowingClick = (e) => {
+    e.stopPropagation();
+    setIsFollowingModalOpen(true);
+    document.getElementById("following_modal" + user._id).showModal();
+  };
+
   useEffect(() => {
-    refetch();
-  }, [username, refetch]);
+    Promise.all([refetchUser(), refetchFollowings(), refetchFollowers()]);
+  }, [username, refetchUser, refetchFollowings, refetchFollowers]);
 
   return (
     <>
@@ -148,14 +209,13 @@ const ProfilePage = () => {
                       src={profileImage || user?.profileImage}
                       onClick={handleProfileImageClick}
                     />
-                    <div className="absolute top-5 right-3 p-1 bg-primary rounded-full group-hover/avatar:opacity-100 opacity-0 cursor-pointer">
-                      {isMyProfile && (
-                        <MdEdit
-                          className="w-4 h-4 text-white"
-                          onClick={() => profileImgRef.current.click()}
-                        />
-                      )}
-                    </div>
+
+                    {isMyProfile && (
+                      <MdEdit
+                        className="w-4 h-4 text-white"
+                        onClick={() => profileImgRef.current.click()}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -217,14 +277,20 @@ const ProfilePage = () => {
                     </span>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <div className="flex gap-1 items-center">
+                <div className="flex gap-2 cursor-pointer">
+                  <div
+                    className="flex gap-1 items-center"
+                    onClick={handleFollowingClick}
+                  >
                     <span className="font-bold text-xs">
                       {user?.following.length}
                     </span>
                     <span className="text-slate-500 text-xs">Takip</span>
                   </div>
-                  <div className="flex gap-1 items-center">
+                  <div
+                    className="flex gap-1 items-center"
+                    onClick={handleFollowersClick}
+                  >
                     <span className="font-bold text-xs">
                       {user?.followers.length}
                     </span>
@@ -270,15 +336,19 @@ const ProfilePage = () => {
             className="w-full object-contain"
             alt=""
           />
-          <button
-            onClick={async () => {
-              await profileImgRef.current.click();
-              document.getElementById("profile_image_modal" + user._id).close();
-            }}
-            className="absolute top-3 right-3 flex items-center gap-1 bg-neutral p-3 rounded-full text-white"
-          >
-            <MdEdit className="w-6 h-6" />
-          </button>
+          {isMyProfile && (
+            <button
+              onClick={async () => {
+                await profileImgRef.current.click();
+                document
+                  .getElementById("profile_image_modal" + user._id)
+                  .close();
+              }}
+              className="absolute top-3 right-3 flex items-center gap-1 bg-neutral p-3 rounded-full text-white"
+            >
+              <MdEdit className="w-6 h-6" />
+            </button>
+          )}
         </div>
         <form method="dialog" className="modal-backdrop">
           <button className="outline-none">close</button>
@@ -296,15 +366,123 @@ const ProfilePage = () => {
             className="w-full object-contain"
             alt=""
           />
-          <button
-            onClick={async () => {
-              await coverImgRef.current.click();
-              document.getElementById("cover_image_modal" + user._id).close();
-            }}
-            className="absolute top-3 right-3 flex items-center gap-1 bg-neutral p-3 rounded-full text-white"
-          >
-            <MdEdit className="w-6 h-6" />
-          </button>
+          {isMyProfile && (
+            <button
+              onClick={async () => {
+                await coverImgRef.current.click();
+                document.getElementById("cover_image_modal" + user._id).close();
+              }}
+              className="absolute top-3 right-3 flex items-center gap-1 bg-neutral p-3 rounded-full text-white"
+            >
+              <MdEdit className="w-6 h-6" />
+            </button>
+          )}
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button className="outline-none">close</button>
+        </form>
+      </dialog>
+
+      {/* Followers Modal */}
+      <dialog
+        id={`followers_modal${user?._id}`}
+        className="modal border-none outline-none"
+      >
+        <div className="modal-box p-5 max-w-screen-sm flex flex-col">
+          {!followers && !isLoading && <LoadingSpinner size="lg" />}
+          {followers?.length === 0 && <p>Kimse tarafından takip edilmiyor.</p>}
+          {followers &&
+            !isFollowersLoading &&
+            followers.map((item) => (
+              <div key={item._id} className="flex justify-between w-full cursor-pointer hover:backdrop-brightness-75 p-5 rounded-lg">
+                <div
+                  onClick={() => {
+                    document
+                      .getElementById(`followers_modal${user._id}`)
+                      .close();
+                    navigate(`/profile/${item?.username}`);
+                  }}
+                  className="w-full rounded-lg flex gap-5 items-center"
+                >
+                  <img
+                    src={item?.profileImage || defaultProfilePicture}
+                    alt="profile"
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                  <div className="flex flex-col">
+                    <p className="text-lg">{item?.fullname}</p>
+                    <p className="text-sm font-light">@{item?.username}</p>
+                  </div>
+                </div>
+                <div className="w-32 whitespace-nowrap bg-neutral border rounded-full px-2 flex items-center justify-center">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      follow(item._id);
+                      refetchFollowers();
+                    }}
+                  >
+                    {isPending && <LoadingSpinner size="sm" />}
+                    {item?.followers.includes(user?._id)
+                      ? "Takibi Bırak"
+                      : "Takip Et"}
+                    {/* {!isPending && !item?.followers.includes(user?._id) && "Takip Et"} */}
+                  </button>
+                </div>
+              </div>
+            ))}
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button className="outline-none">close</button>
+        </form>
+      </dialog>
+
+      {/* Following Modal */}
+      <dialog
+        id={`following_modal${user?._id}`}
+        className="modal border-none outline-none"
+      >
+        <div className="modal-box p-5 max-w-screen-sm flex flex-col gap-5">
+          {!followings && !isFollowingLoading && <LoadingSpinner size="lg" />}
+          {followings?.length === 0 && <p>Takip edilen hesap yok.</p>}
+          {followings &&
+            !isFollowingLoading &&
+            followings.map((item) => (
+              <div key={item._id} className="flex justify-between w-full cursor-pointer hover:backdrop-brightness-75 p-5 rounded-lg">
+                <div
+                  onClick={() => {
+                    document
+                      .getElementById(`following_modal${user?._id}`)
+                      .close();
+                    navigate(`/profile/${item?.username}`);
+                  }}
+                  className="w-full rounded-lg flex gap-5 items-center"
+                >
+                  <img
+                    src={item?.profileImage || defaultProfilePicture}
+                    alt="profile"
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                  <div className="flex flex-col">
+                    <p className="text-lg">{item?.fullname}</p>
+                    <p className="text-sm font-light">@{item?.username}</p>
+                  </div>
+                </div>
+                <div className="w-32 whitespace-nowrap bg-neutral border rounded-full px-2 flex items-center justify-center">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      follow(item._id);
+                      refetchFollowings();
+                    }}
+                  >
+                    {isPending && <LoadingSpinner size="sm" />}
+                    {!isPending && amIFollowing && "Takibi Et"}
+                    {!isPending && !amIFollowing && "Takip Ediliyor"}
+                  </button>
+                </div>
+              </div>
+            ))}
         </div>
         <form method="dialog" className="modal-backdrop">
           <button className="outline-none">close</button>
