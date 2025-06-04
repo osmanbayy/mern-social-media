@@ -10,39 +10,52 @@ import { Toaster } from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 import PostCreate from "./components/common/PostCreate";
+import VerifyAccount from "./pages/VerifyAccount";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   const { data: authUser, isLoading } = useQuery({
     queryKey: ["authUser"],
     queryFn: async () => {
-      try {
-        const response = await fetch("/api/auth/me");
-        const data = await response.json();
-        if (data.error) return null;
-        if (!response.ok) {
-          throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error);
+      const response = await fetch("/api/auth/me", {
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
       }
+      return data;
     },
+    
     retry: false,
   });
-  if (isLoading) {
+
+  if (isLoading || authUser === null) {
     return (
       <div className="h-screen flex justify-center items-center">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
+
+  const isAccountVerified = authUser?.isAccountVerified;
   return (
     <div className="flex max-w-6xl mx-auto">
-      {authUser && <Sidebar />}
+      {authUser && isAccountVerified && <Sidebar />}
       <Routes>
         <Route
           path="/"
-          element={authUser ? <HomePage /> : <Navigate to="/login" />}
+          element={
+            authUser ? (
+              isAccountVerified ? (
+                <HomePage />
+              ) : (
+                <Navigate to="/verify-account" />
+              )
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
         />
         <Route
           path="/signup"
@@ -61,11 +74,16 @@ function App() {
           element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
         />
         <Route
-          path="/create-post" 
+          path="/create-post"
           element={authUser ? <PostCreate /> : <Navigate to="/login" />}
         />
+        <Route
+          path="/verify-account"
+          element={authUser && !isAccountVerified ? <VerifyAccount /> : <Navigate to="/login" />}
+        />
+        <Route path="/reset-password" element={!authUser ? <ResetPassword /> : <Navigate to={"/"} />} />
       </Routes>
-      {authUser && <RightPanel />}
+      {authUser && isAccountVerified && <RightPanel />}
       <Toaster />
     </div>
   );

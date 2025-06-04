@@ -47,16 +47,16 @@ const NotificationPage = () => {
 
   return (
     <>
-      <div className="flex-[4_4_0] border-l border-r border-gray-700 min-h-screen">
+      <div className="flex-[4_4_0] border-l border-r border-gray-700 min-h-screen relative">
         <div className="flex justify-between items-center p-4 border-b border-gray-700">
           <p className="font-bold">Bildirimler</p>
-          <div className="dropdown ">
+          <div className="dropdown">
             <div tabIndex={0} role="button" className="m-1">
-              <LuSettings className="w-4" />
+              <LuSettings className="size-5 cursor-pointer" />
             </div>
             <ul
               tabIndex={0}
-              className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
+              className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-300 rounded-box w-52 absolute top-5 right-1"
             >
               <li>
                 <a onClick={deleteNotifications}>Tüm bildirimleri sil</a>

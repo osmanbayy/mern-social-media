@@ -13,7 +13,7 @@ import { formatPostDate } from "../../utils/date";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { data: authUser, isLoading } = useQuery({ queryKey: ["authUser"] });
 
   const queryClient = useQueryClient();
 
@@ -139,6 +139,8 @@ const Post = ({ post }) => {
     e.stopPropagation(); // Posta tıklanarak yorum modalı açılır
     document.getElementById("comments_modal" + post._id).showModal();
   };
+
+  if(isLoading) return <LoadingSpinner size="md" />
 
   return (
     <>

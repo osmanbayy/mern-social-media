@@ -5,8 +5,6 @@ import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
 import EditProfileModal from "./EditProfileModal";
 
-import { POSTS } from "../../utils/db/dummy";
-
 import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
@@ -16,7 +14,7 @@ import { formatMemberSinceDate } from "../../utils/date";
 import useFollow from "../../hooks/useFollow";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
-import defaultCoverPicture from "../../assets/cover-placeholder.png";
+import defaultCoverPicture from "../../assets/default-cover.jpg";
 import useUpdateProfile from "../../hooks/useUpdateProfile";
 
 const ProfilePage = () => {
@@ -105,6 +103,27 @@ const ProfilePage = () => {
     },
   });
 
+  const {
+    data: posts,
+  } = useQuery({
+    queryKey: ["posts"],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/user/posts/${authUser.username}`);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Gönderiler şu anda alınamıyor. Sunucuyla ilgili hata olabilir."
+          );
+        }
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+  });
+
   const { updateProfile, isUpdatingProfile } = useUpdateProfile();
 
   const isMyProfile = authUser._id === user?._id;
@@ -167,14 +186,14 @@ const ProfilePage = () => {
                 <div className="flex flex-col">
                   <p className="font-bold text-lg">{user?.fullname}</p>
                   <span className="text-sm text-slate-500">
-                    {POSTS?.length} gönderi
+                    {posts?.length} gönderi
                   </span>
                 </div>
               </div>
               {/* COVER IMG */}
-              <div className="relative group/cover">
+              <div className="relative group/cover cursor-pointer">
                 <img
-                  src={coverImg || user?.coverImg}
+                  src={user?.coverImg || defaultCoverPicture}
                   className="h-52 w-full object-cover"
                   alt="cover image"
                   onClick={handleCoverImageClick}
@@ -206,7 +225,7 @@ const ProfilePage = () => {
                 <div className="avatar absolute -bottom-16 left-4">
                   <div className="w-32 rounded-full relative group/avatar border-4">
                     <img
-                      src={profileImage || user?.profileImage}
+                      src={user?.profileImage || defaultProfilePicture}
                       onClick={handleProfileImageClick}
                     />
 

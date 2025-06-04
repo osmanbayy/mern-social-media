@@ -54,7 +54,7 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="max-w-screen-xl mx-auto flex h-screen px-10">
+    <div className="max-w-screen-xl mx-auto flex h-screen px-10 lg:-mt-20">
       <div className="flex-1 hidden md:flex items-center  justify-center">
         <OSSvg className="lg:w-2/3" />
       </div>
@@ -119,7 +119,7 @@ const SignUpPage = () => {
           </button>
           {isError && <p className="text-red-500">{error.message}</p>}
         </form>
-        <div className="flex flex-col lg:w-2/3 gap-2 mt-4">
+        <div className="flex flex-col w-full lg:w-2/3 gap-2 mt-4">
           <p className=" text-lg">Zaten bir hesabın var mı?</p>
           <Link to="/login">
             <button className="btn btn-primary rounded-full btn-outline w-full">

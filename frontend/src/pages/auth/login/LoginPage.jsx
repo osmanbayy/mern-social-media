@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import OSSvg from "../../../components/svgs/OS";
 import { GoLock } from "react-icons/go";
@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -50,13 +51,13 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="max-w-screen-xl mx-auto flex h-screen">
+    <div className="max-w-screen-xl mx-auto flex h-screen lg:-mt-20 px-10">
       <div className="flex-1 hidden lg:flex items-center  justify-center">
         <OSSvg className="lg:w-2/3 " />
       </div>
       <div className="flex-1 flex flex-col justify-center items-center">
         <form
-          className="flex gap-4 flex-col items-center"
+          className="lg:w-2/3 mx-auto md:mx-20 flex gap-4 flex-col items-center"
           onSubmit={handleSubmit}
         >
           <OSSvg className="w-32 h-32 md:hidden" />
@@ -90,7 +91,10 @@ const LoginPage = () => {
           </button>
           {isError && <p className="text-red-500">{error.message}</p>}
         </form>
-        <div className="flex flex-col lg:w-2/3 gap-2 mt-4">
+        <div className="flex justify-end items-end w-full mt-3 lg:w-2/3">
+          <p onClick={() => navigate("/reset-password")} className="text-sm cursor-pointer">Şifreni mi unuttun?</p>
+        </div>
+        <div className="flex flex-col w-full lg:w-2/3 gap-2 mt-4">
           <p className="text-lg">Hesabın yok mu?</p>
           <Link to="/signup">
             <button className="btn btn-primary rounded-full btn-outline w-full">
