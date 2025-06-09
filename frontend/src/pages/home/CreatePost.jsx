@@ -25,7 +25,12 @@ const CreatePost = () => {
     setText((prevText) => prevText + emojiObject.emoji);
   };
 
-  const { mutate: createPost,isPending, isError, error } = useMutation({
+  const {
+    mutate: createPost,
+    isPending,
+    isError,
+    error,
+  } = useMutation({
     mutationFn: async ({ text, img }) => {
       try {
         const response = await fetch("/api/post/create", {
@@ -49,7 +54,7 @@ const CreatePost = () => {
       setImg(null);
       toast.success("Gönderi paylaşıldı.");
       queryClient.invalidateQueries("posts");
-    }
+    },
   });
 
   const handleSubmit = (e) => {
@@ -68,10 +73,15 @@ const CreatePost = () => {
     }
   };
 
+  const theme = localStorage.getItem("theme");
+
   return (
     <div className="flex p-4 items-start gap-4 border-b border-gray-700">
       <div className="avatar">
-        <div className="w-8 rounded-full" onClick={() => navigate(`profile/${authUser.username}`)}>
+        <div
+          className="w-8 rounded-full"
+          onClick={() => navigate(`profile/${authUser.username}`)}
+        >
           <img src={authUser?.profileImage || defaultProfilePicture} />
         </div>
       </div>
@@ -80,7 +90,7 @@ const CreatePost = () => {
         onSubmit={handleSubmit}
       >
         <textarea
-          className="textarea w-full p-0 text-lg resize-none border-none outline-none focus:outline-none border-gray-800"
+          className="textarea w-full p-0 text-lg resize-none border-none outline-none focus:outline-none border-gray-800 rounded-none"
           placeholder="Neler oluyor?!"
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -109,11 +119,16 @@ const CreatePost = () => {
             />
             <BsEmojiSmileFill
               onClick={() => setShowPicker(!showPicker)}
-              className="fill-yellow-200 w-5 h-5 cursor-pointer"
+              className={`${
+                theme === "forest" ? "fill-yellow-200" : "fill-indigo-500"
+              } w-5 h-5 cursor-pointer`}
             />
             {showPicker && (
               <div className="absolute top-full right-0 z-10">
-                <EmojiPicker onEmojiClick={handleEmojiClick} theme="dark" />
+                <EmojiPicker
+                  onEmojiClick={handleEmojiClick}
+                  theme={theme === "forest" ? "dark" : "light"}
+                />
               </div>
             )}
           </div>
@@ -125,12 +140,11 @@ const CreatePost = () => {
             onChange={handleImgChange}
           />
           <button className="btn btn-secondary rounded-full btn-sm text-white px-5">
-            {isPending ? "Paylaşılıyor..." : "Paylaş"} <LiaTelegram className="w-4 h-4" />
+            {isPending ? "Paylaşılıyor..." : "Paylaş"}{" "}
+            <LiaTelegram className="w-4 h-4" />
           </button>
         </div>
-        {isError && (
-          <div className="text-red-500">{error.message}</div>
-        )}
+        {isError && <div className="text-red-500">{error.message}</div>}
       </form>
     </div>
   );

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 
 const postSchema = new mongoose.Schema(
   {
@@ -32,6 +32,12 @@ const postSchema = new mongoose.Schema(
         },
       },
     ],
+    saves: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      }
+    ]
   },
   { timestamps: true }
 );

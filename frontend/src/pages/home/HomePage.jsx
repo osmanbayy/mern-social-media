@@ -12,7 +12,7 @@ const HomePage = () => {
         <div className="flex w-full border-b border-gray-600">
           <div
             className={
-              "flex justify-center flex-1 p-3 hover:bg-zinc-700 transition duration-300 cursor-pointer relative"
+              "flex justify-center flex-1 p-3 hover:bg-base-200 transition duration-300 cursor-pointer relative"
             }
             onClick={() => setFeedType("forYou")}
           >
@@ -22,7 +22,7 @@ const HomePage = () => {
             )}
           </div>
           <div
-            className="flex justify-center flex-1 p-3 hover:bg-zinc-700 transition duration-300 cursor-pointer relative"
+            className="flex justify-center flex-1 p-3 hover:bg-base-200 transition duration-300 cursor-pointer relative"
             onClick={() => setFeedType("following")}
           >
             Takip Ettiklerin

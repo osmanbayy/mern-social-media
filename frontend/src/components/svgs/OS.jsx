@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 const OSSvg = (props) => {
   const getTheme = () =>
-    document.documentElement.getAttribute("data-theme") || "light";
+    document.documentElement.getAttribute("data-theme") || "emerald";
   const [theme, setTheme] = useState(getTheme());
 
   useEffect(() => {
@@ -19,7 +19,7 @@ const OSSvg = (props) => {
   }, []);
   return (
     <>
-      {theme == "nord" ? (
+      {theme == "emerald" ? (
         <svg
           version="1.1"
           viewBox="0 0 1280 1280"

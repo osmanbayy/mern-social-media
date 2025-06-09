@@ -1,7 +1,7 @@
 import { FaRegComment } from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
 import { FaRegHeart } from "react-icons/fa";
-import { FaRegBookmark } from "react-icons/fa6";
+import { IoMdBookmark } from "react-icons/io";
 import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -17,6 +17,7 @@ const Post = ({ post }) => {
 
   const queryClient = useQueryClient();
 
+  // Delete post mutation
   const { mutate: deletePost, isPending: isDeleting } = useMutation({
     mutationFn: async () => {
       try {
@@ -40,6 +41,7 @@ const Post = ({ post }) => {
     },
   });
 
+  // Like post mutation
   const { mutate: likePost, isPending: isLiking } = useMutation({
     mutationFn: async () => {
       try {
@@ -70,6 +72,38 @@ const Post = ({ post }) => {
     },
   });
 
+  // Save post mutation
+  const { mutate: savePost, isPending: isSaving } = useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await fetch(`api/post/save/${post._id}`, {
+          method: "POST",
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Bir şeyler yanlış gitti!");
+        }
+        return data;
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: (updatedSaves) => {
+      queryClient.setQueryData(["posts"], (oldData) => {
+        return oldData.map((oldPost) => {
+          if (oldPost._id === post._id) {
+            return { ...oldPost, saves: updatedSaves };
+          }
+          return oldPost;
+        });
+      });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Comment on post mutation
   const { mutate: commentPost, isPending: isCommenting } = useMutation({
     mutationFn: async () => {
       try {
@@ -100,6 +134,7 @@ const Post = ({ post }) => {
 
   const postOwner = post.user;
   const isLiked = post.likes.includes(authUser._id);
+  const isSaved = post.saves.includes(authUser._id);
 
   const isMyPost = authUser._id === post.user._id;
 
@@ -122,6 +157,12 @@ const Post = ({ post }) => {
     likePost();
   };
 
+  const handleSavePost = (e) => {
+    e.stopPropagation();
+    if (isSaving) return;
+    savePost();
+  };
+
   const handleRepost = (e) => {
     e.stopPropagation();
   };
@@ -140,7 +181,7 @@ const Post = ({ post }) => {
     document.getElementById("comments_modal" + post._id).showModal();
   };
 
-  if(isLoading) return <LoadingSpinner size="md" />
+  if (isLoading) return <LoadingSpinner size="md" />;
 
   return (
     <>
@@ -240,8 +281,17 @@ const Post = ({ post }) => {
                 </span>
               </div>
             </div>
-            <div className="flex w-1/3 justify-end gap-2 items-center">
-              <FaRegBookmark className="w-4 h-4 text-slate-500 cursor-pointer" />
+            <div
+              className="flex w-1/3 justify-end gap-2 items-center"
+              onClick={handleSavePost}
+            >
+              {isSaving && <LoadingSpinner size="sm" />}
+              {!isSaved && !isSaving && (
+                <IoMdBookmark className="w-5 h-5 text-slate-500 cursor-pointer" />
+              )}
+              {isSaved && !isSaving && (
+                <IoMdBookmark className="w-5 h-5 fill-blue-500 cursor-pointer" />
+              )}
             </div>
           </div>
         </div>
@@ -335,7 +385,7 @@ const Post = ({ post }) => {
               </div>
             </div>
             <div className="flex w-1/3 justify-end gap-2 items-center">
-              <FaRegBookmark className="w-4 h-4 text-slate-500 cursor-pointer" />
+              <IoMdBookmark className="w-4 h-4 text-slate-500 cursor-pointer" />
             </div>
           </div>
           {/* <h3 className="font-bold text-lg mb-4 text-indigo-300">Yorumlar</h3> */}

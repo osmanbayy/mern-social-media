@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+/* eslint-disable react-hooks/rules-of-hooks */
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import HomePage from "./pages/home/HomePage";
 import SignupPage from "./pages/auth/signup/SignupPage";
 import LoginPage from "./pages/auth/login/LoginPage";
@@ -12,6 +13,8 @@ import LoadingSpinner from "./components/common/LoadingSpinner";
 import PostCreate from "./components/common/PostCreate";
 import VerifyAccount from "./pages/VerifyAccount";
 import ResetPassword from "./pages/ResetPassword";
+import Settings from "./pages/Settings";
+import BookmarkedPosts from "./pages/BookmarkedPosts";
 
 function App() {
   const { data: authUser, isLoading } = useQuery({
@@ -26,7 +29,7 @@ function App() {
       }
       return data;
     },
-    
+
     retry: false,
   });
 
@@ -39,6 +42,10 @@ function App() {
   }
 
   const isAccountVerified = authUser?.isAccountVerified;
+
+  const location = useLocation();
+  const isSettingPage = location.pathname === "/settings";
+  
   return (
     <div className="flex max-w-6xl mx-auto">
       {authUser && isAccountVerified && <Sidebar />}
@@ -79,11 +86,24 @@ function App() {
         />
         <Route
           path="/verify-account"
-          element={authUser && !isAccountVerified ? <VerifyAccount /> : <Navigate to="/login" />}
+          element={
+            authUser && !isAccountVerified ? (
+              <VerifyAccount />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
         />
-        <Route path="/reset-password" element={!authUser ? <ResetPassword /> : <Navigate to={"/"} />} />
+        <Route
+          path="/reset-password"
+          element={!authUser ? <ResetPassword /> : <Navigate to={"/"} />}
+        />
+        <Route path="/settings"
+          element={authUser && <Settings /> }
+        />
+        <Route path="/saved-posts" element={authUser && <BookmarkedPosts />} />
       </Routes>
-      {authUser && isAccountVerified && <RightPanel />}
+      {authUser && isAccountVerified && !isSettingPage && <RightPanel />}
       <Toaster />
     </div>
   );

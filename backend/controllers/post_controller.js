@@ -237,3 +237,62 @@ export const get_user_posts = async (req, res) => {
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };
+
+export const save_unsave_post = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { id: postId } = req.params;
+
+    const post = await Post.findById(postId);
+    if(!post){
+      return res.status(404).json({ message: "Gönderiye ulaşılamıyor. Silinmiş veya arşivlenmiş olabilir."})
+    }
+
+    const userSavedPost = post.saves.includes(userId);
+    if(userSavedPost){
+      // remove post from saved posts
+      await Post.updateOne({ _id: postId }, { $pull: { saves: userId } });
+      await User.updateOne({ _id: userId }, { $pull: { savedPosts: postId }});
+
+      const updatedSaves = post.saves.filter((id) => id .toString() !== userId.toString());
+      res.status(200).json(updatedSaves);
+    } else {
+      // save post
+      post.saves.push(userId);
+      await User.updateOne({ _id: userId }, { $push: { savedPosts: postId }});
+      await post.save();
+
+      const updatedSaves = post.saves;
+      res.status(200).json(updatedSaves);
+    }
+  } catch (error) {
+    console.log("Error in save/unsave controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+}
+
+export const get_saved_posts = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    const savedPosts = await Post.find({ _id: { $in: user.savedPosts } })
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      });
+
+    res.status(200).json(savedPosts);
+  } catch (error) {
+    console.log("Error in get saved posts controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
