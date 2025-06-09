@@ -13,6 +13,7 @@ import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useEffect } from "react";
+import { GoDotFill } from "react-icons/go";
 // import ThemeToggle from "../ToggleTheme";
 
 const Sidebar = () => {
@@ -50,6 +51,23 @@ const Sidebar = () => {
       <Navigate to={"/login"} />;
     }
   }, [authUser]);
+
+  const { data: notifications } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/notifications");
+        const data = await response.json();
+        if (!response.ok)
+          throw new Error(data.message || "Bir şeyler yanlış gitti");
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+  });
+
+  const isNotRead = notifications?.map(item => item?.read).includes(false);
 
   const location = useLocation();
   const isSettingPage = location.pathname === "/settings"
@@ -113,10 +131,10 @@ const Sidebar = () => {
             <li className="flex justify-center md:justify-start">
               <Link
                 to="/notifications"
-                className="flex gap-3 items-center hover:text-indigo-300 transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
+                className="relative flex gap-3 items-center hover:text-indigo-300 transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
               >
-                <LuBell className="w-7 h-7" />
-                <span className="text-lg hidden md:block">Bildirimler</span>
+                <LuBell className="w-7 h-7" /> {isNotRead && <GoDotFill className="absolute top-0 left-0 fill-green-500" />}
+                <span className="text-lg hidden md:block">Bildirimler</span> 
               </Link>
             </li>
             <li className="flex justify-center md:justify-start">
@@ -195,8 +213,8 @@ const Sidebar = () => {
         <Link to="/create-post" className="flex flex-col items-center ">
           <LuSquarePlus className="w-7 h-7" />
         </Link>
-        <Link to="/notifications" className="flex flex-col items-center ">
-          <LuBell className="w-7 h-7" />
+        <Link to="/notifications" className="relative flex flex-col items-center ">
+          <LuBell className="w-7 h-7" /> {isNotRead && <GoDotFill className="absolute top-0 left-5 text-lg fill-green-500" /> }
         </Link>
         <Link
           to={`/profile/${authUser.username}`}
