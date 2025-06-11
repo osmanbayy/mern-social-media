@@ -413,7 +413,7 @@ const ProfilePage = () => {
           {followers &&
             !isFollowersLoading &&
             followers.map((item) => (
-              <div key={item._id} className="flex justify-between w-full cursor-pointer hover:backdrop-brightness-75 p-5 rounded-lg">
+              <div key={item._id} className="flex items-center justify-between w-full cursor-pointer p-5 rounded-lg hover:bg-base-200/70">
                 <div
                   onClick={() => {
                     document
@@ -429,25 +429,26 @@ const ProfilePage = () => {
                     className="w-7 h-7 rounded-full object-cover"
                   />
                   <div className="flex flex-col">
-                    <p className="text-lg">{item?.fullname}</p>
+                    <p className="lg:text-lg font-semibold">{item?.fullname}</p>
                     <p className="text-sm font-light">@{item?.username}</p>
                   </div>
                 </div>
-                <div className="w-32 whitespace-nowrap bg-neutral border rounded-full px-2 flex items-center justify-center">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      follow(item._id);
-                      refetchFollowers();
-                    }}
-                  >
-                    {isPending && <LoadingSpinner size="sm" />}
-                    {item?.followers.includes(user?._id)
-                      ? "Takibi Bırak"
-                      : "Takip Et"}
-                    {/* {!isPending && !item?.followers.includes(user?._id) && "Takip Et"} */}
-                  </button>
-                </div>
+                
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    follow(item._id);
+                    refetchFollowers();
+                  }}
+                  className="btn btn-secondary"
+                >
+                  {isPending && <LoadingSpinner size="sm" />}
+                  {item?.followers.includes(user?._id)
+                    ? "Takibi Bırak"
+                    : "Takip Et"}
+                  {/* {!isPending && !item?.followers.includes(user?._id) && "Takip Et"} */}
+                </button>
+                
               </div>
             ))}
         </div>
@@ -467,7 +468,7 @@ const ProfilePage = () => {
           {followings &&
             !isFollowingLoading &&
             followings.map((item) => (
-              <div key={item._id} className="flex justify-between w-full cursor-pointer hover:backdrop-brightness-75 p-5 rounded-lg">
+              <div key={item._id} className="flex items-center justify-between w-full cursor-pointer hover:bg-base-200/70 p-5 rounded-lg">
                 <div
                   onClick={() => {
                     document
@@ -483,23 +484,24 @@ const ProfilePage = () => {
                     className="w-7 h-7 rounded-full object-cover"
                   />
                   <div className="flex flex-col">
-                    <p className="text-lg">{item?.fullname}</p>
+                    <p className="lg:text-lg font-semibold">{item?.fullname}</p>
                     <p className="text-sm font-light">@{item?.username}</p>
                   </div>
                 </div>
-                <div className="w-32 whitespace-nowrap bg-neutral border rounded-full px-2 flex items-center justify-center">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      follow(item._id);
-                      refetchFollowings();
-                    }}
-                  >
-                    {isPending && <LoadingSpinner size="sm" />}
-                    {!isPending && amIFollowing && "Takibi Et"}
-                    {!isPending && !amIFollowing && "Takip Ediliyor"}
-                  </button>
-                </div>
+                
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    follow(item._id);
+                    refetchFollowings();
+                  }}
+                  className="btn btn-secondary"
+                >
+                  {isPending && <LoadingSpinner size="sm" />}
+                  {!isPending && amIFollowing && "Takibi Et"}
+                  {!isPending && !amIFollowing && "Takip Ediliyor"}
+                </button>
+               
               </div>
             ))}
         </div>

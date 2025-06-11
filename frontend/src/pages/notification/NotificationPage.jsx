@@ -1,11 +1,13 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { LuHeart, LuSettings, LuUser } from "react-icons/lu";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
+import { FaArrowLeft } from "react-icons/fa";
 
 const NotificationPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: notifications, isLoading } = useQuery({
     queryKey: ["notifications"],
@@ -37,7 +39,7 @@ const NotificationPage = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: ["notifications"]});
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("Bildirimler silindi");
     },
     onError: () => {
@@ -49,7 +51,15 @@ const NotificationPage = () => {
     <>
       <div className="flex-[4_4_0] border-l border-r border-gray-700 min-h-screen relative">
         <div className="flex justify-between items-center p-4 border-b border-gray-700">
-          <p className="font-bold">Bildirimler</p>
+          <div className="flex items-center gap-5">
+            <div
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-base-100 cursor-pointer transition-all rounded-full invert-25"
+            >
+              <FaArrowLeft />
+            </div>
+            <p className="font-bold">Bildirimler</p>
+          </div>
           <div className="dropdown">
             <div tabIndex={0} role="button" className="m-1">
               <LuSettings className="size-5 cursor-pointer" />

@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: emerald --default, forest --prefersdark, dark;
+  themes: fantasy --default, dracula --prefersdark, dark;
 }
 
 @font-face {
@@ -13,7 +13,7 @@
 
 
 * {
-  font-family: "Inter 28pt 28pt", sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 body {

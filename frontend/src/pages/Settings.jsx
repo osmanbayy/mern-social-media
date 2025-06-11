@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { FaChevronRight } from "react-icons/fa6";
+import { FaArrowLeft, FaChevronRight } from "react-icons/fa6";
 import AccountInformation from "../components/settingsComponents/AccountInformation";
 import DisplayAndTheme from "../components/settingsComponents/DisplayAndTheme";
+import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState("Hesap Detayları");
+  const navigate = useNavigate();
 
   const menuItems = [
     "Hesap Detayları",
@@ -39,7 +41,15 @@ const Settings = () => {
       {/* Sol Menü */}
       <div className="flex-[1] border-r border-gray-700">
         <div className="p-4 border-b border-gray-700">
-          <p className="font-bold">Ayarlar</p>
+          <div className="flex items-center gap-5">
+            <div
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-base-100 cursor-pointer transition-all rounded-full invert-25"
+            >
+              <FaArrowLeft />
+            </div>
+            <p className="font-bold">Ayarlar</p>
+          </div>
         </div>
         <div className="w-full pt-4">
           <div className="flex flex-col w-full items-start">

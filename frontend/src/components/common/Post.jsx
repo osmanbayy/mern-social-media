@@ -1,6 +1,5 @@
 import { FaRegComment } from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
-import { FaRegHeart } from "react-icons/fa";
 import { IoMdBookmark } from "react-icons/io";
 import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
@@ -10,6 +9,10 @@ import toast from "react-hot-toast";
 import LoadingSpinner from "../common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { formatPostDate } from "../../utils/date";
+import { HiDotsHorizontal } from "react-icons/hi";
+import { BsEmojiFrown } from "react-icons/bs";
+import { SlUserFollow } from "react-icons/sl";
+import { FaHeart } from "react-icons/fa6";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
@@ -132,7 +135,7 @@ const Post = ({ post }) => {
     },
   });
 
-  const postOwner = post.user;
+  const postOwner = post?.user;
   const isLiked = post.likes.includes(authUser._id);
   const isSaved = post.saves.includes(authUser._id);
 
@@ -143,6 +146,10 @@ const Post = ({ post }) => {
   const handleDeletePost = (e) => {
     e.stopPropagation(); // Gönderi sil butonuna tıklanarak modal açılmasın
     deletePost();
+  };
+
+  const handleOptions = (e) => {
+    e.stopPropagation();
   };
 
   const handlePostComment = (e) => {
@@ -215,17 +222,50 @@ const Post = ({ post }) => {
               <span>·</span>
               <span className="text-gray-600">{formattedDate}</span>
             </span>
-            {isMyPost && (
-              <span className="flex justify-end flex-1">
-                {!isDeleting && (
-                  <FaTrash
-                    className="cursor-pointer hover:text-red-500"
-                    onClick={handleDeletePost}
-                  />
-                )}
-                {isDeleting && <LoadingSpinner size="sm" />}
-              </span>
-            )}
+            <div
+              className="flex flex-1 justify-end w-12"
+              onClick={handleOptions}
+            >
+              <div className="dropdown dropdown-left">
+                <HiDotsHorizontal
+                  tabIndex={0}
+                  role="button"
+                  className="size-5 rounded-full hover:text-red-500"
+                />
+                <ul
+                  tabIndex={0}
+                  className="dropdown-content menu bg-base-100 z-1 w-56 shadow-lg"
+                >
+                  {isMyPost && (
+                    <li className="" onClick={handleDeletePost}>
+                      {!isDeleting && (
+                        <a href="">
+                          <FaTrash /> <span>Gönderiyi Sil</span>
+                        </a>
+                      )}
+                      {isDeleting && <LoadingSpinner size="sm" />}
+                    </li>
+                  )}
+                  {!isMyPost && (
+                    <li className="">
+                      <a className="rounded-none flex whitespace-nowrap">
+                        <BsEmojiFrown /> Bu gönderi ilgimi çekmiyor
+                      </a>
+                    </li>
+                  )}
+                  {!isMyPost && (
+                    <li className="">
+                      <a className="rounded-none">
+                        <SlUserFollow /> Takip et{" "}
+                        <span className="text-gray-500">
+                          @{postOwner.username}
+                        </span>
+                      </a>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            </div>
           </div>
           <div className="flex flex-col gap-3 overflow-hidden">
             <span>{post.text}</span>
@@ -266,10 +306,10 @@ const Post = ({ post }) => {
               >
                 {isLiking && <LoadingSpinner size="sm" />}
                 {!isLiked && !isLiking && (
-                  <FaRegHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
+                  <FaHeart className="w-5 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
                 )}
                 {isLiked && !isLiking && (
-                  <FaRegHeart className="w-4 h-4 cursor-pointer text-red-600" />
+                  <FaHeart className="w-4 h-4 cursor-pointer fill-red-600" />
                 )}
 
                 <span
@@ -302,7 +342,7 @@ const Post = ({ post }) => {
         id={`comments_modal${post._id}`}
         className="modal border-none outline-none"
       >
-        <div className="modal-box rounded border border-gray-600">
+        <div className="modal-box rounded shadow-2xl">
           <div className="flex gap-2 items-center">
             <Link
               to={`/profile/${postOwner.username}`}
@@ -369,10 +409,10 @@ const Post = ({ post }) => {
               >
                 {isLiking && <LoadingSpinner size="sm" />}
                 {!isLiked && !isLiking && (
-                  <FaRegHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
+                  <FaHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
                 )}
                 {isLiked && !isLiking && (
-                  <FaRegHeart className="w-4 h-4 cursor-pointer text-red-600" />
+                  <FaHeart className="w-4 h-4 cursor-pointer fill-red-600" />
                 )}
 
                 <span

@@ -4,7 +4,7 @@ import { BiMoon, BiSun } from "react-icons/bi";
 
 const ToggleTheme = () => {
   const [theme, setTheme] = useState(
-    () => localStorage.getItem("theme") || "emerald"
+    () => localStorage.getItem("theme") || "fantasy"
   );
 
   useEffect(() => {
@@ -13,7 +13,7 @@ const ToggleTheme = () => {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "emerald" ? "forest" : "emerald"));
+    setTheme((prev) => (prev === "fantasy" ? "dracula" : "fantasy"));
   };
 
   return (
@@ -27,7 +27,7 @@ const ToggleTheme = () => {
           <input
             type="checkbox"
             onChange={toggleTheme}
-            checked={theme === "forest"}
+            checked={theme === "dracula"}
           />
           <BiSun className="swap-on" />
           <BiMoon className="swap-off" />
