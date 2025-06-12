@@ -4,6 +4,7 @@ import mail_icon from "../assets/mail_icon.svg";
 import lock_icon from "../assets/lock_icon.svg";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { FaArrowLeft } from "react-icons/fa";
 
 const ResetPassword = () => {
   const [isEmailSent, setIsEmailSent] = useState(false);
@@ -78,6 +79,12 @@ const ResetPassword = () => {
 
   return (
     <div className="w-full flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from-zinc-700 to-slate-900">
+      <div
+        onClick={() => navigate(-1)}
+        className="absolute top-10 left-10 flex items-center gap-3 text-lg cursor-pointer p-2 hover:bg-base-200 rounded-full"
+      >
+        <FaArrowLeft className="size-6" /> Geri
+      </div>
       {/* email form */}
 
       {!isEmailSent && (
