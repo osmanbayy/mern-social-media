@@ -14,6 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
 import { GoDotFill } from "react-icons/go";
+import LogoutDialog from "../LogoutDialog";
 
 const Sidebar = () => {
   const [activeTab, setActiveTab] = useState("home");
@@ -226,10 +227,11 @@ const Sidebar = () => {
                   </p>
                 </div>
                 <LuLogOut
+                  title="Çıkış Yap"
                   className="w-5 h-5 cursor-pointer"
                   onClick={(e) => {
                     e.preventDefault();
-                    logout();
+                    document.getElementById("logout_modal").showModal();
                   }}
                 />
               </div>
@@ -271,6 +273,8 @@ const Sidebar = () => {
           <LuLogOut className="w-7 h-7" />
         </Link>
       </div>
+
+      <LogoutDialog handleLogout={logout} />
     </>
   );
 };

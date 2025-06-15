@@ -120,14 +120,14 @@ const CreatePost = () => {
             <BsEmojiSmileFill
               onClick={() => setShowPicker(!showPicker)}
               className={`${
-                theme === "forest" ? "fill-yellow-200" : "fill-indigo-500"
+                theme === "dracula" ? "fill-yellow-200" : "fill-indigo-500"
               } w-5 h-5 cursor-pointer`}
             />
             {showPicker && (
               <div className="absolute top-full right-0 z-10">
                 <EmojiPicker
                   onEmojiClick={handleEmojiClick}
-                  theme={theme === "forest" ? "dark" : "light"}
+                  theme={theme === "dracula" ? "dark" : "light"}
                 />
               </div>
             )}

@@ -19,6 +19,7 @@ import { TbEdit } from "react-icons/tb";
 import { LuPin } from "react-icons/lu";
 import useFollow from "../../hooks/useFollow";
 import { MdOutlineShowChart } from "react-icons/md";
+import DeletePostDialog from "../DeletePostDialog";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
@@ -171,8 +172,7 @@ const Post = ({ post }) => {
 
   const theme = localStorage.getItem("theme");
 
-  const handleDeletePost = (e) => {
-    e.stopPropagation(); // Gönderi sil butonuna tıklanarak modal açılmasın
+  const handleDeletePost = () => {
     deletePost();
   };
 
@@ -268,11 +268,16 @@ const Post = ({ post }) => {
                   }`}
                 >
                   {isMyPost && (
-                    <li className="" onClick={handleDeletePost}>
+                    <li
+                      className=""
+                      onClick={() =>
+                        document.getElementById("delete_modal").showModal()
+                      }
+                    >
                       {!isDeleting && (
-                        <a href="">
+                        <div>
                           <FaTrash /> <span>Gönderiyi Sil</span>
-                        </a>
+                        </div>
                       )}
                       {isDeleting && <LoadingSpinner size="sm" />}
                     </li>
@@ -583,6 +588,9 @@ const Post = ({ post }) => {
           <button className="outline-none">close</button>
         </form>
       </dialog>
+
+      {/* Delete Post Modal */}
+      <DeletePostDialog handleDeletePost={handleDeletePost} />
     </>
   );
 };
