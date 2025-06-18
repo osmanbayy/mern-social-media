@@ -6,7 +6,7 @@ export const gel_all_notifications = async (req, res) => {
     const notifications = await Notification.find({ to: userId }).populate({
       path: "from",
       select: "username profileImage",
-    });
+    }).sort("desc");
 
     await Notification.updateMany({ to: userId }, { read: true });
     res.status(200).json(notifications);

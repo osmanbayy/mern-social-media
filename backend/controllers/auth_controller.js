@@ -57,8 +57,8 @@ export const signup = async (req, res) => {
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
-      subject: "Welcome to my authentication project.",
-      text: `Welcome to my authentication project. Your account has been created with ${email}`,
+      subject: "OnSekiz'e Hoşgeldin!",
+      text: `Seni aramızda görmekten mutluluk duyuyoruz. Hesabın ${email} adresiyle başarıyla oluşturuldu.`,
     };
 
     await transporter.sendMail(mailOptions);
