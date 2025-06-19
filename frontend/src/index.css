@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: fantasy --default, dracula --prefersdark, dark;
+  themes: emerald --default, dark --prefersdark, dark;
 }
 
 @font-face {
