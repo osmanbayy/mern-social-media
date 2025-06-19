@@ -6,8 +6,9 @@ import {
   LuLogOut,
   LuBookmark,
   LuSettings,
+  LuMenu,
 } from "react-icons/lu";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import OSSvg from "../svgs/OS";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +19,9 @@ import LogoutDialog from "../LogoutDialog";
 
 const Sidebar = () => {
   const [activeTab, setActiveTab] = useState("home");
+
+  const navigate = useNavigate();
+  const theme = localStorage.getItem("theme");
 
   const queryClient = useQueryClient();
   const { mutate: logout } = useMutation({
@@ -263,15 +267,41 @@ const Sidebar = () => {
         >
           <LuUser className="w-7 h-7" />
         </Link>
-        <Link
-          onClick={(e) => {
-            e.preventDefault();
-            logout();
-          }}
-          className="flex flex-col items-center"
-        >
-          <LuLogOut className="w-7 h-7" />
-        </Link>
+        <div className="dropdown dropdown-top dropdown-end">
+          <LuMenu className="w-7 h-7" tabIndex={0} role="button" />
+          <ul
+            tabIndex={0}
+            className={`dropdown-content menu bg-base-100 border border-gray-600 rounded-box z-1 w-52 p-2 shadow-lg ${
+              theme === "fantasy" ? "shadow-black/20" : "shadow-white/10"
+            } `}
+          >
+            <li>
+              <Link to={`/settings`} className="flex items-center gap-2">
+                <LuSettings className="w-5 h-5" />
+                <span>Ayarlar</span>
+              </Link>
+            </li>
+            <li>
+              <Link to={`/saved-posts`} className="flex items-center gap-2">
+                <LuBookmark className="w-5 h-5" />
+                <span>Kaydedilenler</span>
+              </Link>
+            </li>
+            <li>
+              <div
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("logout_modal").showModal();
+                  navigate("/login");
+                }}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <LuLogOut className="w-5 h-5" />
+                Çıkış Yap
+              </div>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <LogoutDialog handleLogout={logout} />
