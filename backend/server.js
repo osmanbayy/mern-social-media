@@ -4,6 +4,7 @@ import authRoutes from "./routes/auth_routes.js";
 import userRoutes from "./routes/user_routes.js";
 import postRoutes from "./routes/post_routes.js";
 import notificationRoutes from "./routes/notification_routes.js";
+import uploadRoutes from "./routes/upload_routes.js";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connect_mongodb from "./database/connect_mongodb.js";
@@ -34,6 +35,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/post", postRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/upload", uploadRoutes);
 
 if (process.env.NODE_ENV == "production") {
   app.use(express.static(path.join(__dirname, "/frontend/dist")));

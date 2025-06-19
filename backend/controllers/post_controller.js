@@ -63,6 +63,59 @@ export const delete_post = async (req, res) => {
   }
 };
 
+export const edit_post = async (req, res) => {
+  try {
+    const { text } = req.body;
+    let { img } = req.body;
+    const postId = req.params.id;
+    const userId = req.user._id.toString();
+
+    if (!text && !img) {
+      return res.status(400).json({ message: "Gönderiniz boş olamaz." });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({
+        message: "Gönderiye ulaşılamıyor. Silinmiş veya arşivlenmiş olabilir.",
+      });
+    }
+
+    if (post.user.toString() !== userId) {
+      return res
+        .status(401)
+        .json({ message: "Gönderiyi düzenlemek için yetkiniz yok." });
+    }
+
+    // Eğer yeni resim yüklendiyse, eski resmi sil
+    if (img && img !== post.img) {
+      if (post.img) {
+        const oldImageId = post.img.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(oldImageId);
+      }
+      const uploadedResponse = await cloudinary.uploader.upload(img);
+      img = uploadedResponse.secure_url;
+    }
+
+    const updatedPost = await Post.findByIdAndUpdate(
+      postId,
+      { text, img },
+      { new: true }
+    ).populate({
+      path: "user",
+      select: "-password",
+    }).populate({
+      path: "comments.user",
+      select: "-password",
+    });
+
+    res.status(200).json(updatedPost);
+  } catch (error) {
+    console.log("Error in edit post controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
 export const comment_on_post = async (req, res) => {
   try {
     const { text } = req.body;

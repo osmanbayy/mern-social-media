@@ -20,9 +20,11 @@ import { LuPin } from "react-icons/lu";
 import useFollow from "../../hooks/useFollow";
 import { MdOutlineShowChart } from "react-icons/md";
 import DeletePostDialog from "../DeletePostDialog";
+import EditPostDialog from "../EditPostDialog";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const { data: authUser, isLoading } = useQuery({ queryKey: ["authUser"] });
 
   const queryClient = useQueryClient();
@@ -176,6 +178,16 @@ const Post = ({ post }) => {
     deletePost();
   };
 
+  const handleEditPost = () => {
+    setShowEditDialog(true);
+    document.getElementById("edit_post_modal").showModal();
+  };
+
+  const handleCloseEditDialog = () => {
+    setShowEditDialog(false);
+    document.getElementById("edit_post_modal").close();
+  };
+
   const handleOptions = (e) => {
     e.stopPropagation();
   };
@@ -283,10 +295,16 @@ const Post = ({ post }) => {
                     </li>
                   )}
                   {isMyPost && (
-                    <li className="">
-                      <a href="">
-                        <TbEdit /> <span>Düzenle</span>
-                      </a>
+                    <li
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleEditPost();
+                      }}
+                    >
+                      <div className="flex items-center gap-2 cursor-pointer">
+                        <TbEdit className="size-5" /> <span>Düzenle</span>
+                      </div>
                     </li>
                   )}
                   {isMyPost && (
@@ -591,6 +609,11 @@ const Post = ({ post }) => {
 
       {/* Delete Post Modal */}
       <DeletePostDialog handleDeletePost={handleDeletePost} />
+
+      {/* Edit Post Modal */}
+      {showEditDialog && (
+        <EditPostDialog post={post} onClose={handleCloseEditDialog} />
+      )}
     </>
   );
 };
