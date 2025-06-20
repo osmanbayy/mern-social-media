@@ -14,6 +14,7 @@ const LoginPage = () => {
     username: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const queryClient = useQueryClient();
   const { mutate, isError, error, isPending } = useMutation({
@@ -78,13 +79,24 @@ const LoginPage = () => {
           <label className="input input-bordered rounded flex items-center gap-2">
             <GoLock />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               className="grow"
               placeholder="Şifre"
               name="password"
               onChange={handleInputChange}
               value={formData.password}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="btn btn-ghost btn-sm p-1"
+            >
+              {showPassword ? (
+                <img src="/src/assets/close-eye.svg" alt="Hide password" className="w-4 h-4" />
+              ) : (
+                <img src="/src/assets/open-eye.svg" alt="Show password" className="w-4 h-4" />
+              )}
+            </button>
           </label>
           <button className="btn btn-accent rounded-full w-full btn-outline">
             <FiLogIn /> {isPending ? "Yükleniyor..." : "Giriş Yap"}
