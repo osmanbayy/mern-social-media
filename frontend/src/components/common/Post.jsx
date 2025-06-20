@@ -180,12 +180,12 @@ const Post = ({ post }) => {
 
   const handleEditPost = () => {
     setShowEditDialog(true);
-    document.getElementById("edit_post_modal").showModal();
+    document.getElementById(`edit_post_modal_${post._id}`).showModal();
   };
 
   const handleCloseEditDialog = () => {
     setShowEditDialog(false);
-    document.getElementById("edit_post_modal").close();
+    document.getElementById(`edit_post_modal_${post._id}`).close();
   };
 
   const handleOptions = (e) => {
@@ -283,7 +283,7 @@ const Post = ({ post }) => {
                     <li
                       className=""
                       onClick={() =>
-                        document.getElementById("delete_modal").showModal()
+                        document.getElementById(`delete_modal_${post._id}`).showModal()
                       }
                     >
                       {!isDeleting && (
@@ -608,11 +608,18 @@ const Post = ({ post }) => {
       </dialog>
 
       {/* Delete Post Modal */}
-      <DeletePostDialog handleDeletePost={handleDeletePost} />
+      <DeletePostDialog 
+        modalId={`delete_modal_${post._id}`}
+        handleDeletePost={handleDeletePost} 
+      />
 
       {/* Edit Post Modal */}
       {showEditDialog && (
-        <EditPostDialog post={post} onClose={handleCloseEditDialog} />
+        <EditPostDialog 
+          post={post} 
+          onClose={handleCloseEditDialog}
+          modalId={`edit_post_modal_${post._id}`}
+        />
       )}
     </>
   );

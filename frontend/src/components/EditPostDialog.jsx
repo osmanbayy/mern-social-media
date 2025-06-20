@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import LoadingSpinner from "./common/LoadingSpinner";
 
-const EditPostDialog = ({ post, onClose }) => {
+const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   const [text, setText] = useState(post.text || "");
   const [img, setImg] = useState(post.img || "");
   const [isImageUploading, setIsImageUploading] = useState(false);
@@ -19,6 +19,7 @@ const EditPostDialog = ({ post, onClose }) => {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({ text, img }),
         });
         const data = await response.json();
@@ -81,7 +82,7 @@ const EditPostDialog = ({ post, onClose }) => {
   };
 
   return (
-    <dialog id="edit_post_modal" className="modal border-none outline-none">
+    <dialog id={modalId} className="modal border-none outline-none">
       <div className="modal-box rounded shadow-2xl max-w-2xl">
         <h3 className="font-bold text-lg mb-4">Gönderiyi Düzenle</h3>
         

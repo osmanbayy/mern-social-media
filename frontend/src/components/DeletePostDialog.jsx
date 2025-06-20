@@ -1,8 +1,8 @@
 import { FaTimes } from "react-icons/fa";
 
-const DeletePostDialog = ({ handleDeletePost }) => {
+const DeletePostDialog = ({ handleDeletePost, modalId = "delete_modal" }) => {
   return (
-    <dialog id="delete_modal" className="modal">
+    <dialog id={modalId} className="modal">
       <div className="modal-box">
         <form method="dialog">
           <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
@@ -16,7 +16,7 @@ const DeletePostDialog = ({ handleDeletePost }) => {
         </p>
         <div className="absolute right-2 bottom-2 flex items-center gap-2 pt-5">
           <button
-            onClick={() => document.getElementById("delete_modal").close()}
+            onClick={() => document.getElementById(modalId).close()}
             className="btn btn-md btn-neutral"
           >
             İptal
@@ -24,7 +24,7 @@ const DeletePostDialog = ({ handleDeletePost }) => {
           <button
             onClick={async () => {
               await handleDeletePost();
-              document.getElementById("delete_modal").close();
+              document.getElementById(modalId).close();
             }}
             className="btn btn-md btn-error text-white"
           >
