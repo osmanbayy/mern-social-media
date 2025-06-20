@@ -78,6 +78,12 @@ const Sidebar = () => {
 
   const location = useLocation();
   const isSettingPage = location.pathname === "/settings";
+  
+  // Mobil navigation için aktif sayfa tespiti
+  const isHomeActive = location.pathname === "/";
+  const isCreatePostActive = location.pathname === "/create-post";
+  const isNotificationsActive = location.pathname === "/notifications";
+  const isProfileActive = location.pathname === `/profile/${authUser?.username}`;
 
   return (
     <>
@@ -261,24 +267,38 @@ const Sidebar = () => {
 
       {/* Bottom Navigation - For Mobile */}
       <div className="md:hidden z-10 fixed bottom-0 left-0 w-full bg-transparent backdrop-blur-xl border-t border-gray-600 py-5 rounded-t-2xl shadow-lg flex justify-around items-center">
-        <Link to="/" className="flex flex-col items-center">
+        <Link 
+          to="/" 
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
+            isHomeActive ? "text-indigo-600" : "hover:bg-gray-700"
+          }`}
+        >
           <LuHouse className="w-7 h-7" />
         </Link>
-        <Link to="/create-post" className="flex flex-col items-center ">
+        <Link 
+          to="/create-post" 
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
+            isCreatePostActive ? "text-indigo-600" : "hover:bg-gray-700"
+          }`}
+        >
           <LuSquarePlus className="w-7 h-7" />
         </Link>
         <Link
           to="/notifications"
-          className="relative flex flex-col items-center "
+          className={`relative flex flex-col items-center p-2 rounded-lg transition-colors ${
+            isNotificationsActive ? "text-indigo-600" : "hover:bg-gray-700"
+          }`}
         >
-          <LuBell className="w-7 h-7" />{" "}
+          <LuBell className="w-7 h-7" />
           {isNotRead && (
             <GoDotFill className="absolute top-0 left-5 text-lg fill-green-500" />
           )}
         </Link>
         <Link
           to={`/profile/${authUser.username}`}
-          className="flex flex-col items-center "
+          className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
+            isProfileActive ? "text-indigo-600" : "hover:bg-gray-700"
+          }`}
         >
           <LuUser className="w-7 h-7" />
         </Link>
