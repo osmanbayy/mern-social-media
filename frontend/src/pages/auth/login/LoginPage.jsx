@@ -7,6 +7,7 @@ import { FiUser, FiLogIn } from "react-icons/fi";
 import { FaUserPlus } from "react-icons/fa6";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { LuEye, LuEyeClosed } from "react-icons/lu";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -92,9 +93,9 @@ const LoginPage = () => {
               className="btn btn-ghost btn-sm p-1"
             >
               {showPassword ? (
-                <img src="/src/assets/close-eye.svg" alt="Hide password" className="w-4 h-4" />
+                <LuEye />
               ) : (
-                <img src="/src/assets/open-eye.svg" alt="Show password" className="w-4 h-4" />
+                <LuEyeClosed />
               )}
             </button>
           </label>
