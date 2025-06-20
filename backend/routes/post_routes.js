@@ -11,7 +11,10 @@ import {
   get_following_posts,
   get_user_posts,
   save_unsave_post,
-  get_saved_posts
+  get_saved_posts,
+  hide_post,
+  unhide_post,
+  get_hidden_posts
 } from "../controllers/post_controller.js";
 
 const router = express.Router();
@@ -22,6 +25,9 @@ router.get("/likes/:id", protect_route, get_liked_posts);
 router.get("/user/:username", protect_route, get_user_posts);
 router.post("/save/:id", protect_route, save_unsave_post);
 router.get("/saved/:id", get_saved_posts);
+router.post("/hide/:id", protect_route, hide_post);
+router.delete("/hide/:id", protect_route, unhide_post);
+router.get("/hidden/:id", protect_route, get_hidden_posts);
 router.post("/create", protect_route, create_post);
 router.put("/:id", protect_route, edit_post);
 router.post("/like/:id", protect_route, like_unlike_post);

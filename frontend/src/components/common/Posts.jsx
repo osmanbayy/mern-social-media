@@ -15,7 +15,9 @@ const Posts = ({ feedType, username, userId }) => {
       case "likes":
         return `/api/post/likes/${userId}`;
       case "saves": 
-        return `/api/post/saved/${userId}`;    
+        return `/api/post/saved/${userId}`;
+      case "hidden":
+        return `/api/post/hidden/${userId}`;
       default:
         return "api/post/all";
     }
@@ -61,13 +63,16 @@ const Posts = ({ feedType, username, userId }) => {
       )}
       {!isLoading && !isRefetching && posts?.length === 0 && (
         <p className="text-center my-4">
-          Burada hiç gönderi yok. Sayfayı yenilemeyi dene.👻
+          {feedType === "hidden" 
+            ? "Henüz gizlenen gönderiniz yok. 👻" 
+            : "Burada hiç gönderi yok. Sayfayı yenilemeyi dene.👻"
+          }
         </p>
       )}
       {!isLoading && !isRefetching && posts && (
         <div>
           {posts.map((post) => (
-            <Post key={post._id} post={post} />
+            <Post key={post._id} post={post} isHidden={feedType === "hidden"} />
           ))}
         </div>
       )}

@@ -15,6 +15,7 @@ import VerifyAccount from "./pages/VerifyAccount";
 import ResetPassword from "./pages/ResetPassword";
 import Settings from "./pages/Settings";
 import BookmarkedPosts from "./pages/BookmarkedPosts";
+import HiddenPosts from "./pages/HiddenPosts";
 
 function App() {
   const { data: authUser, isLoading } = useQuery({
@@ -102,6 +103,7 @@ function App() {
           element={authUser && <Settings /> }
         />
         <Route path="/saved-posts" element={authUser && <BookmarkedPosts />} />
+        <Route path="/hidden-posts" element={authUser && <HiddenPosts />} />
       </Routes>
       {authUser && isAccountVerified && !isSettingPage && <RightPanel />}
       <Toaster />

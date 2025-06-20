@@ -189,7 +189,15 @@ export const like_unlike_post = async (req, res) => {
 
 export const get_all_posts = async (req, res) => {
   try {
-    const posts = await Post.find()
+    const userId = req.user._id;
+    
+    // Kullanıcının gizlediği gönderileri al
+    const user = await User.findById(userId);
+    const hiddenPostIds = user.hiddenPosts.map(id => id.toString());
+    
+    const posts = await Post.find({
+      _id: { $nin: hiddenPostIds } // Gizlenen gönderileri hariç tut
+    })
       .sort({ createdAt: -1 })
       .populate({
         path: "user",
@@ -237,14 +245,21 @@ export const get_liked_posts = async (req, res) => {
 export const get_following_posts = async (req, res) => {
   try {
     const userId = req.user._id;
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "Kullanıcı bulunamadı." });
     }
 
     const following = user.following;
+    
+    // Kullanıcının gizlediği gönderileri al
+    const hiddenPostIds = user.hiddenPosts.map(id => id.toString());
 
-    const feedPosts = await Post.find({ user: { $in: following } })
+    const feedPosts = await Post.find({ 
+      user: { $in: following },
+      _id: { $nin: hiddenPostIds } // Gizlenen gönderileri hariç tut
+    })
       .sort({
         createdAt: -1,
       })
@@ -346,6 +361,85 @@ export const get_saved_posts = async (req, res) => {
     res.status(200).json(savedPosts);
   } catch (error) {
     console.log("Error in get saved posts controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+export const hide_post = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { id: postId } = req.params;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Gönderiye ulaşılamıyor. Silinmiş veya arşivlenmiş olabilir." });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    // Gönderi zaten gizli mi kontrol et
+    const isAlreadyHidden = user.hiddenPosts.includes(postId);
+    if (isAlreadyHidden) {
+      return res.status(400).json({ message: "Bu gönderi zaten gizli." });
+    }
+
+    // Gönderiyi gizle
+    user.hiddenPosts.push(postId);
+    await user.save();
+
+    res.status(200).json({ message: "Gönderi gizlendi." });
+  } catch (error) {
+    console.log("Error in hide post controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+export const unhide_post = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { id: postId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    // Gönderiyi gizliden çıkar
+    user.hiddenPosts = user.hiddenPosts.filter(id => id.toString() !== postId.toString());
+    await user.save();
+
+    res.status(200).json({ message: "Gönderi görünür hale getirildi." });
+  } catch (error) {
+    console.log("Error in unhide post controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+export const get_hidden_posts = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    const hiddenPosts = await Post.find({ _id: { $in: user.hiddenPosts } })
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      });
+
+    res.status(200).json(hiddenPosts);
+  } catch (error) {
+    console.log("Error in get hidden posts controller", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };

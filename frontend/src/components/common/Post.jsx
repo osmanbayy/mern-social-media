@@ -21,8 +21,9 @@ import useFollow from "../../hooks/useFollow";
 import { MdOutlineShowChart } from "react-icons/md";
 import DeletePostDialog from "../DeletePostDialog";
 import EditPostDialog from "../EditPostDialog";
+import { LuEyeOff } from "react-icons/lu";
 
-const Post = ({ post }) => {
+const Post = ({ post, isHidden = false }) => {
   const [comment, setComment] = useState("");
   const [showEditDialog, setShowEditDialog] = useState(false);
   const { data: authUser, isLoading } = useQuery({ queryKey: ["authUser"] });
@@ -109,6 +110,56 @@ const Post = ({ post }) => {
           return oldPost;
         });
       });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Hide post mutation
+  const { mutate: hidePost, isPending: isHiding } = useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await fetch(`api/post/hide/${post._id}`, {
+          method: "POST",
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Bir şeyler yanlış gitti!");
+        }
+        return data;
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Gönderi gizlendi.");
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Unhide post mutation
+  const { mutate: unhidePost, isPending: isUnhiding } = useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await fetch(`api/post/hide/${post._id}`, {
+          method: "DELETE",
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Bir şeyler yanlış gitti!");
+        }
+        return data;
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Gönderi görünür hale getirildi.");
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
     onError: (error) => {
       toast.error(error.message);
@@ -279,6 +330,26 @@ const Post = ({ post }) => {
                     theme === "fantasy" ? "shadow-black/20" : "shadow-white/10"
                   }`}
                 >
+                  {isHidden && (
+                    <li 
+                      className=""
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        unhidePost();
+                      }}
+                    >
+                      {isUnhiding ? (
+                        <>
+                          <LoadingSpinner size="xs" /> Görünür Hale Getiriliyor...
+                        </>
+                      ) : (
+                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+                          <LuEyeOff /> Görünür Hale Getir
+                        </a>
+                      )}
+                    </li>
+                  )}
                   {isMyPost && (
                     <li
                       className=""
@@ -321,11 +392,24 @@ const Post = ({ post }) => {
                       </a>
                     </li>
                   )}
-                  {!isMyPost && (
-                    <li className="">
-                      <a className="rounded-none flex whitespace-nowrap">
-                        <BsEmojiFrown /> Bu gönderi ilgimi çekmiyor
-                      </a>
+                  {!isMyPost && !isHidden && (
+                    <li 
+                      className=""
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        hidePost();
+                      }}
+                    >
+                      {isHiding ? (
+                        <>
+                          <LoadingSpinner size="xs" /> Gizleniyor...
+                        </>
+                      ) : (
+                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+                          <BsEmojiFrown /> Bu gönderi ilgimi çekmiyor
+                        </a>
+                      )}
                     </li>
                   )}
                   {!isMyPost && (
@@ -498,53 +582,6 @@ const Post = ({ post }) => {
                 onClick={handleImageClick}
               />
             )}
-          </div>
-          <div className="flex justify-between mt-3">
-            <div className="flex gap-4 items-center w-2/3 justify-between">
-              <div
-                className="flex gap-1 items-center cursor-pointer group"
-                onClick={handlePostClick}
-              >
-                <FaRegComment className="w-4 h-4  text-slate-500 group-hover:text-sky-400" />
-                <span className="text-sm text-slate-500 group-hover:text-sky-400">
-                  {post.comments.length}
-                </span>
-              </div>
-
-              <div
-                className="flex gap-1 items-center group cursor-pointer"
-                onClick={handleRepost}
-              >
-                <BiRepost className="w-6 h-6  text-slate-500 group-hover:text-green-500" />
-                <span className="text-sm text-slate-500 group-hover:text-green-500">
-                  0
-                </span>
-              </div>
-
-              <div
-                className="flex gap-1 items-center group cursor-pointer"
-                onClick={handleLikePost}
-              >
-                {isLiking && <LoadingSpinner size="sm" />}
-                {!isLiked && !isLiking && (
-                  <FaHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
-                )}
-                {isLiked && !isLiking && (
-                  <FaHeart className="w-4 h-4 cursor-pointer fill-red-600" />
-                )}
-
-                <span
-                  className={`text-sm text-slate-500 group-hover:text-pink-500 ${
-                    isLiked ? "text-red-600" : "text-slate-500"
-                  }`}
-                >
-                  {post.likes.length}
-                </span>
-              </div>
-            </div>
-            <div className="flex w-1/3 justify-end gap-2 items-center">
-              <IoMdBookmark className="w-4 h-4 text-slate-500 cursor-pointer" />
-            </div>
           </div>
           {/* <h3 className="font-bold text-lg mb-4 text-indigo-300">Yorumlar</h3> */}
           <div className="flex flex-col gap-3 max-h-60 overflow-auto mt-5">

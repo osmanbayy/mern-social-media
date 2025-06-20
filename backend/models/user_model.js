@@ -65,6 +65,13 @@ const userSchema = new mongoose.Schema(
         default: [],
       },
     ],
+    hiddenPosts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+        default: [],
+      },
+    ],
     verifyOtp: { type: String, default: "" },
     verifyOtpExpiresAt: { type: Number, default: 0 },
     isAccountVerified: { type: Boolean, default: false },
