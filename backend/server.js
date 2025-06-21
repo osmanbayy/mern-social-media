@@ -29,7 +29,9 @@ app.use(express.urlencoded({ extended: true })); // to parse form data(urlencode
 
 app.use(cookieParser());
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+const allowedOrigins = ["http://localhost:3000", "https://onsekiz.onrender.com"];
+
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
