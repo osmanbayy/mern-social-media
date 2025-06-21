@@ -1,10 +1,7 @@
 import Posts from "../components/common/Posts";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
 
-const HiddenPosts = () => {
-  const { userId } = useParams();
-
+const BookmarkedPosts = () => {
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 
   if (!authUser) {
@@ -14,11 +11,11 @@ const HiddenPosts = () => {
   return (
     <div className="flex flex-col">
       <div className="flex items-center gap-4 p-4 border-b border-gray-700">
-        <h1 className="text-xl font-bold">Gizlenen Gönderiler</h1>
+        <h1 className="text-xl font-bold">Kaydedilen Gönderiler</h1>
       </div>
-      <Posts feedType="hidden" userId={authUser._id} />
+      <Posts feedType="saves" userId={authUser._id} />
     </div>
   );
 };
 
-export default HiddenPosts;
+export default BookmarkedPosts;
