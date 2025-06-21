@@ -9,7 +9,7 @@ const BookmarkedPosts = () => {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex-[4_4_0] flex-col">
       <div className="flex items-center gap-4 p-4 border-b border-gray-700">
         <h1 className="text-xl font-bold">Kaydedilen Gönderiler</h1>
       </div>

@@ -19,7 +19,7 @@ const OSSvg = (props) => {
   }, []);
   return (
     <>
-      {theme == "emerald" ? (
+      {theme == "nord" ? (
         <svg
           version="1.1"
           viewBox="0 0 1280 1280"

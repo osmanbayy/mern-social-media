@@ -9,19 +9,10 @@ import toast from "react-hot-toast";
 import LoadingSpinner from "../common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { formatPostDate } from "../../utils/date";
-import { HiDotsHorizontal } from "react-icons/hi";
-import { BsEmojiFrown } from "react-icons/bs";
-import { SlUserFollow, SlUserUnfollow } from "react-icons/sl";
 import { FaHeart } from "react-icons/fa6";
-import { GoBlocked, GoMute } from "react-icons/go";
-import { CiFlag1 } from "react-icons/ci";
-import { TbEdit } from "react-icons/tb";
-import { LuPin } from "react-icons/lu";
-import useFollow from "../../hooks/useFollow";
-import { MdOutlineShowChart } from "react-icons/md";
 import DeletePostDialog from "../DeletePostDialog";
 import EditPostDialog from "../EditPostDialog";
-import { LuEyeOff } from "react-icons/lu";
+import PostOptions from "../PostOptions";
 
 const Post = ({ post, isHidden = false }) => {
   const [comment, setComment] = useState("");
@@ -195,29 +186,9 @@ const Post = ({ post, isHidden = false }) => {
     },
   });
 
-  // Fetch the user
-  const { data: user } = useQuery({
-    queryKey: ["user"],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`/api/user/profile/${post.user.username}`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir hata oluştu.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message || "Bir hata oluştu.");
-      }
-    },
-  });
-
-  const { follow, isPending } = useFollow();
-
   const postOwner = post?.user;
   const isLiked = post.likes.includes(authUser._id);
   const isSaved = post.saves.includes(authUser._id);
-  let amIFollowing = authUser?.following.includes(user?._id);
 
   const isMyPost = authUser._id === post.user._id;
 
@@ -301,7 +272,7 @@ const Post = ({ post, isHidden = false }) => {
           <div className="flex gap-2 items-center">
             <Link
               to={`/profile/${postOwner.username}`}
-              className="font-bold text-sm md:text-base truncate"
+              className="font-normal tracking-tighter md:tracking-normal md:font-bold text-sm md:text-base truncate"
               onClick={handleProfileClick}
             >
               {postOwner.fullname}
@@ -317,159 +288,25 @@ const Post = ({ post, isHidden = false }) => {
               className="flex flex-1 justify-end w-12"
               onClick={handleOptions}
             >
-              {/* Post Options Dropdown */}
-              <div className="dropdown dropdown-left">
-                <HiDotsHorizontal
-                  tabIndex={0}
-                  role="button"
-                  className="size-5 rounded-full hover:invert-50"
-                />
-                <ul
-                  tabIndex={0}
-                  className={`dropdown-content rounded-md border-[0.2px] border-gray-600 menu bg-base-100 z-1 font-semibold min-w-60 shadow-lg p-2 ${
-                    theme === "fantasy" ? "shadow-black/20" : "shadow-white/10"
-                  }`}
-                >
-                  {isHidden && (
-                    <li 
-                      className=""
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        unhidePost();
-                      }}
-                    >
-                      {isUnhiding ? (
-                        <>
-                          <LoadingSpinner size="xs" /> Görünür Hale Getiriliyor...
-                        </>
-                      ) : (
-                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
-                          <LuEyeOff /> Görünür Hale Getir
-                        </a>
-                      )}
-                    </li>
-                  )}
-                  {isMyPost && (
-                    <li
-                      className=""
-                      onClick={() =>
-                        document.getElementById(`delete_modal_${post._id}`).showModal()
-                      }
-                    >
-                      {!isDeleting && (
-                        <div>
-                          <FaTrash /> <span>Gönderiyi Sil</span>
-                        </div>
-                      )}
-                      {isDeleting && <LoadingSpinner size="sm" />}
-                    </li>
-                  )}
-                  {isMyPost && (
-                    <li
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleEditPost();
-                      }}
-                    >
-                      <div className="flex items-center gap-2 cursor-pointer">
-                        <TbEdit className="size-5" /> <span>Düzenle</span>
-                      </div>
-                    </li>
-                  )}
-                  {isMyPost && (
-                    <li className="">
-                      <a href="">
-                        <LuPin /> <span>Profilde Başa Sabitle</span>
-                      </a>
-                    </li>
-                  )}
-                  {isMyPost && (
-                    <li className="">
-                      <a href="">
-                        <MdOutlineShowChart /> <span>Görünürlüğü Düzenle</span>
-                      </a>
-                    </li>
-                  )}
-                  {!isMyPost && !isHidden && (
-                    <li 
-                      className=""
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        hidePost();
-                      }}
-                    >
-                      {isHiding ? (
-                        <>
-                          <LoadingSpinner size="xs" /> Gizleniyor...
-                        </>
-                      ) : (
-                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
-                          <BsEmojiFrown /> Bu gönderi ilgimi çekmiyor
-                        </a>
-                      )}
-                    </li>
-                  )}
-                  {!isMyPost && (
-                    <li onClick={() => follow(post.user._id)}>
-                      {isPending ? (
-                        <>
-                          <LoadingSpinner size="xs" /> Yükleniyor...
-                        </>
-                      ) : (
-                        <a className="rounded-none whitespace-nowrap">
-                          {amIFollowing ? (
-                            <>
-                              <SlUserUnfollow /> Takipten Çık
-                            </>
-                          ) : (
-                            <>
-                              <SlUserFollow /> Takip et
-                            </>
-                          )}
-                          <span className="text-gray-500">
-                            @{postOwner.username}
-                          </span>
-                        </a>
-                      )}
-                    </li>
-                  )}
-                  {!isMyPost && (
-                    <li>
-                      <a href="" className="rounded-none whitespace-nowrap">
-                        <GoMute /> Sessize Al{" "}
-                        <span className="text-gray-500">
-                          @{postOwner.username}
-                        </span>
-                      </a>
-                    </li>
-                  )}
-                  {!isMyPost && (
-                    <li>
-                      <a href="" className="rounded-none whitespace-nowrap">
-                        <GoBlocked /> Engelle{" "}
-                        <span className="text-gray-500">
-                          @{postOwner.username}
-                        </span>
-                      </a>
-                    </li>
-                  )}
-                  {!isMyPost && (
-                    <li>
-                      <a href="" className="rounded-none whitespace-nowrap">
-                        <CiFlag1 /> Bildir{" "}
-                      </a>
-                    </li>
-                  )}
-                </ul>
-              </div>
+              <PostOptions
+                post={post}
+                postOwner={postOwner}
+                isMyPost={isMyPost}
+                isHidden={isHidden}
+                isDeleting={isDeleting}
+                isHiding={isHiding}
+                isUnhiding={isUnhiding}
+                onDelete={handleDeletePost}
+                onEdit={handleEditPost}
+                onHide={hidePost}
+                onUnhide={unhidePost}
+                theme={theme}
+              />
             </div>
           </div>
           {/* Post Content */}
           <div className="flex flex-col gap-3 overflow-hidden">
-            <span>{post.text}</span>
+            <span className="text-sm md:text-base">{post.text}</span>
             {post.img && (
               <img
                 src={post.img}

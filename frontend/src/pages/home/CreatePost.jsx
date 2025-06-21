@@ -120,7 +120,7 @@ const CreatePost = () => {
             <BsEmojiSmileFill
               onClick={() => setShowPicker(!showPicker)}
               className={`${
-                theme === "dracula" ? "fill-yellow-200" : "fill-indigo-500"
+                theme === "dark" ? "fill-yellow-200" : "fill-indigo-500"
               } w-5 h-5 cursor-pointer`}
             />
             {showPicker && (
@@ -139,7 +139,7 @@ const CreatePost = () => {
             ref={imgRef}
             onChange={handleImgChange}
           />
-          <button className="btn btn-secondary rounded-full btn-sm text-white px-5">
+          <button className="btn btn-primary rounded-full btn-sm text-white px-5">
             {isPending ? "Paylaşılıyor..." : "Paylaş"}{" "}
             <LiaTelegram className="w-4 h-4" />
           </button>

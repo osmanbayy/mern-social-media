@@ -225,10 +225,6 @@ const Sidebar = () => {
             </li>
           </ul>
 
-          {/* <div>
-            <ThemeToggle />
-          </div> */}
-
           {authUser && (
             <Link
               to={`/profile/${authUser.username}`}

@@ -266,7 +266,7 @@ const ProfilePage = () => {
 
               <div className="flex flex-col gap-4 mt-14 px-4">
                 <div className="flex flex-col">
-                  <span className="font-bold text-lg">{user?.fullname}</span>
+                  <span className="font-normal md:font-bold text-sm md:text-lg">{user?.fullname}</span>
                   <span className="text-sm text-slate-500">
                     @{user?.username}
                   </span>
@@ -429,7 +429,7 @@ const ProfilePage = () => {
                     className="w-7 h-7 rounded-full object-cover"
                   />
                   <div className="flex flex-col">
-                    <p className="lg:text-lg font-semibold">{item?.fullname}</p>
+                    <p className="lg:text-lg text-sm md:text-base md:font-semibold">{item?.fullname}</p>
                     <p className="text-sm font-light">@{item?.username}</p>
                   </div>
                 </div>
@@ -440,7 +440,7 @@ const ProfilePage = () => {
                     follow(item._id);
                     refetchFollowers();
                   }}
-                  className="btn btn-secondary"
+                  className="btn btn-sm md:btn-md btn-secondary"
                 >
                   {isPending && <LoadingSpinner size="sm" />}
                   {item?.followers.includes(user?._id)
@@ -484,7 +484,7 @@ const ProfilePage = () => {
                     className="w-7 h-7 rounded-full object-cover"
                   />
                   <div className="flex flex-col">
-                    <p className="lg:text-lg font-semibold">{item?.fullname}</p>
+                    <p className="lg:text-lg text-sm md:text-base md:font-semibold">{item?.fullname}</p>
                     <p className="text-sm font-light">@{item?.username}</p>
                   </div>
                 </div>
@@ -495,7 +495,7 @@ const ProfilePage = () => {
                     follow(item._id);
                     refetchFollowings();
                   }}
-                  className="btn btn-secondary"
+                  className="btn btn-sm btn-secondary"
                 >
                   {isPending && <LoadingSpinner size="sm" />}
                   {!isPending && amIFollowing && "Takibi Et"}
