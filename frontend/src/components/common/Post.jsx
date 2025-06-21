@@ -301,17 +301,17 @@ const Post = ({ post, isHidden = false }) => {
           <div className="flex gap-2 items-center">
             <Link
               to={`/profile/${postOwner.username}`}
-              className="font-bold"
+              className="font-bold text-sm md:text-base truncate"
               onClick={handleProfileClick}
             >
               {postOwner.fullname}
             </Link>
-            <span className="text-gray-500 flex gap-1 text-sm">
+            <span className="text-gray-500 flex gap-1 text-xs md:text-sm">
               <Link to={`/profile/${postOwner.username}`}>
                 @{postOwner.username}
               </Link>
               <span>·</span>
-              <span className="text-gray-600">{formattedDate}</span>
+              <span className="text-gray-600 text-xs md:text-sm">{formattedDate}</span>
             </span>
             <div
               className="flex flex-1 justify-end w-12"
