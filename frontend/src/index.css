@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: nord --default, dark --prefersdark, dark;
+  themes: light --default, dark --prefersdark, dark;
 }
 
 @font-face {
@@ -13,7 +13,7 @@
 
 
 * {
-  font-family: "Inter", sans-serif;
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
 }
 
 body {

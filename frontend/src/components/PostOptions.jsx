@@ -36,7 +36,7 @@ const PostOptions = ({
         <ul
           tabIndex={0}
           className={`dropdown-content rounded-md border-[0.2px] border-gray-600 menu bg-base-100 z-1 font-semibold min-w-60 shadow-lg p-2 ${
-            theme === "fantasy" ? "shadow-black/20" : "shadow-white/10"
+            theme === "dark" ? "shadow-black/20" : "shadow-white"
           }`}
         >
           {isHidden && (

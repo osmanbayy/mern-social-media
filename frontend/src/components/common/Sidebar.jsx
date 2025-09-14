@@ -111,7 +111,7 @@ const Sidebar = () => {
                 <img
                   src={authUser.profileImage || defaultProfilePicture}
                   alt=""
-                  className="object-cover w-32 h-32 rounded-full border-4 invert:border-base-100"
+                  className="object-cover w-32 h-32 rounded-full border-4 invert:border-base-200"
                 />
               </Link>
             </div>
