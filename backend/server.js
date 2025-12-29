@@ -10,6 +10,7 @@ import cookieParser from "cookie-parser";
 import connect_mongodb from "./database/connect_mongodb.js";
 import { v2 as cloudinary } from "cloudinary";
 import cors from "cors";
+import job from "./lib/utils/cron.js";
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+job.start();
 const app = express();
 const PORT = process.env.PORT || 8000;
 

@@ -383,6 +383,9 @@ const Post = ({ post, isHidden = false }) => {
       >
         <div className="modal-box rounded shadow-2xl">
           <div className="flex gap-2 items-center">
+            <div className="border rounded-full">
+              <img src={postOwner.profileImage} alt="Post Owner Profile Image" className="size-8 rounded-full object-cover" />
+            </div>
             <Link
               to={`/profile/${postOwner.username}`}
               className="font-bold"
@@ -409,8 +412,8 @@ const Post = ({ post, isHidden = false }) => {
               </span>
             )}
           </div>
-          <div className="flex flex-col gap-3 overflow-hidden">
-            <span>{post.text}</span>
+          <div className="flex flex-col gap-3 overflow-hidden border-b border-gray-500 pb-2">
+            <span className="px-10 py-2">{post.text}</span>
             {post.img && (
               <img
                 src={post.img}
@@ -420,7 +423,6 @@ const Post = ({ post, isHidden = false }) => {
               />
             )}
           </div>
-          {/* <h3 className="font-bold text-lg mb-4 text-indigo-300">Yorumlar</h3> */}
           <div className="flex flex-col gap-3 max-h-60 overflow-auto mt-5">
             {post.comments.length === 0 && (
               <p className="text-sm text-slate-500">
@@ -428,7 +430,7 @@ const Post = ({ post, isHidden = false }) => {
               </p>
             )}
             {post.comments.map((comment) => (
-              <div key={comment._id} className="flex gap-2 items-start">
+              <div key={comment._id} className="flex gap-2 items-start ml-5">
                 <div className="avatar">
                   <div className="w-8 rounded-full">
                     <img

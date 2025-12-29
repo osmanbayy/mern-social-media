@@ -3,9 +3,7 @@ import { useEffect, useState } from "react";
 import { BiMoon, BiSun } from "react-icons/bi";
 
 const ToggleTheme = () => {
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem("theme") || "dark"
-  );
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
