@@ -50,18 +50,33 @@ export const signup = async (req, res) => {
       password: hashedPassword,
     });
 
+    // Generate verification OTP
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    newUser.verifyOtp = otp;
+    newUser.verifyOtpExpiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
     await newUser.save();
     generateTokenAndSetCookie(newUser._id, res);
 
-    // Sending welcome email
-    const mailOptions = {
-      from: process.env.SENDER_EMAIL,
-      to: email,
-      subject: "OnSekiz'e Hoşgeldin!",
-      text: `Seni aramızda görmekten mutluluk duyuyoruz. Hesabın ${email} adresiyle başarıyla oluşturuldu.`,
-    };
+    // Sending verification OTP email
+    try {
+      const mailOptions = {
+        from: process.env.SENDER_EMAIL,
+        to: email,
+        subject: "Hesabınızı Doğrulayın",
+        html: EMAIL_VERIFY_TEMPLATE.replace("{{otp}}", otp).replace(
+          "{{email}}",
+          email
+        ),
+      };
 
-    await transporter.sendMail(mailOptions);
+      await transporter.sendMail(mailOptions);
+      console.log("Verification OTP email sent successfully to:", email);
+    } catch (emailError) {
+      console.error("Error sending verification email:", emailError);
+      // Don't fail the signup if email fails, but log the error
+      // The user can request a new OTP later
+    }
 
     res.status(201).json({
       _id: newUser._id,
@@ -189,12 +204,26 @@ export const sendVerifyOtp = async (req, res) => {
       ),
     };
 
-    await transporter.sendMail(mailOption);
-
-    res.json({
-      success: true,
-      message: "Doğrulama kodu gönderildi.",
-    });
+    try {
+      await transporter.sendMail(mailOption);
+      console.log("Verification OTP email sent successfully to:", user.email);
+      res.json({
+        success: true,
+        message: "Doğrulama kodu gönderildi.",
+      });
+    } catch (emailError) {
+      console.error("Error sending verification email:", emailError);
+      console.error("Email error details:", {
+        message: emailError.message,
+        code: emailError.code,
+        command: emailError.command,
+        response: emailError.response,
+      });
+      res.status(500).json({ 
+        success: false, 
+        message: "E-posta gönderilirken bir hata oluştu. Lütfen tekrar deneyin." 
+      });
+    }
   } catch (error) {
     console.error("Error in sendVerifyOtp:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -218,13 +247,13 @@ export const verifyEmail = async (req, res) => {
       return res.json({ success: false, message: "Invalid OTP." });
     }
 
-    if (user.verifyOtpExpiredAt < Date.now()) {
+    if (user.verifyOtpExpiresAt < Date.now()) {
       return res.json({ success: false, message: "OTP Expired." });
     }
 
     user.isAccountVerified = true;
     user.verifyOtp = "";
-    user.verifyOtpExpiredAt = 0;
+    user.verifyOtpExpiresAt = 0;
 
     await user.save();
     return res.json({ success: true, message: "Mail başarıyla doğrulandı." });
