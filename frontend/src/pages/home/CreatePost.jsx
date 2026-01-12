@@ -1,6 +1,6 @@
 import { CiImageOn } from "react-icons/ci";
 import { BsEmojiSmileFill } from "react-icons/bs";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { IoCloseSharp } from "react-icons/io5";
 import { LiaTelegram } from "react-icons/lia";
 import EmojiPicker from "emoji-picker-react";
@@ -17,6 +17,40 @@ const CreatePost = () => {
 
   const [showPicker, setShowPicker] = useState(false);
   const imgRef = useRef(null);
+
+  const getTheme = () => {
+    const dataTheme = document.documentElement.getAttribute("data-theme");
+    return dataTheme || localStorage.getItem("theme") || "dark";
+  };
+
+  const [theme, setTheme] = useState(getTheme());
+
+  useEffect(() => {
+    const updateTheme = () => {
+      setTheme(getTheme());
+    };
+
+    updateTheme();
+
+    const observer = new MutationObserver(() => {
+      setTheme(getTheme());
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    const handleStorageChange = () => {
+      setTheme(getTheme());
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
 
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
   const queryClient = useQueryClient();
@@ -73,8 +107,6 @@ const CreatePost = () => {
     }
   };
 
-  const theme = localStorage.getItem("theme");
-
   return (
     <div className="flex p-4 items-start gap-4 border-b border-gray-700">
       <div className="avatar">
@@ -120,14 +152,14 @@ const CreatePost = () => {
             <BsEmojiSmileFill
               onClick={() => setShowPicker(!showPicker)}
               className={`${
-                theme === "light" ? "fill-yellow-200" : "fill-indigo-500"
+                theme === "dark" ? "fill-yellow-400" : "fill-blue-500"
               } w-5 h-5 cursor-pointer`}
             />
             {showPicker && (
               <div className="absolute top-full right-0 z-10">
                 <EmojiPicker
                   onEmojiClick={handleEmojiClick}
-                  theme={theme === "light" ? "dark" : "light"}
+                  theme={theme === "dark" ? "dark" : "light"}
                 />
               </div>
             )}
