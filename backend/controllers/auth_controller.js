@@ -124,50 +124,21 @@ export const login = async (req, res) => {
     });
   }
 };
-export const logout = async (req, res) => {
-  try {
-    // Vercel cross-domain için cookie silme ayarları
-    const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
-    
-    // Cookie silme seçenekleri
-    const cookieOptions = {
-      httpOnly: true,
-      maxAge: 0,
-      expires: new Date(0),
-      sameSite: isProduction ? "none" : "strict",
-      secure: isProduction,
-      path: "/",
-    };
-    
-    // Önce clearCookie ile dene
-    res.clearCookie("jwt", cookieOptions);
-    
-    // Sonra cookie'yi boş string ile set et
-    res.cookie("jwt", "", cookieOptions);
-    
-    // Manuel Set-Cookie header'ı ekle (en güvenilir yöntem)
-    // Vercel cross-domain için domain belirtilmemeli
-    const expireDate = new Date(0).toUTCString();
-    if (isProduction) {
-      // Production/Vercel için SameSite=None ve Secure
-      res.setHeader(
-        "Set-Cookie",
-        `jwt=; Path=/; Expires=${expireDate}; HttpOnly; Secure; SameSite=None`
-      );
-    } else {
-      // Development için SameSite=Strict
-      res.setHeader(
-        "Set-Cookie",
-        `jwt=; Path=/; Expires=${expireDate}; HttpOnly; SameSite=Strict`
-      );
-    }
-    
-    res.status(200).json({ message: "Çıkış yapıldı." });
-  } catch (error) {
-    console.log("Error in logout controller", error.message);
-    res.status(500).json({ error: "Sunucu hatası!" });
-  }
+export const logout = (req, res) => {
+  const isProduction =
+    process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+
+  res.cookie("jwt", "", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "strict",
+    expires: new Date(0),
+    path: "/",
+  });
+
+  res.status(200).json({ message: "Çıkış yapıldı." });
 };
+
 export const get_me = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
