@@ -15,50 +15,31 @@ const Sidebar = () => {
 
   const { mutate: logoutMutation } = useMutation({
     mutationFn: async () => {
-      console.log("🔴 Logout başlatılıyor...");
       const response = await logout();
-      console.log("✅ Logout response:", response);
-      // Response'u görmek ve cookie silme işleminin tamamlanması için bekle
-      await new Promise(resolve => setTimeout(resolve, 1000));
       return response;
     },
-    onSuccess: (response) => {
-      console.log("✅ Logout başarılı, response:", response);
-      
-      // Logout flag'i set et (getCurrentUser'ın çalışmasını engelle)
+    onSuccess: () => {
       localStorage.setItem("_logout_in_progress", "true");
-      
-      // ÖNCE authUser'ı null yap (cookie silinmese bile)
       queryClient.setQueryData(["authUser"], null);
-      
-      // Clear all queries and cache
       queryClient.clear();
       queryClient.removeQueries();
       queryClient.getQueryCache().clear();
-      
-      // Clear storage (logout flag hariç - yönlendirme için gerekli)
       sessionStorage.clear();
-      
       toast.success("Çıkış yapıldı.");
-      
-      // Hemen login'e yönlendir
-      console.log("🚀 Login sayfasına yönlendiriliyor...");
       setTimeout(() => {
-        // Logout flag'ini temizle ve her şeyi temizle
         localStorage.clear();
         window.location.href = "/login";
       }, 500);
     },
-    onError: (error) => {
+    onError: () => {
       queryClient.clear();
       queryClient.removeQueries();
       queryClient.getQueryCache().clear();
       localStorage.clear();
       sessionStorage.clear();
-      
       setTimeout(() => {
         window.location.href = "/login";
-      }, 2000);
+      }, 500);
     },
   });
 

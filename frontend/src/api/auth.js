@@ -1,14 +1,9 @@
-// Auth API - All authentication-related API calls
-
-// API base URL'i normalize et (çift slash'ları temizle)
 const getApiBase = () => {
   const base = import.meta.env.VITE_API_BASE_URL;
   if (!base) return "/api/auth";
   
-  // URL'i normalize et
-  let normalized = base.replace(/\/+$/, ''); // Sonundaki slash'ları temizle
+  let normalized = base.replace(/\/+$/, '');
   
-  // Eğer /api yoksa ekle (Vercel'de backend URL'i sadece domain olabilir)
   if (!normalized.endsWith('/api')) {
     normalized = `${normalized}/api`;
   }
@@ -22,47 +17,38 @@ const handleResponse = async (response) => {
   const contentType = response.headers.get("content-type");
   if (!contentType || !contentType.includes("application/json")) {
     const text = await response.text();
-    throw new Error(text || "Beklenmeyen bir hata oluştu.");
+    throw new Error(text || "Unexpected error occurred.");
   }
   
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message || data.error || "Bir hata oluştu.");
+    throw new Error(data.message || data.error || "An error occurred.");
   }
   return data;
 };
 
-// Get current user
 export const getCurrentUser = async () => {
   try {
     const response = await fetch(`${API_BASE}/me`, {
       credentials: "include",
-      cache: "no-store", // Prevent caching
+      cache: "no-store",
     });
     
-    // If unauthorized, return null instead of throwing
     if (response.status === 401 || response.status === 403) {
-      console.log("🔴 getCurrentUser: Unauthorized (401/403)");
       return null;
     }
     
-    // Check if response is ok
     if (!response.ok) {
-      console.log("🔴 getCurrentUser: Response not ok", response.status);
       return null;
     }
     
     const data = await handleResponse(response);
-    console.log("✅ getCurrentUser: User data received", data ? "User exists" : "No user");
     return data;
   } catch (error) {
-    // If any error occurs, return null
-    console.log("🔴 getCurrentUser: Error", error.message);
     return null;
   }
 };
 
-// Login
 export const login = async (username, password) => {
   const response = await fetch(`${API_BASE}/login`, {
     method: "POST",
@@ -75,7 +61,6 @@ export const login = async (username, password) => {
   return handleResponse(response);
 };
 
-// Signup
 export const signup = async (userData) => {
   const response = await fetch(`${API_BASE}/signup`, {
     method: "POST",
@@ -88,7 +73,6 @@ export const signup = async (userData) => {
   return handleResponse(response);
 };
 
-// Logout
 export const logout = async () => {
   const response = await fetch(`${API_BASE}/logout`, {
     method: "POST",
@@ -97,7 +81,6 @@ export const logout = async () => {
   return handleResponse(response);
 };
 
-// Verify account
 export const verifyAccount = async (verificationCode) => {
   const response = await fetch(`${API_BASE}/verify/${verificationCode}`, {
     method: "POST",
@@ -106,7 +89,6 @@ export const verifyAccount = async (verificationCode) => {
   return handleResponse(response);
 };
 
-// Resend verification code
 export const resendVerificationCode = async () => {
   const response = await fetch(`${API_BASE}/resend-verification-code`, {
     method: "POST",
@@ -115,7 +97,6 @@ export const resendVerificationCode = async () => {
   return handleResponse(response);
 };
 
-// Reset password request
 export const requestPasswordReset = async (email) => {
   const response = await fetch(`${API_BASE}/forgot-password`, {
     method: "POST",
@@ -128,7 +109,6 @@ export const requestPasswordReset = async (email) => {
   return handleResponse(response);
 };
 
-// Reset password
 export const resetPassword = async (token, newPassword) => {
   const response = await fetch(`${API_BASE}/reset-password/${token}`, {
     method: "POST",

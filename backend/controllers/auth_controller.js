@@ -125,59 +125,20 @@ export const login = async (req, res) => {
   }
 };
 export const logout = (req, res) => {
-  try {
-    const isProduction =
-      process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  const isProduction =
+    process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
-    const expireDate = new Date(0).toUTCString();
-    
-    const cookieOptions = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "strict",
-      expires: new Date(0),
-      path: "/",
-    };
+  res.cookie("jwt", "", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "strict",
+    expires: new Date(0),
+    path: "/",
+  });
 
-    res.clearCookie("jwt", cookieOptions);
-
-    res.cookie("jwt", "", cookieOptions);
-    
-    if (isProduction) {
-      res.setHeader(
-        "Set-Cookie",
-        `jwt=; Path=/; Expires=${expireDate}; HttpOnly; Secure; SameSite=None`
-      );
-    } else {
-      res.setHeader(
-        "Set-Cookie",
-        `jwt=; Path=/; Expires=${expireDate}; HttpOnly; SameSite=Strict`
-      );
-    }
-
-    res.status(200).json({ 
-      message: "Çıkış yapıldı.",
-      cookieCleared: true 
-    });
-  } catch (error) {
-    console.log("Error in logout controller", error.message);
-    // Even if there's an error, try to clear cookie
-    try {
-      res.clearCookie("jwt", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1",
-        sameSite: (process.env.NODE_ENV === "production" || process.env.VERCEL === "1") ? "none" : "strict",
-        path: "/",
-      });
-    } catch (clearError) {
-      console.log("Error clearing cookie:", clearError.message);
-    }
-    res.status(200).json({ 
-      message: "Çıkış yapıldı.",
-      cookieCleared: false 
-    });
-  }
+  return res.status(200).json({ message: "Çıkış yapıldı." });
 };
+
 
 export const get_me = async (req, res) => {
   try {
