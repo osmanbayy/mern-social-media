@@ -279,6 +279,45 @@ export const get_following_posts = async (req, res) => {
   }
 };
 
+export const get_single_post = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Disable caching for this endpoint
+    res.set({
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+      "Content-Type": "application/json",
+    });
+
+    if (!id) {
+      return res.status(400).json({ message: "Post ID gerekli." });
+    }
+
+    const post = await Post.findById(id)
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      });
+
+    if (!post) {
+      return res.status(404).json({
+        message: "Gönderiye ulaşılamıyor. Silinmiş veya arşivlenmiş olabilir.",
+      });
+    }
+
+    res.status(200).json(post);
+  } catch (error) {
+    console.log("Error in get single post controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
 export const get_user_posts = async (req, res) => {
   const { username } = req.params;
 

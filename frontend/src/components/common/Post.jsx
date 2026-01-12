@@ -2,7 +2,7 @@ import { FaRegComment } from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
 import { IoMdBookmark } from "react-icons/io";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import LoadingSpinner from "../common/LoadingSpinner";
@@ -11,12 +11,12 @@ import { formatPostDate } from "../../utils/date";
 import { FaHeart } from "react-icons/fa6";
 import DeletePostDialog from "../modals/DeletePostDialog";
 import EditPostDialog from "../modals/EditPostDialog";
-import PostCommentsModal from "../modals/PostCommentsModal";
 import PostImageModal from "../modals/PostImageModal";
 import PostOptions from "../PostOptions";
 
 const Post = ({ post, isHidden = false }) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const navigate = useNavigate();
   const { data: authUser, isLoading } = useQuery({ queryKey: ["authUser"] });
 
   const queryClient = useQueryClient();
@@ -212,8 +212,8 @@ const Post = ({ post, isHidden = false }) => {
   };
 
   const handlePostClick = (e) => {
-    e.stopPropagation(); // Posta tıklanarak yorum modalı açılır
-    document.getElementById("comments_modal" + post._id).showModal();
+    e.stopPropagation();
+    navigate(`/post/${post._id}`);
   };
 
   if (isLoading) return <LoadingSpinner size="md" />;
@@ -341,17 +341,6 @@ const Post = ({ post, isHidden = false }) => {
           </div>
         </div>
       </div>
-
-      {/* Comments Modal */}
-      <PostCommentsModal
-        post={post}
-        postOwner={postOwner}
-        isMyPost={isMyPost}
-        isDeleting={isDeleting}
-        onDeletePost={handleDeletePost}
-        onProfileClick={handleProfileClick}
-        onImageClick={handleImageClick}
-      />
 
       {/* Image Modal */}
       <PostImageModal post={post} />

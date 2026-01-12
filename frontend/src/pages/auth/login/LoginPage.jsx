@@ -62,7 +62,7 @@ const LoginPage = () => {
           className="lg:w-2/3 mx-auto md:mx-20 flex gap-4 flex-col items-center"
           onSubmit={handleSubmit}
         >
-          <OSSvg forceDark className="w-32 h-32 md:hidden flex-shrink-0" />
+          <OSSvg forceDark className="w-32 h-32 md:hidden flex-shrink-0" /> 
           <h1 className="login-title text-4xl font-extrabold">OnSekiz</h1>
           <label className="input input-bordered rounded flex items-center gap-2">
             <FiUser />
