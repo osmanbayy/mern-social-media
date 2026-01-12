@@ -16,18 +16,26 @@ const Sidebar = () => {
   const { mutate: logoutMutation } = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      // Clear all queries
+      // Clear all queries and cache
       queryClient.clear();
+      queryClient.removeQueries();
+      // Clear React Query cache completely
+      queryClient.getQueryCache().clear();
       toast.success("Çıkış yapıldı.");
-      // Use href instead of reload for better cookie handling
-      window.location.href = "/login";
+      // Force a hard redirect to login page
+      setTimeout(() => {
+        window.location.replace("/login");
+      }, 100);
     },
     onError: (error) => {
       console.error("Çıkış hatası:", error.message);
-      toast.error(error.message || "Çıkış sırasında hata oluştu.");
       // Even if there's an error, try to clear and redirect
       queryClient.clear();
-      window.location.href = "/login";
+      queryClient.removeQueries();
+      queryClient.getQueryCache().clear();
+      setTimeout(() => {
+        window.location.replace("/login");
+      }, 100);
     },
   });
 

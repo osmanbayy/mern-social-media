@@ -126,14 +126,28 @@ export const login = async (req, res) => {
 };
 export const logout = async (req, res) => {
   try {
+    // Cookie'yi silmek için oluşturulduğu ayarlarla aynı ayarları kullan
+    // Vercel cross-domain için sameSite: "none" ve secure: true gerekli
     const cookieOptions = {
       httpOnly: true,
       maxAge: 0,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-      secure: process.env.NODE_ENV === "production",
+      expires: new Date(0), // Expire immediately
+      sameSite: process.env.NODE_ENV === "production" || process.env.VERCEL === "1" ? "none" : "strict",
+      secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1",
+      path: "/", // Cookie path'i belirt
     };
     
+    // Cookie'yi boş string ve expire date ile set et
     res.cookie("jwt", "", cookieOptions);
+    
+    // Alternatif olarak clearCookie da kullanılabilir
+    res.clearCookie("jwt", {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" || process.env.VERCEL === "1" ? "none" : "strict",
+      secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1",
+      path: "/",
+    });
+    
     res.status(200).json({ message: "Çıkış yapıldı." });
   } catch (error) {
     console.log("Error in logout controller", error.message);

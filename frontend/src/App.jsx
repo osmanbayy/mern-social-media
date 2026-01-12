@@ -22,16 +22,18 @@ import PostDetailPage from "./pages/post/PostDetailPage";
 import EditProfilePage from "./pages/profile/EditProfilePage";
 
 function App() {
-  const { data: authUser, isLoading } = useQuery({
+  const { data: authUser, isLoading, isError } = useQuery({
     queryKey: ["authUser"],
     queryFn: getCurrentUser,
     retry: false,
+    staleTime: 0,
+    cacheTime: 0,
   });
 
   const location = useLocation();
   const isSettingPage = location.pathname === "/settings";
 
-  if (isLoading || authUser === null) {
+  if (isLoading) {
     return (
       <div className="h-screen flex justify-center items-center">
         <LoadingSpinner size="lg" />
@@ -39,16 +41,18 @@ function App() {
     );
   }
 
+  // If error or no user, treat as logged out
+  const isLoggedIn = !isError && authUser !== null && authUser !== undefined;
   const isAccountVerified = authUser?.isAccountVerified;
   
   return (
     <div className="flex max-w-6xl mx-auto">
-      {authUser && isAccountVerified && <Sidebar />}
+      {isLoggedIn && isAccountVerified && <Sidebar />}
       <Routes>
         <Route
           path="/"
           element={
-            authUser ? (
+            isLoggedIn ? (
               isAccountVerified ? (
                 <HomePage />
               ) : (
@@ -61,36 +65,36 @@ function App() {
         />
         <Route
           path="/signup"
-          element={!authUser ? <SignupPage /> : <Navigate to="/" />}
+          element={!isLoggedIn ? <SignupPage /> : <Navigate to="/" />}
         />
         <Route
           path="/login"
-          element={!authUser ? <LoginPage /> : <Navigate to="/" />}
+          element={!isLoggedIn ? <LoginPage /> : <Navigate to="/" />}
         />
         <Route
           path="/notifications"
-          element={authUser ? <NotificationPage /> : <Navigate to="/login" />}
+          element={isLoggedIn ? <NotificationPage /> : <Navigate to="/login" />}
         />
         <Route
           path="/profile/:username"
-          element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
+          element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" />}
         />
         <Route
           path="/profile/:username/followers"
-          element={authUser ? <ProfileFollowersPage /> : <Navigate to="/login" />}
+          element={isLoggedIn ? <ProfileFollowersPage /> : <Navigate to="/login" />}
         />
         <Route
           path="/profile/:username/following"
-          element={authUser ? <ProfileFollowersPage /> : <Navigate to="/login" />}
+          element={isLoggedIn ? <ProfileFollowersPage /> : <Navigate to="/login" />}
         />
         <Route
           path="/create-post"
-          element={authUser ? <PostCreate /> : <Navigate to="/login" />}
+          element={isLoggedIn ? <PostCreate /> : <Navigate to="/login" />}
         />
         <Route
           path="/verify-account"
           element={
-            authUser && !isAccountVerified ? (
+            isLoggedIn && !isAccountVerified ? (
               <VerifyAccount />
             ) : (
               <Navigate to="/login" />
@@ -99,17 +103,17 @@ function App() {
         />
         <Route
           path="/reset-password"
-          element={!authUser ? <ResetPassword /> : <Navigate to={"/"} />}
+          element={!isLoggedIn ? <ResetPassword /> : <Navigate to={"/"} />}
         />
         <Route path="/settings"
-          element={authUser && <Settings /> }
+          element={isLoggedIn && <Settings /> }
         />
-        <Route path="/saved-posts" element={authUser && <BookmarkedPosts />} />
-        <Route path="/hidden-posts" element={authUser && <HiddenPosts />} />
-        <Route path="/post/:postId" element={authUser && isAccountVerified ? <PostDetailPage /> : <Navigate to="/login" />} />
-        <Route path="/edit-profile" element={authUser && isAccountVerified ? <EditProfilePage /> : <Navigate to="/login" />} />
+        <Route path="/saved-posts" element={isLoggedIn && <BookmarkedPosts />} />
+        <Route path="/hidden-posts" element={isLoggedIn && <HiddenPosts />} />
+        <Route path="/post/:postId" element={isLoggedIn && isAccountVerified ? <PostDetailPage /> : <Navigate to="/login" />} />
+        <Route path="/edit-profile" element={isLoggedIn && isAccountVerified ? <EditProfilePage /> : <Navigate to="/login" />} />
       </Routes>
-      {authUser && isAccountVerified && !isSettingPage && <RightPanel />}
+      {isLoggedIn && isAccountVerified && !isSettingPage && <RightPanel />}
       <Toaster />
     </div>
   );

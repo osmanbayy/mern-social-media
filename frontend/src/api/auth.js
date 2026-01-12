@@ -34,10 +34,21 @@ const handleResponse = async (response) => {
 
 // Get current user
 export const getCurrentUser = async () => {
-  const response = await fetch(`${API_BASE}/me`, {
-    credentials: "include",
-  });
-  return handleResponse(response);
+  try {
+    const response = await fetch(`${API_BASE}/me`, {
+      credentials: "include",
+    });
+    
+    // If unauthorized, return null instead of throwing
+    if (response.status === 401 || response.status === 403) {
+      return null;
+    }
+    
+    return handleResponse(response);
+  } catch (error) {
+    // If any error occurs, return null
+    return null;
+  }
 };
 
 // Login
