@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import BookmarkedPosts from "./pages/BookmarkedPosts";
 import HiddenPosts from "./pages/HiddenPosts";
 import PostDetailPage from "./pages/post/PostDetailPage";
+import EditProfilePage from "./pages/profile/EditProfilePage";
 
 function App() {
   const { data: authUser, isLoading } = useQuery({
@@ -106,6 +107,7 @@ function App() {
         <Route path="/saved-posts" element={authUser && <BookmarkedPosts />} />
         <Route path="/hidden-posts" element={authUser && <HiddenPosts />} />
         <Route path="/post/:postId" element={authUser && isAccountVerified ? <PostDetailPage /> : <Navigate to="/login" />} />
+        <Route path="/edit-profile" element={authUser && isAccountVerified ? <EditProfilePage /> : <Navigate to="/login" />} />
       </Routes>
       {authUser && isAccountVerified && !isSettingPage && <RightPanel />}
       <Toaster />

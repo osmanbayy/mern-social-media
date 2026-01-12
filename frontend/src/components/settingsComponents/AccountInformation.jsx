@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../common/LoadingSpinner";
-import EditProfileModal from "../modals/EditProfileModal";
 import { LuUser, LuAtSign, LuMail, LuBadgeCheck } from "react-icons/lu";
 
 const AccountInformation = () => {
+  const navigate = useNavigate();
   const { data: authUser, isLoading } = useQuery({ queryKey: ["authUser"] });
 
   if (isLoading) {
@@ -83,7 +84,12 @@ const AccountInformation = () => {
 
       {/* Edit Profile Button */}
       <div className="flex justify-end">
-        <EditProfileModal />
+        <button
+          className="btn btn-outline rounded-full btn-sm"
+          onClick={() => navigate("/edit-profile")}
+        >
+          Bilgilerini Düzenle
+        </button>
       </div>
     </div>
   );

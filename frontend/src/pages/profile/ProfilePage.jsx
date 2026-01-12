@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
-import EditProfileModal from "../../components/modals/EditProfileModal";
 import ProfileImageModal from "../../components/modals/ProfileImageModal";
 import CoverImageModal from "../../components/modals/CoverImageModal";
 import { FaArrowLeft } from "react-icons/fa6";
@@ -197,7 +196,12 @@ const ProfilePage = () => {
             {/* Profil aksiyonları (Takip / Profili düzenle / Güncelle) */}
             <div className="flex justify-end px-4 mb-3 gap-2">
               {isMyProfile ? (
-                <EditProfileModal authUser={authUser} />
+                <button
+                  className="btn btn-outline rounded-full btn-sm"
+                  onClick={() => navigate("/edit-profile")}
+                >
+                  Bilgilerini Düzenle
+                </button>
               ) : (
                 <button
                   className={`btn btn-sm rounded-full px-4 ${
