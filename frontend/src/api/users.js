@@ -1,6 +1,6 @@
 // Users API - All user-related API calls
 
-const API_BASE = "/api/user";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/user` : "/api/user";
 
 const handleResponse = async (response) => {
   const data = await response.json();

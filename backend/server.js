@@ -20,7 +20,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-job.start();
+// Cron job'ı sadece Vercel dışında çalıştır (Vercel'de serverless functions kullanılıyor)
+if (process.env.VERCEL !== "1") {
+  job.start();
+}
 const app = express();
 const PORT = process.env.PORT || 8000;
 
@@ -31,7 +34,11 @@ app.use(express.urlencoded({ extended: true })); // to parse form data(urlencode
 
 app.use(cookieParser());
 
-const allowedOrigins = ["http://localhost:3000", "https://onsekiz.onrender.com"];
+const allowedOrigins = [
+  "http://localhost:3000", 
+  "https://onsekiz.onrender.com",
+  process.env.FRONTEND_URL
+].filter(Boolean); // undefined değerleri filtrele
 
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 
@@ -41,15 +48,23 @@ app.use("/api/post", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
 
-if (process.env.NODE_ENV == "production") {
-  app.use(express.static(path.join(__dirname, "/frontend/dist")));
+// MongoDB bağlantısını başlat
+connect_mongodb();
 
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
+// Vercel serverless function için app'i export et
+export default app;
+
+// Eğer standalone server olarak çalışıyorsa (development)
+if (process.env.NODE_ENV !== "production" || process.env.VERCEL !== "1") {
+  if (process.env.NODE_ENV == "production") {
+    app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+    app.get("*", (req, res) => {
+      res.sendFile(path.resolve(__dirname, "../frontend", "dist", "index.html"));
+    });
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
   });
 }
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  connect_mongodb();
-});

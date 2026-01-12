@@ -1,6 +1,6 @@
 // Notifications API - All notification-related API calls
 
-const API_BASE = "/api/notifications";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/notifications` : "/api/notifications";
 
 const handleResponse = async (response) => {
   const data = await response.json();

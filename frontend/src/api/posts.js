@@ -1,6 +1,6 @@
 // Posts API - All post-related API calls
 
-const API_BASE = "/api/post";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/post` : "/api/post";
 
 const handleResponse = async (response) => {
   const contentType = response.headers.get("content-type");
