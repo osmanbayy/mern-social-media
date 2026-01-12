@@ -41,28 +41,49 @@ const allowedOrigins = [
   process.env.FRONTEND_URL
 ].filter(Boolean); // undefined değerleri filtrele
 
-// CORS middleware - daha esnek yapılandırma
-app.use(cors({
-  origin: function (origin, callback) {
-    // Origin yoksa (mobile app, Postman gibi) izin ver
-    if (!origin) return callback(null, true);
+// CORS middleware - Vercel için optimize edilmiş
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Tüm Vercel frontend URL'lerine izin ver
+  if (origin && (origin.includes('onsekiz-frontend') && origin.includes('.vercel.app'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     
-    // Eğer origin allowedOrigins içindeyse veya Vercel preview URL'i ise izin ver
-    if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed.replace(/\/$/, '')))) {
-      return callback(null, true);
+    // Preflight request için hemen response döndür
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
     }
-    
-    // Vercel preview URL'leri için kontrol (örn: onsekiz-frontend-*.vercel.app)
-    if (origin.includes('onsekiz-frontend') && origin.includes('.vercel.app')) {
-      return callback(null, true);
+  } else if (allowedOrigins.includes(origin) || !origin) {
+    // Allowed origins veya origin yoksa (Postman gibi)
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*');
     }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     
-    callback(null, true); // Geçici olarak tüm origin'lere izin ver (production'da kısıtlayın)
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-}));
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+  } else {
+    // Diğer origin'ler için de izin ver (geçici)
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+  }
+  
+  next();
+});
 
 // Health check endpoint
 app.get("/", (req, res) => {

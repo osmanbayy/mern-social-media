@@ -4,7 +4,15 @@
 const getApiBase = () => {
   const base = import.meta.env.VITE_API_BASE_URL;
   if (!base) return "/api/auth";
-  const normalized = base.replace(/\/+$/, ''); // Sonundaki slash'ları temizle
+  
+  // URL'i normalize et
+  let normalized = base.replace(/\/+$/, ''); // Sonundaki slash'ları temizle
+  
+  // Eğer /api yoksa ekle (Vercel'de backend URL'i sadece domain olabilir)
+  if (!normalized.endsWith('/api')) {
+    normalized = `${normalized}/api`;
+  }
+  
   return `${normalized}/auth`;
 };
 

@@ -4,7 +4,12 @@
 const getApiBase = () => {
   const base = import.meta.env.VITE_API_BASE_URL;
   if (!base) return "/api/post";
-  const normalized = base.replace(/\/+$/, ''); // Sonundaki slash'ları temizle
+  
+  let normalized = base.replace(/\/+$/, '');
+  if (!normalized.endsWith('/api')) {
+    normalized = `${normalized}/api`;
+  }
+  
   return `${normalized}/post`;
 };
 
