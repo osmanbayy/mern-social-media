@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-import { LuHeart, LuSettings, LuUser, LuTrash2, LuCheckCheck } from "react-icons/lu";
+import { LuHeart, LuSettings, LuUser, LuTrash2, LuCheckCheck, LuMessageCircle } from "react-icons/lu";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
@@ -124,8 +124,8 @@ const NotificationPage = () => {
             {notifications.map((notification) => (
               <Link
                 to={
-                  notification.type === "like"
-                    ? `/post/${notification.post?._id || ""}`
+                  (notification.type === "like" || notification.type === "comment") && notification.post?._id
+                    ? `/post/${notification.post._id}`
                     : `/profile/${notification.from?.username}`
                 }
                 key={notification._id}
@@ -145,6 +145,8 @@ const NotificationPage = () => {
                   className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
                     notification.type === "follow"
                       ? "bg-blue-500/10 group-hover:bg-blue-500/20"
+                      : notification.type === "comment"
+                      ? "bg-emerald-500/10 group-hover:bg-emerald-500/20"
                       : "bg-red-500/10 group-hover:bg-red-500/20"
                   }`}
                 >
@@ -154,6 +156,14 @@ const NotificationPage = () => {
                         !notification.read
                           ? "text-blue-500"
                           : "text-blue-500/70"
+                      }`}
+                    />
+                  ) : notification.type === "comment" ? (
+                    <LuMessageCircle
+                      className={`w-6 h-6 transition-colors ${
+                        !notification.read
+                          ? "text-emerald-500"
+                          : "text-emerald-500/70"
                       }`}
                     />
                   ) : (
@@ -198,6 +208,8 @@ const NotificationPage = () => {
                       </span>{" "}
                       {notification.type === "follow"
                         ? "seni takip etti"
+                        : notification.type === "comment"
+                        ? "gönderine yorum yaptı"
                         : "gönderini beğendi"}
                     </p>
                     {notification.createdAt && (

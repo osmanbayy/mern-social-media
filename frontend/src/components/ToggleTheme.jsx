@@ -1,13 +1,20 @@
 // src/components/ToggleTheme.jsx
 import { useEffect, useState } from "react";
-import { BiMoon, BiSun } from "react-icons/bi";
+import { LuMoon, LuSun } from "react-icons/lu";
 
 const ToggleTheme = () => {
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") || "dark";
+    }
+    return "dark";
+  });
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
+    if (typeof window !== "undefined") {
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("theme", theme);
+    }
   }, [theme]);
 
   const toggleTheme = () => {
@@ -15,23 +22,23 @@ const ToggleTheme = () => {
   };
 
   return (
-    <div
+    <button
       onClick={toggleTheme}
-      className="flex items-center gap-2 cursor-pointer"
+      className="relative w-16 h-8 rounded-full bg-base-300 transition-colors duration-500 focus:outline-none"
+      aria-label="Toggle theme"
     >
-      Temayı Değiştir
-      <div>
-        <label className="swap w-full swap-rotate cursor-pointer text-xl">
-          <input
-            type="checkbox"
-            onChange={toggleTheme}
-            checked={theme === "dark"}
-          />
-          <BiSun className="swap-on" />
-          <BiMoon className="swap-off" />
-        </label>
+      <div
+        className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-base-100 flex items-center justify-center transition-transform duration-500 ease-in-out ${
+          theme === "dark" ? "translate-x-0" : "translate-x-8"
+        }`}
+      >
+        {theme === "dark" ? (
+          <LuMoon className="w-4 h-4 text-blue-500 transition-opacity duration-500" />
+        ) : (
+          <LuSun className="w-4 h-4 text-amber-500 transition-opacity duration-500" />
+        )}
       </div>
-    </div>
+    </button>
   );
 };
 

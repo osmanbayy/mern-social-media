@@ -8,6 +8,10 @@ export const gel_all_notifications = async (req, res) => {
         path: "from",
         select: "username profileImage fullname",
       })
+      .populate({
+        path: "post",
+        select: "_id",
+      })
       .sort({ createdAt: -1 }); // En yeni bildirimler en üste
 
     await Notification.updateMany({ to: userId }, { read: true });

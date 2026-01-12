@@ -137,7 +137,33 @@ export const comment_on_post = async (req, res) => {
     post.comments.push(comment);
     await post.save();
 
-    res.status(200).json(post);
+    // Kullanıcı kendi gönderisine yorum yapmıyorsa bildirim oluştur
+    if (post.user.toString() !== userId.toString()) {
+      try {
+        const notification = new Notification({
+          from: userId,
+          to: post.user,
+          type: "comment",
+          post: postId,
+        });
+        await notification.save();
+      } catch (error) {
+        console.log("Error creating comment notification:", error.message);
+      }
+    }
+
+    // Post'u populate ederek döndür
+    const populatedPost = await Post.findById(postId)
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      });
+
+    res.status(200).json(populatedPost);
   } catch (error) {
     console.log("Error in comment controller", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -174,6 +200,7 @@ export const like_unlike_post = async (req, res) => {
         from: userId,
         to: post.user,
         type: "like",
+        post: postId,
       });
 
       await notification.save();
