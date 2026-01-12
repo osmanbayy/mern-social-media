@@ -22,12 +22,16 @@ import PostDetailPage from "./pages/post/PostDetailPage";
 import EditProfilePage from "./pages/profile/EditProfilePage";
 
 function App() {
+  // Check if we're in logout state (localStorage flag)
+  const isLoggingOut = localStorage.getItem("_logout_in_progress") === "true";
+  
   const { data: authUser, isLoading, isError } = useQuery({
     queryKey: ["authUser"],
     queryFn: getCurrentUser,
     retry: false,
     staleTime: 0,
     cacheTime: 0,
+    enabled: !isLoggingOut, // Don't fetch if logout is in progress
   });
 
   const location = useLocation();
@@ -42,7 +46,8 @@ function App() {
   }
 
   // If error or no user, treat as logged out
-  const isLoggedIn = !isError && authUser !== null && authUser !== undefined;
+  // Explicitly check for null/undefined (not just falsy)
+  const isLoggedIn = !isError && authUser !== null && authUser !== undefined && Object.keys(authUser || {}).length > 0;
   const isAccountVerified = authUser?.isAccountVerified;
   
   return (

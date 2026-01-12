@@ -25,26 +25,31 @@ const Sidebar = () => {
     onSuccess: (response) => {
       console.log("✅ Logout başarılı, response:", response);
       
+      // Logout flag'i set et (getCurrentUser'ın çalışmasını engelle)
+      localStorage.setItem("_logout_in_progress", "true");
+      
+      // ÖNCE authUser'ı null yap (cookie silinmese bile)
+      queryClient.setQueryData(["authUser"], null);
+      
       // Clear all queries and cache
       queryClient.clear();
       queryClient.removeQueries();
       queryClient.getQueryCache().clear();
       
-      // Clear storage
-      localStorage.clear();
+      // Clear storage (logout flag hariç - yönlendirme için gerekli)
       sessionStorage.clear();
       
       toast.success("Çıkış yapıldı.");
       
-      // Cookie silme işleminin tamamlanması için daha uzun bekle
-      console.log("⏳ Login sayfasına yönlendiriliyor (2 saniye sonra)...");
+      // Hemen login'e yönlendir
+      console.log("🚀 Login sayfasına yönlendiriliyor...");
       setTimeout(() => {
-        console.log("🚀 Yönlendirme yapılıyor...");
+        // Logout flag'ini temizle ve her şeyi temizle
+        localStorage.clear();
         window.location.href = "/login";
-      }, 2000);
+      }, 500);
     },
     onError: (error) => {
-      console.error("❌ Logout hatası:", error);
       queryClient.clear();
       queryClient.removeQueries();
       queryClient.getQueryCache().clear();

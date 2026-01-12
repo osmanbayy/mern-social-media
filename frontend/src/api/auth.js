@@ -37,16 +37,27 @@ export const getCurrentUser = async () => {
   try {
     const response = await fetch(`${API_BASE}/me`, {
       credentials: "include",
+      cache: "no-store", // Prevent caching
     });
     
     // If unauthorized, return null instead of throwing
     if (response.status === 401 || response.status === 403) {
+      console.log("🔴 getCurrentUser: Unauthorized (401/403)");
       return null;
     }
     
-    return handleResponse(response);
+    // Check if response is ok
+    if (!response.ok) {
+      console.log("🔴 getCurrentUser: Response not ok", response.status);
+      return null;
+    }
+    
+    const data = await handleResponse(response);
+    console.log("✅ getCurrentUser: User data received", data ? "User exists" : "No user");
+    return data;
   } catch (error) {
     // If any error occurs, return null
+    console.log("🔴 getCurrentUser: Error", error.message);
     return null;
   }
 };
