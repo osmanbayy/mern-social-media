@@ -28,8 +28,8 @@ const RightPanel = () => {
 
   return (
     <div className="hidden lg:block my-4 mx-2">
-      <div className="p-4 rounded-md sticky top-2">
-        <p className="font-bold mb-5">Kimi takip etmeli?</p>
+      <div className="p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 sticky top-4 shadow-lg">
+        <p className="font-bold text-lg mb-5 text-base-content">Kimi takip etmeli?</p>
         <div className="flex flex-col gap-4">
           {/* item */}
           {isLoading && (
@@ -46,30 +46,30 @@ const RightPanel = () => {
             suggestedUsers?.map((user) => (
               <Link
                 to={`/profile/${user.username}`}
-                className="flex items-center justify-between gap-4"
+                className="flex items-center justify-between gap-4 p-3 rounded-xl hover:bg-base-200/50 transition-all duration-300 group"
                 key={user._id}
               >
-                <div className="flex gap-2 items-center">
-                  <div className="avatar">
-                    <div className="w-8 rounded-full">
+                <div className="flex gap-3 items-center flex-1 min-w-0">
+                  <div className="avatar flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full ring-2 ring-base-300 group-hover:ring-primary transition-all duration-300">
                       <img
                         src={user.profileImage || defaultProfilePicture}
-                        className="w-8 rounded-full object-cover"
+                        className="w-full h-full rounded-full object-cover"
                       />
                     </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm tracking-tight truncate w-36">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-semibold tracking-tight truncate group-hover:text-primary transition-colors">
                       {user.fullname}
                     </span>
-                    <span className="text-sm text-slate-500">
+                    <span className="text-xs text-base-content/60 truncate">
                       @{user.username}
                     </span>
                   </div>
                 </div>
-                <div>
+                <div className="flex-shrink-0">
                   <button
-                    className="btn bg-white text-black hover:bg-white hover:opacity-90 rounded-full btn-sm"
+                    className="btn btn-primary btn-sm rounded-full text-white hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
                     onClick={(e) => {
                       e.preventDefault();
                       follow(user._id);

@@ -121,10 +121,10 @@ const PostDetailPage = () => {
   return (
     <div className="flex-[4_4_0] border-r border-gray-700 min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-base-100/95 backdrop-blur-sm border-b border-gray-700 px-4 py-3 flex items-center gap-4">
+      <div className="sticky top-0 z-10 bg-base-100/95 backdrop-blur-xl border-b border-base-300/50 px-5 py-4 flex items-center gap-4 shadow-sm">
         <button
           onClick={() => navigate(-1)}
-          className="btn btn-ghost btn-sm btn-circle hover:bg-base-200"
+          className="btn btn-ghost btn-sm btn-circle hover:bg-base-200 transition-all duration-200 hover:scale-110"
         >
           <IoArrowBack className="w-5 h-5" />
         </button>
@@ -132,14 +132,14 @@ const PostDetailPage = () => {
       </div>
 
       {/* Post Content */}
-      <div className="border-b border-gray-700">
-        <div className="flex gap-3 items-start p-4">
+      <div className="border-b border-base-300/50">
+        <div className="flex gap-4 items-start p-5">
           <Link
             to={`/profile/${postOwner.username}`}
             className="avatar flex-shrink-0"
             onClick={handleProfileClick}
           >
-            <div className="w-12 h-12 rounded-full overflow-hidden">
+            <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-base-300 hover:ring-primary transition-all duration-300">
               <img
                 src={postOwner.profileImage || defaultProfilePicture}
                 alt={postOwner.fullname}
@@ -190,10 +190,10 @@ const PostDetailPage = () => {
               {post.text}
             </p>
             {post.img && (
-              <div className="rounded-2xl overflow-hidden border border-base-300 mb-3">
+              <div className="rounded-2xl overflow-hidden border border-base-300/50 mb-4 hover:border-base-300 transition-all duration-300 group/image">
                 <img
                   src={post.img}
-                  className="w-full max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                  className="w-full max-h-[600px] object-contain cursor-pointer hover:scale-[1.01] transition-transform duration-500"
                   alt="Gönderi Resmi"
                   onClick={handleImageClick}
                 />
@@ -218,10 +218,10 @@ const PostDetailPage = () => {
       </div>
 
       {/* Comment Input */}
-      <div className="border-b border-gray-700 p-4">
-        <form onSubmit={handlePostComment} className="flex gap-3">
+      <div className="sticky bottom-0 bg-base-100/95 backdrop-blur-xl border-t border-base-300/50 p-5 shadow-lg">
+        <form onSubmit={handlePostComment} className="flex gap-3 items-end">
           <div className="avatar flex-shrink-0">
-            <div className="w-10 h-10 rounded-full">
+            <div className="w-10 h-10 rounded-full ring-2 ring-base-300">
               <img
                 src={authUser?.profileImage || defaultProfilePicture}
                 alt={authUser?.fullname}
@@ -241,11 +241,11 @@ const PostDetailPage = () => {
               <button
                 type="submit"
                 disabled={!comment.trim() || isCommenting}
-                className="btn btn-primary rounded-full px-6 btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn btn-primary rounded-full px-6 btn-sm disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
               >
                 {isCommenting ? (
                   <>
-                    <LoadingSpinner size="sm" />
+                    <span className="loading loading-spinner loading-sm"></span>
                     <span className="ml-2">Gönderiliyor...</span>
                   </>
                 ) : (
@@ -258,13 +258,13 @@ const PostDetailPage = () => {
       </div>
 
       {/* Comments Section */}
-      <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 'calc(100vh - 400px)' }}>
+      <div className="overflow-y-auto custom-scrollbar px-5" style={{ maxHeight: 'calc(100vh - 400px)' }}>
         {!post.comments || post.comments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            <div className="w-20 h-20 rounded-full bg-base-200 flex items-center justify-center mb-4">
-              <span className="text-4xl">💬</span>
+          <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mb-4 shadow-lg">
+              <span className="text-5xl">💬</span>
             </div>
-            <p className="text-base-content/70 font-semibold text-base mb-1">
+            <p className="text-base-content/80 font-semibold text-lg mb-2">
               Henüz yorum yok
             </p>
             <p className="text-base-content/50 text-sm">
@@ -272,17 +272,17 @@ const PostDetailPage = () => {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-base-300">
+          <div className="divide-y divide-base-300/50">
             {post.comments?.map((commentItem) => (
               <div
                 key={commentItem._id}
-                className="flex gap-3 p-4 hover:bg-base-200/30 transition-colors"
+                className="flex gap-3 p-4 hover:bg-base-200/30 transition-all duration-200 rounded-xl my-2 fade-in"
               >
                 <Link
                   to={`/profile/${commentItem.user.username}`}
                   className="avatar flex-shrink-0"
                 >
-                  <div className="w-10 h-10 rounded-full">
+                  <div className="w-10 h-10 rounded-full ring-2 ring-base-300 hover:ring-primary transition-all duration-300">
                     <img
                       src={commentItem.user.profileImage || defaultProfilePicture}
                       alt={commentItem.user.fullname}
@@ -294,7 +294,7 @@ const PostDetailPage = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <Link
                       to={`/profile/${commentItem.user.username}`}
-                      className="font-bold text-sm hover:underline"
+                      className="font-semibold text-sm hover:text-primary transition-colors"
                     >
                       {commentItem.user.fullname}
                     </Link>

@@ -9,25 +9,33 @@ const HomePage = () => {
     <>
       <div className="flex-[4_4_0] mr-auto border-r border-gray-700 min-h-screen mb-14 md:mb-0 pb-15 md:pb-0">
         {/* Header */}
-        <div className="flex w-full border-b border-gray-600">
+        <div className="flex w-full border-b border-base-300/50 bg-base-100/80 backdrop-blur-sm sticky top-0 z-10">
           <div
             className={
-              "flex justify-center flex-1 p-3 hover:bg-base-200 transition duration-300 cursor-pointer relative"
+              "flex justify-center flex-1 p-4 hover:bg-base-200/50 transition-all duration-300 cursor-pointer relative group"
             }
             onClick={() => setFeedType("forYou")}
           >
-            Senin İçin
+            <span className={`font-medium transition-colors ${
+              feedType === "forYou" ? "text-primary" : "text-base-content/70 group-hover:text-base-content"
+            }`}>
+              Senin İçin
+            </span>
             {feedType === "forYou" && (
-              <div className="absolute bottom-0 w-10 bg-indigo-500 h-1 rounded-full"></div>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 bg-primary h-1 rounded-full"></div>
             )}
           </div>
           <div
-            className="flex justify-center flex-1 p-3 hover:bg-base-200 transition duration-300 cursor-pointer relative"
+            className="flex justify-center flex-1 p-4 hover:bg-base-200/50 transition-all duration-300 cursor-pointer relative group"
             onClick={() => setFeedType("following")}
           >
-            Takip Ettiklerin
+            <span className={`font-medium transition-colors ${
+              feedType === "following" ? "text-primary" : "text-base-content/70 group-hover:text-base-content"
+            }`}>
+              Takip Ettiklerin
+            </span>
             {feedType === "following" && (
-              <div className="absolute bottom-0 bg-indigo-500 w-10 h-1 rounded-full"></div>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 bg-primary h-1 rounded-full"></div>
             )}
           </div>
         </div>

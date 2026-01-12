@@ -19,16 +19,18 @@ const PostActions = ({
 }) => {
   if (variant === "compact") {
     return (
-      <div className="flex justify-between mt-3">
-        <div className="flex gap-4 items-center w-2/3 justify-between">
+      <div className="flex justify-between mt-4 pt-3 border-t border-base-300/30">
+        <div className="flex gap-6 items-center">
           {onComment && (
             <div
-              className="flex gap-1 items-center cursor-pointer group"
+              className="flex gap-1.5 items-center cursor-pointer group"
               onClick={onComment}
             >
-              <FaRegComment className="w-4 h-4 text-slate-500 group-hover:text-sky-400" />
+              <div className="p-1.5 rounded-full group-hover:bg-blue-500/10 transition-all duration-200">
+                <FaRegComment className="w-4 h-4 text-base-content/60 group-hover:text-blue-500 transition-all duration-200 group-hover:scale-110" />
+              </div>
               {showCounts && (
-                <span className="text-sm text-slate-500 group-hover:text-sky-400">
+                <span className="text-sm text-base-content/60 group-hover:text-blue-500 transition-colors font-medium">
                   {post.comments.length}
                 </span>
               )}
@@ -37,12 +39,14 @@ const PostActions = ({
 
           {onRepost && (
             <div
-              className="flex gap-1 items-center group cursor-pointer"
+              className="flex gap-1.5 items-center group cursor-pointer"
               onClick={onRepost}
             >
-              <BiRepost className="w-6 h-6 text-slate-500 group-hover:text-green-500" />
+              <div className="p-1.5 rounded-full group-hover:bg-green-500/10 transition-all duration-200">
+                <BiRepost className="w-5 h-5 text-base-content/60 group-hover:text-green-500 transition-all duration-200 group-hover:scale-110" />
+              </div>
               {showCounts && (
-                <span className="text-sm text-slate-500 group-hover:text-green-500">
+                <span className="text-sm text-base-content/60 group-hover:text-green-500 transition-colors font-medium">
                   0
                 </span>
               )}
@@ -50,20 +54,22 @@ const PostActions = ({
           )}
 
           <div
-            className="flex gap-1 items-center group cursor-pointer"
+            className="flex gap-1.5 items-center group cursor-pointer"
             onClick={onLike}
           >
-            <FaHeart
-              className={`w-5 h-4 cursor-pointer transition-colors ${
-                isLiked
-                  ? "fill-red-600 text-red-600"
-                  : "text-slate-500 group-hover:text-pink-500"
-              }`}
-            />
+            <div className="p-1.5 rounded-full group-hover:bg-pink-500/10 transition-all duration-200">
+              <FaHeart
+                className={`w-5 h-5 transition-all duration-200 ${
+                  isLiked
+                    ? "fill-red-500 text-red-500 scale-110"
+                    : "text-base-content/60 group-hover:text-pink-500 group-hover:scale-110"
+                }`}
+              />
+            </div>
             {showCounts && (
               <span
-                className={`text-sm text-slate-500 group-hover:text-pink-500 transition-colors ${
-                  isLiked ? "text-red-600" : "text-slate-500"
+                className={`text-sm transition-colors font-medium ${
+                  isLiked ? "text-red-500" : "text-base-content/60 group-hover:text-pink-500"
                 }`}
               >
                 {post.likes.length}
@@ -72,35 +78,37 @@ const PostActions = ({
           </div>
         </div>
         <div
-          className="flex w-1/3 justify-end gap-2 items-center"
+          className="flex items-center cursor-pointer group"
           onClick={onSave}
         >
-          <IoMdBookmark
-            className={`w-5 h-5 cursor-pointer transition-colors ${
-              isSaved
-                ? "fill-blue-500 text-blue-500"
-                : "text-slate-500"
-            }`}
-          />
+          <div className="p-1.5 rounded-full group-hover:bg-blue-500/10 transition-all duration-200">
+            <IoMdBookmark
+              className={`w-5 h-5 transition-all duration-200 ${
+                isSaved
+                  ? "fill-blue-500 text-blue-500 scale-110"
+                  : "text-base-content/60 group-hover:text-blue-500 group-hover:scale-110"
+              }`}
+            />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-between pt-3 border-t border-base-300 mt-2">
-      <div className="flex items-center gap-6">
+    <div className="flex items-center justify-between pt-4 border-t border-base-300/50 mt-3">
+      <div className="flex items-center gap-8">
         {/* Comment Button */}
         {onComment && (
           <div
             className="flex items-center gap-2 group cursor-pointer"
             onClick={onComment}
           >
-            <div className="p-2 rounded-full group-hover:bg-blue-500/10 transition-colors">
-              <FaRegComment className="w-5 h-5 text-base-content/60 group-hover:text-blue-500 transition-colors" />
+            <div className="p-2.5 rounded-full group-hover:bg-blue-500/10 transition-all duration-200 group-active:scale-95">
+              <FaRegComment className="w-5 h-5 text-base-content/60 group-hover:text-blue-500 transition-all duration-200 group-hover:scale-110" />
             </div>
             {showCounts && (
-              <span className="text-sm text-base-content/60 group-hover:text-blue-500 transition-colors">
+              <span className="text-sm text-base-content/60 group-hover:text-blue-500 transition-colors font-medium">
                 {post.comments.length}
               </span>
             )}
@@ -113,11 +121,11 @@ const PostActions = ({
             className="flex items-center gap-2 group cursor-pointer"
             onClick={onRepost}
           >
-            <div className="p-2 rounded-full group-hover:bg-green-500/10 transition-colors">
-              <BiRepost className="w-5 h-5 text-base-content/60 group-hover:text-green-500 transition-colors" />
+            <div className="p-2.5 rounded-full group-hover:bg-green-500/10 transition-all duration-200 group-active:scale-95">
+              <BiRepost className="w-5 h-5 text-base-content/60 group-hover:text-green-500 transition-all duration-200 group-hover:scale-110" />
             </div>
             {showCounts && (
-              <span className="text-sm text-base-content/60 group-hover:text-green-500 transition-colors">
+              <span className="text-sm text-base-content/60 group-hover:text-green-500 transition-colors font-medium">
                 0
               </span>
             )}
@@ -129,18 +137,18 @@ const PostActions = ({
           className="flex items-center gap-2 group cursor-pointer"
           onClick={onLike}
         >
-          <div className="p-2 rounded-full group-hover:bg-pink-500/10 transition-colors">
+          <div className="p-2.5 rounded-full group-hover:bg-pink-500/10 transition-all duration-200 group-active:scale-95">
             <FaHeart
-              className={`w-5 h-5 transition-colors ${
+              className={`w-5 h-5 transition-all duration-200 ${
                 isLiked
-                  ? "fill-red-500 text-red-500"
-                  : "text-base-content/60 group-hover:text-pink-500"
+                  ? "fill-red-500 text-red-500 scale-110"
+                  : "text-base-content/60 group-hover:text-pink-500 group-hover:scale-110"
               }`}
             />
           </div>
           {showCounts && (
             <span
-              className={`text-sm transition-colors ${
+              className={`text-sm transition-colors font-medium ${
                 isLiked
                   ? "text-red-500"
                   : "text-base-content/60 group-hover:text-pink-500"
@@ -156,12 +164,12 @@ const PostActions = ({
           className="flex items-center gap-2 group cursor-pointer"
           onClick={onSave}
         >
-          <div className="p-2 rounded-full group-hover:bg-blue-500/10 transition-colors">
+          <div className="p-2.5 rounded-full group-hover:bg-blue-500/10 transition-all duration-200 group-active:scale-95">
             <IoMdBookmark
-              className={`w-5 h-5 transition-colors ${
+              className={`w-5 h-5 transition-all duration-200 ${
                 isSaved
-                  ? "fill-blue-500 text-blue-500"
-                  : "text-base-content/60 group-hover:text-blue-500"
+                  ? "fill-blue-500 text-blue-500 scale-110"
+                  : "text-base-content/60 group-hover:text-blue-500 group-hover:scale-110"
               }`}
             />
           </div>

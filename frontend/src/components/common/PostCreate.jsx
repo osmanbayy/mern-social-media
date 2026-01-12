@@ -87,58 +87,72 @@ const PostCreate = () => {
   };
 
   return (
-    <div className="w-full flex p-4 items-start gap-4 border-b border-gray-700">
-      <div className="avatar">
-        <div className="w-8 rounded-full">
-          <img src={authUser?.profileImage || defaultProfilePicture} />
+    <div className="w-full flex p-5 items-start gap-4 border-b border-base-300/50 bg-base-100/50 backdrop-blur-sm">
+      <div className="avatar flex-shrink-0">
+        <div className="w-10 h-10 rounded-full ring-2 ring-base-300 hover:ring-primary transition-all duration-300">
+          <img 
+            src={authUser?.profileImage || defaultProfilePicture}
+            className="w-full h-full rounded-full object-cover"
+          />
         </div>
       </div>
       <form
-        className="relative flex flex-col gap-2 w-full"
+        className="relative flex flex-col gap-3 w-full"
         onSubmit={handleSubmit}
       >
         <textarea
-          className="textarea w-full p-0 text-lg resize-none border-none outline-none focus:outline-none border-gray-800"
-          placeholder="Neler oluyor?!"
+          className="textarea w-full p-0 text-base resize-none border-none outline-none focus:outline-none bg-transparent placeholder:text-base-content/50 modern-input"
+          placeholder="Neler oluyor?"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          rows={3}
         />
         {img && (
-          <div className="relative w-72 mx-auto">
-            <IoCloseSharp
-              className="absolute top-0 right-0 text-white bg-gray-800 rounded-full w-5 h-5 cursor-pointer"
+          <div className="relative w-full max-w-md mx-auto rounded-2xl overflow-hidden border border-base-300/50 group">
+            <button
+              type="button"
+              className="absolute top-2 right-2 z-10 text-white bg-black/70 hover:bg-black/90 rounded-full w-8 h-8 flex items-center justify-center transition-all duration-200 hover:scale-110"
               onClick={() => {
                 setImg(null);
                 imgRef.current.value = null;
               }}
-            />
+            >
+              <IoCloseSharp className="w-5 h-5" />
+            </button>
             <img
               src={img}
-              className="w-full mx-auto h-72 object-cover rounded"
+              className="w-full h-auto max-h-96 object-cover"
+              alt="Preview"
             />
           </div>
         )}
 
-        <div className="flex justify-between border-t py-2 border-t-gray-700">
-          <div className="flex gap-1 items-center">
-            <CiImageOn
-              className=" w-6 h-6 cursor-pointer"
-              onClick={() => imgRef.current.click()}
-            />
-            <BsEmojiSmileFill
-              onClick={() => setShowPicker(!showPicker)}
-              className={`${
-                theme === "dark" ? "fill-yellow-400" : "fill-blue-500"
-              } w-5 h-5 cursor-pointer`}
-            />
-            {showPicker && (
-              <div className="absolute top-full right-0 z-10">
-                <EmojiPicker
-                  onEmojiClick={handleEmojiClick}
-                  theme={theme === "dark" ? "dark" : "light"}
+        <div className="flex justify-between items-center border-t border-base-300/50 pt-3">
+          <div className="flex gap-3 items-center">
+            <div className="p-2 rounded-full hover:bg-primary/10 transition-all duration-200 cursor-pointer group">
+              <CiImageOn
+                className="w-5 h-5 text-base-content/60 group-hover:text-primary transition-colors"
+                onClick={() => imgRef.current.click()}
+              />
+            </div>
+            <div className="relative">
+              <div className="p-2 rounded-full hover:bg-primary/10 transition-all duration-200 cursor-pointer group">
+                <BsEmojiSmileFill
+                  onClick={() => setShowPicker(!showPicker)}
+                  className={`w-5 h-5 transition-all duration-200 group-hover:scale-110 ${
+                    theme === "dark" ? "fill-yellow-400" : "fill-blue-500"
+                  }`}
                 />
               </div>
-            )}
+              {showPicker && (
+                <div className="absolute top-full left-0 z-20 mt-2 shadow-2xl rounded-2xl overflow-hidden">
+                  <EmojiPicker
+                    onEmojiClick={handleEmojiClick}
+                    theme={theme === "dark" ? "dark" : "light"}
+                  />
+                </div>
+              )}
+            </div>
           </div>
           <input
             type="file"
@@ -147,12 +161,21 @@ const PostCreate = () => {
             ref={imgRef}
             onChange={handleImgChange}
           />
-          <button className="btn btn-secondary rounded-full btn-sm text-white px-5">
-            {isPending ? "Paylaşılıyor..." : "Paylaş"} <LiaTelegram className="w-4 h-4" />
+          <button 
+            className="btn btn-primary rounded-full btn-sm text-white px-6 hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg disabled:opacity-50"
+            disabled={isPending || (!text.trim() && !img)}
+          >
+            {isPending ? (
+              <span className="loading loading-spinner loading-sm"></span>
+            ) : (
+              <>
+                Paylaş <LiaTelegram className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
         {isError && (
-          <div className="text-red-500">{error.message}</div>
+          <div className="text-error text-sm mt-2">{error.message}</div>
         )}
       </form>
     </div>

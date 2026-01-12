@@ -81,7 +81,7 @@ const Sidebar = () => {
           isSettingPage ? "min-w-18 md:min-w-52" : "max-w-18 md:max-w-52"
         }`}
       >
-        <div className="sticky top-0 left-0 h-screen flex flex-col border-r border-gray-700 w-18 md:w-full">
+        <div className="sticky top-0 left-0 h-screen flex flex-col border-r border-base-300/50 bg-base-100/80 backdrop-blur-sm w-18 md:w-full">
           <Link to="/" className="flex justify-center md:justify-start mb-12">
             <OSSvg
               onClick={() =>
@@ -99,7 +99,7 @@ const Sidebar = () => {
                 <img
                   src={authUser.profileImage || defaultProfilePicture}
                   alt=""
-                  className="object-cover w-32 h-32 rounded-full border-4 invert:border-base-200"
+                  className="object-cover w-32 h-32 rounded-full border-4 border-base-300 shadow-lg hover:shadow-xl transition-shadow duration-300"
                 />
               </Link>
             </div>
@@ -123,92 +123,104 @@ const Sidebar = () => {
             </div>
           </div>
 
-          <ul className="flex flex-col gap-3 mt-4 mr-2">
+          <ul className="flex flex-col gap-2 mt-4 mr-2">
             <li
               onClick={() => setActiveTab("home")}
-              className={`flex justify-center md:justify-start w-full hover:bg-base-200 rounded-xl ${
-                activeTab === "home" && "bg-base-200"
+              className={`flex justify-center md:justify-start w-full rounded-xl transition-all duration-300 ${
+                activeTab === "home" 
+                  ? "bg-primary/10 text-primary" 
+                  : "hover:bg-base-200/50 text-base-content/70"
               }`}
             >
               <Link
                 to="/"
-                className="flex gap-3 items-center transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
+                className="flex gap-3 items-center rounded-xl duration-300 py-3 pl-3 pr-4 max-w-fit cursor-pointer w-full"
               >
-                <LuHouse className="w-7 h-7" />
-                <span className="text-lg hidden md:block">Anasayfa</span>
+                <LuHouse className="w-6 h-6" />
+                <span className="text-base font-medium hidden md:block">Anasayfa</span>
               </Link>
             </li>
             <li
               onClick={() => setActiveTab("notifications")}
-              className={`flex justify-center md:justify-start w-full hover:bg-base-200 rounded-xl ${
-                activeTab === "notifications" && "bg-base-200"
+              className={`flex justify-center md:justify-start w-full rounded-xl transition-all duration-300 ${
+                activeTab === "notifications" 
+                  ? "bg-primary/10 text-primary" 
+                  : "hover:bg-base-200/50 text-base-content/70"
               }`}
             >
               <Link
                 to="/notifications"
-                className="relative flex gap-3 items-center bg-nsition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
+                className="relative flex gap-3 items-center rounded-xl duration-300 py-3 pl-3 pr-4 max-w-fit cursor-pointer w-full"
               >
-                <LuBell className="w-7 h-7" />{" "}
+                <LuBell className="w-6 h-6" />
                 {isNotRead && (
-                  <GoDotFill className="absolute top-0 left-0 fill-green-500" />
+                  <GoDotFill className="absolute top-2 left-3 w-2 h-2 fill-primary animate-pulse" />
                 )}
-                <span className="text-lg hidden md:block">Bildirimler</span>
+                <span className="text-base font-medium hidden md:block">Bildirimler</span>
               </Link>
             </li>
             <li
               onClick={() => setActiveTab("savedPosts")}
-              className={`flex justify-center md:justify-start w-full hover:bg-base-200 rounded-xl ${
-                activeTab === "savedPosts" && "bg-base-200"
+              className={`flex justify-center md:justify-start w-full rounded-xl transition-all duration-300 ${
+                activeTab === "savedPosts" 
+                  ? "bg-primary/10 text-primary" 
+                  : "hover:bg-base-200/50 text-base-content/70"
               }`}
             >
               <Link
                 to={`/saved-posts`}
-                className="flex gap-3 items-center transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
+                className="flex gap-3 items-center rounded-xl duration-300 py-3 pl-3 pr-4 max-w-fit cursor-pointer w-full"
               >
-                <LuBookmark className="w-7 h-7" />
-                <span className="text-lg hidden md:block">Kaydedilenler</span>
+                <LuBookmark className="w-6 h-6" />
+                <span className="text-base font-medium hidden md:block">Kaydedilenler</span>
               </Link>
             </li>
             <li
               onClick={() => setActiveTab("hiddenPosts")}
-              className={`flex justify-center md:justify-start w-full hover:bg-base-200 rounded-xl ${
-                activeTab === "hiddenPosts" && "bg-base-200"
+              className={`flex justify-center md:justify-start w-full rounded-xl transition-all duration-300 ${
+                activeTab === "hiddenPosts" 
+                  ? "bg-primary/10 text-primary" 
+                  : "hover:bg-base-200/50 text-base-content/70"
               }`}
             >
               <Link
                 to={`/hidden-posts`}
-                className="flex gap-3 items-center transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
+                className="flex gap-3 items-center rounded-xl duration-300 py-3 pl-3 pr-4 max-w-fit cursor-pointer w-full"
               >
-                <LuEyeOff className="w-7 h-7" />
-                <span className="text-lg hidden md:block">Gizlenenler</span>
+                <LuEyeOff className="w-6 h-6" />
+                <span className="text-base font-medium hidden md:block">Gizlenenler</span>
               </Link>
             </li>
             <li
               onClick={() => setActiveTab("profile")}
-              className={`flex justify-center md:justify-start w-full hover:bg-base-200 rounded-xl ${
-                activeTab === "profile" && "bg-base-200"
+              className={`flex justify-center md:justify-start w-full rounded-xl transition-all duration-300 ${
+                activeTab === "profile" 
+                  ? "bg-primary/10 text-primary" 
+                  : "hover:bg-base-200/50 text-base-content/70"
               }`}
             >
               <Link
                 to={`/profile/${authUser?.username}`}
-                className="flex gap-3 items-center transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
+                className="flex gap-3 items-center rounded-xl duration-300 py-3 pl-3 pr-4 max-w-fit cursor-pointer w-full"
               >
-                <LuUser className="w-7 h-7" />
-                <span className="text-lg hidden md:block">Profil</span>
+                <LuUser className="w-6 h-6" />
+                <span className="text-base font-medium hidden md:block">Profil</span>
               </Link>
             </li>
             <li
               onClick={() => setActiveTab("settings")}
-              className={`flex justify-center md:justify-start w-full hover:bg-base-200 rounded-xl ${
-                activeTab === "settings" && "bg-base-200"
+              className={`flex justify-center md:justify-start w-full rounded-xl transition-all duration-300 ${
+                activeTab === "settings" 
+                  ? "bg-primary/10 text-primary" 
+                  : "hover:bg-base-200/50 text-base-content/70"
               }`}
             >
               <Link
                 to={`/settings`}
-                className="flex gap-3 items-center transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer"
+                className="flex gap-3 items-center rounded-xl duration-300 py-3 pl-3 pr-4 max-w-fit cursor-pointer w-full"
               >
-                <LuSettings className="w-7 h-7" />
-                <span className="text-lg hidden md:block">Ayarlar</span>
+                <LuSettings className="w-6 h-6" />
+                <span className="text-base font-medium hidden md:block">Ayarlar</span>
               </Link>
             </li>
           </ul>
@@ -250,7 +262,7 @@ const Sidebar = () => {
       </div>
 
       {/* Bottom Navigation - For Mobile */}
-      <div className="md:hidden z-10 fixed bottom-0 left-0 w-full bg-transparent backdrop-blur-xl border-t border-gray-600 py-5 rounded-t-2xl shadow-lg flex justify-around items-center">
+      <div className="md:hidden z-10 fixed bottom-0 left-0 w-full bg-base-100/80 backdrop-blur-xl border-t border-base-300/50 py-4 rounded-t-3xl shadow-2xl flex justify-around items-center">
         <Link 
           to="/" 
           className={`flex flex-col items-center p-2 rounded-lg transition-colors ${

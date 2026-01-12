@@ -95,33 +95,40 @@ const Post = ({ post, isHidden = false }) => {
     <>
       {/* Post Body */}
       <div
-        className="flex gap-2 items-start p-4 border-b transition cursor-pointer border-gray-700"
+        className="flex gap-3 items-start p-5 border-b border-base-300/50 hover:bg-base-200/30 transition-all duration-300 cursor-pointer group fade-in"
         onClick={handlePostClick}
       >
-        <div className="avatar">
+        <div className="avatar flex-shrink-0">
           <Link
             to={`/profile/${postOwner.username}`}
-            className="w-8 rounded-full overflow-hidden h-8"
+            className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-base-300 hover:ring-primary transition-all duration-300"
             onClick={handleProfileClick}
           >
-            <img src={postOwner.profileImage || defaultProfilePicture} />
+            <img 
+              src={postOwner.profileImage || defaultProfilePicture}
+              className="w-full h-full object-cover"
+            />
           </Link>
         </div>
-        <div className="flex flex-col flex-1">
-          <div className="flex gap-2 items-center">
+        <div className="flex flex-col flex-1 min-w-0">
+          <div className="flex gap-2 items-center mb-1">
             <Link
               to={`/profile/${postOwner.username}`}
-              className="font-normal tracking-tighter md:tracking-normal md:font-bold text-sm md:text-base truncate"
+              className="font-semibold text-sm md:text-base truncate hover:text-primary transition-colors"
               onClick={handleProfileClick}
             >
               {postOwner.fullname}
             </Link>
-            <span className="text-gray-500 flex gap-1 text-xs md:text-sm">
-              <Link to={`/profile/${postOwner.username}`}>
+            <span className="text-base-content/60 flex gap-1 text-xs md:text-sm">
+              <Link 
+                to={`/profile/${postOwner.username}`}
+                className="hover:text-primary transition-colors"
+                onClick={handleProfileClick}
+              >
                 @{postOwner.username}
               </Link>
               <span>·</span>
-              <span className="text-gray-600 text-xs md:text-sm">{formattedDate}</span>
+              <span className="text-base-content/50">{formattedDate}</span>
             </span>
             <div
               className="flex flex-1 justify-end w-12"
@@ -144,15 +151,17 @@ const Post = ({ post, isHidden = false }) => {
             </div>
           </div>
           {/* Post Content */}
-          <div className="flex flex-col gap-3 overflow-hidden">
-            <span className="text-sm md:text-base">{updatedPost.text}</span>
+          <div className="flex flex-col gap-3 overflow-hidden mt-2">
+            <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">{updatedPost.text}</p>
             {updatedPost.img && (
-              <img
-                src={updatedPost.img}
-                className="h-80 object-contain rounded-lg border border-gray-700"
-                alt=""
-                onClick={handleImageClick}
-              />
+              <div className="rounded-2xl overflow-hidden border border-base-300/50 hover:border-base-300 transition-all duration-300 group/image">
+                <img
+                  src={updatedPost.img}
+                  className="w-full max-h-[500px] object-cover cursor-pointer hover:scale-[1.02] transition-transform duration-500"
+                  alt=""
+                  onClick={handleImageClick}
+                />
+              </div>
             )}
           </div>
           {/* Post Actions */}
