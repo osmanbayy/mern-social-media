@@ -1,51 +1,57 @@
 import nodemailer from "nodemailer";
 import "dotenv/config"
 
-// SMTP yapılandırması - Environment variables'dan alınır
-// Farklı email servisleri için kullanılabilir (Gmail, Outlook, Brevo, SendGrid, vb.)
-
 const getSmtpConfig = () => {
-  // Eğer özel SMTP host belirtilmişse onu kullan
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.error("SMTP credentials missing!");
+    console.error("SMTP_USER:", process.env.SMTP_USER ? "Set" : "NOT SET");
+    console.error("SMTP_PASS:", process.env.SMTP_PASS ? "Set" : "NOT SET");
+    throw new Error("SMTP credentials are not configured");
+  }
+
   if (process.env.SMTP_HOST) {
     return {
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+      secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
       tls: {
-        rejectUnauthorized: false, // Vercel gibi ortamlarda gerekli olabilir
+        rejectUnauthorized: false,
       },
     };
   }
 
-  // Varsayılan: Gmail (en yaygın kullanılan)
   return {
-    service: 'gmail', // Gmail için service kullanılabilir
+    service: 'gmail',
     auth: {
-      user: process.env.SMTP_USER, // Gmail adresiniz
-      pass: process.env.SMTP_PASS, // Gmail App Password
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
     tls: {
-      rejectUnauthorized: false, // Vercel gibi ortamlarda gerekli olabilir
+      rejectUnauthorized: false,
     },
   };
 };
 
-const transporter = nodemailer.createTransport(getSmtpConfig());
+let transporter;
 
-// Verify connection configuration
-transporter.verify(function (error, success) {
-  if (error) {
-    console.error("Nodemailer configuration error:", error);
-    console.error("SMTP_USER:", process.env.SMTP_USER ? "Set" : "NOT SET");
-    console.error("SMTP_PASS:", process.env.SMTP_PASS ? "Set" : "NOT SET");
-    console.error("SMTP_HOST:", process.env.SMTP_HOST || "Using Gmail service");
-  } else {
-    console.log("Nodemailer is ready to send emails");
-  }
-});
+try {
+  const config = getSmtpConfig();
+  transporter = nodemailer.createTransport(config);
+  console.log("Nodemailer transporter created successfully");
+} catch (error) {
+  console.error("Failed to create nodemailer transporter:", error.message);
+
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.SMTP_USER || '',
+      pass: process.env.SMTP_PASS || '',
+    },
+  });
+}
 
 export default transporter;
