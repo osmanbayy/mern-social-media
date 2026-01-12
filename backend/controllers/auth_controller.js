@@ -126,7 +126,14 @@ export const login = async (req, res) => {
 };
 export const logout = async (req, res) => {
   try {
-    res.cookie("jwt", "", { maxAge: 0 });
+    const cookieOptions = {
+      httpOnly: true,
+      maxAge: 0,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      secure: process.env.NODE_ENV === "production",
+    };
+    
+    res.cookie("jwt", "", cookieOptions);
     res.status(200).json({ message: "Çıkış yapıldı." });
   } catch (error) {
     console.log("Error in logout controller", error.message);

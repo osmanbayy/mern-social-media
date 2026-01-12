@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
 import LogoutDialog from "../modals/LogoutDialog";
@@ -11,16 +11,23 @@ import MobileSlideMenu from "./MobileSlideMenu";
 const Sidebar = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { mutate: logoutMutation } = useMutation({
     mutationFn: logout,
     onSuccess: () => {
+      // Clear all queries
+      queryClient.clear();
       toast.success("Çıkış yapıldı.");
-      window.location.reload();
+      // Use href instead of reload for better cookie handling
+      window.location.href = "/login";
     },
     onError: (error) => {
       console.error("Çıkış hatası:", error.message);
       toast.error(error.message || "Çıkış sırasında hata oluştu.");
+      // Even if there's an error, try to clear and redirect
+      queryClient.clear();
+      window.location.href = "/login";
     },
   });
 
