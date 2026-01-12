@@ -1,18 +1,15 @@
-import { FaRegComment } from "react-icons/fa";
-import { BiRepost } from "react-icons/bi";
-import { IoMdBookmark } from "react-icons/io";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import LoadingSpinner from "../common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { formatPostDate } from "../../utils/date";
-import { FaHeart } from "react-icons/fa6";
 import DeletePostDialog from "../modals/DeletePostDialog";
 import EditPostDialog from "../modals/EditPostDialog";
 import PostImageModal from "../modals/PostImageModal";
 import PostOptions from "../PostOptions";
+import PostActions from "./PostActions";
 import { deletePost as deletePostAPI, likePost as likePostAPI, savePost as savePostAPI, hidePost as hidePostAPI, unhidePost as unhidePostAPI } from "../../api/posts";
 
 const Post = ({ post, isHidden = false }) => {
@@ -22,54 +19,169 @@ const Post = ({ post, isHidden = false }) => {
 
   const queryClient = useQueryClient();
 
+  // Get updated post from cache - check all posts queries
+  // We need to force re-render when cache updates, so we'll use a state trigger
+  const [updateTrigger, setUpdateTrigger] = useState(0);
+  
+  // Subscribe to cache updates by checking queries on each render
+  const postsQueries = queryClient.getQueriesData({ queryKey: ["posts"] });
+  
+  // Get updated post from cache - check all posts queries
+  const updatedPost = useMemo(() => {
+    // Check all posts queries to find the updated post
+    for (const [, postsData] of postsQueries) {
+      if (postsData && Array.isArray(postsData)) {
+        const cachedPost = postsData.find((p) => p._id === post._id);
+        if (cachedPost) {
+          return cachedPost;
+        }
+      }
+    }
+    return post;
+  }, [post, postsQueries, updateTrigger]);
+  
+  // Force re-render when cache updates by listening to query cache changes
+  useEffect(() => {
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (event?.query?.queryKey?.[0] === "posts") {
+        setUpdateTrigger((prev) => prev + 1);
+      }
+    });
+    return unsubscribe;
+  }, [queryClient]);
+
   // Delete post mutation
   const { mutate: deletePost, isPending: isDeleting } = useMutation({
-    mutationFn: () => deletePostAPI(post._id),
+    mutationFn: () => deletePostAPI(updatedPost._id),
     onSuccess: () => {
       toast.success("Gönderi silindi.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
 
-  // Like post mutation
-  const { mutate: likePost, isPending: isLiking } = useMutation({
-    mutationFn: () => likePostAPI(post._id),
-    onSuccess: (updatedLikes) => {
-      queryClient.setQueryData(["posts"], (oldData) => {
-        return oldData.map((oldPost) => {
-          if (oldPost._id === post._id) {
-            return { ...oldPost, likes: updatedLikes };
-          }
-          return oldPost;
-        });
+  // Like post mutation with optimistic update
+  const { mutate: likePost } = useMutation({
+    mutationFn: () => likePostAPI(updatedPost._id),
+    onMutate: async () => {
+      // Cancel outgoing refetches for all posts queries
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+
+      // Snapshot previous values for all posts queries
+      const allPostsQueries = queryClient.getQueriesData({ queryKey: ["posts"] });
+      const previousQueries = new Map(allPostsQueries);
+
+      // Optimistically update ALL posts queries
+      allPostsQueries.forEach(([queryKey, oldData]) => {
+        if (oldData && Array.isArray(oldData) && authUser?._id) {
+          queryClient.setQueryData(queryKey, (currentData) => {
+            if (!currentData || !Array.isArray(currentData)) return currentData;
+            return currentData.map((oldPost) => {
+              if (oldPost._id === updatedPost._id) {
+                const isCurrentlyLiked = oldPost.likes.includes(authUser._id);
+                const newLikes = isCurrentlyLiked
+                  ? oldPost.likes.filter((id) => id.toString() !== authUser._id.toString())
+                  : [...oldPost.likes, authUser._id];
+                return { ...oldPost, likes: newLikes };
+              }
+              return oldPost;
+            });
+          });
+        }
       });
+
+      return { previousQueries };
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback on error for all queries
+      if (context?.previousQueries) {
+        context.previousQueries.forEach((oldData, queryKey) => {
+          queryClient.setQueryData(queryKey, oldData);
+        });
+      }
       toast.error(error.message);
+    },
+    onSuccess: (updatedLikes) => {
+      // Update cache with server response for ALL posts queries
+      const allPostsQueries = queryClient.getQueriesData({ queryKey: ["posts"] });
+      allPostsQueries.forEach(([queryKey, oldData]) => {
+        if (oldData && Array.isArray(oldData)) {
+          queryClient.setQueryData(queryKey, (currentData) => {
+            if (!currentData || !Array.isArray(currentData)) return currentData;
+            return currentData.map((oldPost) => {
+              if (oldPost._id === updatedPost._id) {
+                return { ...oldPost, likes: updatedLikes };
+              }
+              return oldPost;
+            });
+          });
+        }
+      });
     },
   });
 
-  // Save post mutation
-  const { mutate: savePost, isPending: isSaving } = useMutation({
-    mutationFn: () => savePostAPI(post._id),
-    onSuccess: (updatedSaves) => {
-      queryClient.setQueryData(["posts"], (oldData) => {
-        return oldData.map((oldPost) => {
-          if (oldPost._id === post._id) {
-            return { ...oldPost, saves: updatedSaves };
-          }
-          return oldPost;
-        });
+  // Save post mutation with optimistic update
+  const { mutate: savePost } = useMutation({
+    mutationFn: () => savePostAPI(updatedPost._id),
+    onMutate: async () => {
+      // Cancel outgoing refetches for all posts queries
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+
+      // Snapshot previous values for all posts queries
+      const allPostsQueries = queryClient.getQueriesData({ queryKey: ["posts"] });
+      const previousQueries = new Map(allPostsQueries);
+
+      // Optimistically update ALL posts queries
+      allPostsQueries.forEach(([queryKey, oldData]) => {
+        if (oldData && Array.isArray(oldData) && authUser?._id) {
+          queryClient.setQueryData(queryKey, (currentData) => {
+            if (!currentData || !Array.isArray(currentData)) return currentData;
+            return currentData.map((oldPost) => {
+              if (oldPost._id === updatedPost._id) {
+                const isCurrentlySaved = oldPost.saves.includes(authUser._id);
+                const newSaves = isCurrentlySaved
+                  ? oldPost.saves.filter((id) => id.toString() !== authUser._id.toString())
+                  : [...oldPost.saves, authUser._id];
+                return { ...oldPost, saves: newSaves };
+              }
+              return oldPost;
+            });
+          });
+        }
       });
+
+      return { previousQueries };
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback on error for all queries
+      if (context?.previousQueries) {
+        context.previousQueries.forEach((oldData, queryKey) => {
+          queryClient.setQueryData(queryKey, oldData);
+        });
+      }
       toast.error(error.message);
+    },
+    onSuccess: (updatedSaves) => {
+      // Update cache with server response for ALL posts queries
+      const allPostsQueries = queryClient.getQueriesData({ queryKey: ["posts"] });
+      allPostsQueries.forEach(([queryKey, oldData]) => {
+        if (oldData && Array.isArray(oldData)) {
+          queryClient.setQueryData(queryKey, (currentData) => {
+            if (!currentData || !Array.isArray(currentData)) return currentData;
+            return currentData.map((oldPost) => {
+              if (oldPost._id === updatedPost._id) {
+                return { ...oldPost, saves: updatedSaves };
+              }
+              return oldPost;
+            });
+          });
+        }
+      });
     },
   });
 
   // Hide post mutation
   const { mutate: hidePost, isPending: isHiding } = useMutation({
-    mutationFn: () => hidePostAPI(post._id),
+    mutationFn: () => hidePostAPI(updatedPost._id),
     onSuccess: () => {
       toast.success("Gönderi gizlendi.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
@@ -81,7 +193,7 @@ const Post = ({ post, isHidden = false }) => {
 
   // Unhide post mutation
   const { mutate: unhidePost, isPending: isUnhiding } = useMutation({
-    mutationFn: () => unhidePostAPI(post._id),
+    mutationFn: () => unhidePostAPI(updatedPost._id),
     onSuccess: () => {
       toast.success("Gönderi görünür hale getirildi.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
@@ -92,13 +204,13 @@ const Post = ({ post, isHidden = false }) => {
   });
 
 
-  const postOwner = post?.user;
-  const isLiked = post.likes.includes(authUser._id);
-  const isSaved = post.saves.includes(authUser._id);
+  const postOwner = updatedPost?.user;
+  const isLiked = authUser?._id ? updatedPost.likes.includes(authUser._id) : false;
+  const isSaved = authUser?._id ? updatedPost.saves.includes(authUser._id) : false;
 
-  const isMyPost = authUser._id === post.user._id;
+  const isMyPost = authUser?._id === updatedPost.user._id;
 
-  const formattedDate = formatPostDate(post.createdAt);
+  const formattedDate = formatPostDate(updatedPost.createdAt);
 
   const theme = localStorage.getItem("theme");
 
@@ -108,12 +220,12 @@ const Post = ({ post, isHidden = false }) => {
 
   const handleEditPost = () => {
     setShowEditDialog(true);
-    document.getElementById(`edit_post_modal_${post._id}`).showModal();
+    document.getElementById(`edit_post_modal_${updatedPost._id}`).showModal();
   };
 
   const handleCloseEditDialog = () => {
     setShowEditDialog(false);
-    document.getElementById(`edit_post_modal_${post._id}`).close();
+    document.getElementById(`edit_post_modal_${updatedPost._id}`).close();
   };
 
   const handleOptions = (e) => {
@@ -122,13 +234,11 @@ const Post = ({ post, isHidden = false }) => {
 
   const handleLikePost = (e) => {
     e.stopPropagation();
-    if (isLiking) return;
     likePost();
   };
 
   const handleSavePost = (e) => {
     e.stopPropagation();
-    if (isSaving) return;
     savePost();
   };
 
@@ -142,12 +252,12 @@ const Post = ({ post, isHidden = false }) => {
 
   const handleImageClick = (e) => {
     e.stopPropagation();
-    document.getElementById("image_modal" + post._id).showModal();
+    document.getElementById("image_modal" + updatedPost._id).showModal();
   };
 
   const handlePostClick = (e) => {
     e.stopPropagation();
-    navigate(`/post/${post._id}`);
+    navigate(`/post/${updatedPost._id}`);
   };
 
   if (isLoading) return <LoadingSpinner size="md" />;
@@ -189,7 +299,7 @@ const Post = ({ post, isHidden = false }) => {
               onClick={handleOptions}
             >
               <PostOptions
-                post={post}
+                post={updatedPost}
                 postOwner={postOwner}
                 isMyPost={isMyPost}
                 isHidden={isHidden}
@@ -206,89 +316,46 @@ const Post = ({ post, isHidden = false }) => {
           </div>
           {/* Post Content */}
           <div className="flex flex-col gap-3 overflow-hidden">
-            <span className="text-sm md:text-base">{post.text}</span>
-            {post.img && (
+            <span className="text-sm md:text-base">{updatedPost.text}</span>
+            {updatedPost.img && (
               <img
-                src={post.img}
+                src={updatedPost.img}
                 className="h-80 object-contain rounded-lg border border-gray-700"
                 alt=""
                 onClick={handleImageClick}
               />
             )}
           </div>
-          {/* Post Actions (comment, like, repost , save etc.) */}
-          <div className="flex justify-between mt-3">
-            <div className="flex gap-4 items-center w-2/3 justify-between">
-              <div
-                className="flex gap-1 items-center cursor-pointer group"
-                onClick={handlePostClick}
-              >
-                <FaRegComment className="w-4 h-4  text-slate-500 group-hover:text-sky-400" />
-                <span className="text-sm text-slate-500 group-hover:text-sky-400">
-                  {post.comments.length}
-                </span>
-              </div>
-
-              <div
-                className="flex gap-1 items-center group cursor-pointer"
-                onClick={handleRepost}
-              >
-                <BiRepost className="w-6 h-6  text-slate-500 group-hover:text-green-500" />
-                <span className="text-sm text-slate-500 group-hover:text-green-500">
-                  0
-                </span>
-              </div>
-
-              <div
-                className="flex gap-1 items-center group cursor-pointer"
-                onClick={handleLikePost}
-              >
-                {isLiking && <LoadingSpinner size="sm" />}
-                {!isLiked && !isLiking && (
-                  <FaHeart className="w-5 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
-                )}
-                {isLiked && !isLiking && (
-                  <FaHeart className="w-4 h-4 cursor-pointer fill-red-600" />
-                )}
-
-                <span
-                  className={`text-sm text-slate-500 group-hover:text-pink-500 ${
-                    isLiked ? "text-red-600" : "text-slate-500"
-                  }`}
-                >
-                  {post.likes.length}
-                </span>
-              </div>
-            </div>
-            <div
-              className="flex w-1/3 justify-end gap-2 items-center"
-              onClick={handleSavePost}
-            >
-              {isSaving && <LoadingSpinner size="sm" />}
-              {!isSaved && !isSaving && (
-                <IoMdBookmark className="w-5 h-5 text-slate-500 cursor-pointer" />
-              )}
-              {isSaved && !isSaving && (
-                <IoMdBookmark className="w-5 h-5 fill-blue-500 cursor-pointer" />
-              )}
-            </div>
-          </div>
+          {/* Post Actions */}
+          <PostActions
+            post={updatedPost}
+            isLiked={isLiked}
+            isSaved={isSaved}
+            isLiking={false}
+            isSaving={false}
+            onLike={handleLikePost}
+            onSave={handleSavePost}
+            onComment={handlePostClick}
+            onRepost={handleRepost}
+            showCounts={true}
+            variant="compact"
+          />
         </div>
       </div>
 
       {/* Image Modal */}
-      <PostImageModal post={post} />
+      <PostImageModal post={updatedPost} />
 
       {/* Delete Post Modal */}
       <DeletePostDialog 
-        modalId={`delete_modal_${post._id}`}
+        modalId={`delete_modal_${updatedPost._id}`}
         handleDeletePost={handleDeletePost} 
       />
 
       {/* Edit Post Modal */}
       {showEditDialog && (
         <EditPostDialog 
-          post={post} 
+          post={updatedPost} 
           onClose={handleCloseEditDialog}
           modalId={`edit_post_modal_${post._id}`}
         />

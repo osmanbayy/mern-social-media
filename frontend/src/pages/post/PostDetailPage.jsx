@@ -5,15 +5,12 @@ import toast from "react-hot-toast";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { formatPostDate } from "../../utils/date";
-import { FaRegComment } from "react-icons/fa";
-import { BiRepost } from "react-icons/bi";
-import { IoMdBookmark } from "react-icons/io";
-import { FaHeart } from "react-icons/fa6";
 import { IoArrowBack } from "react-icons/io5";
 import PostImageModal from "../../components/modals/PostImageModal";
 import DeletePostDialog from "../../components/modals/DeletePostDialog";
 import EditPostDialog from "../../components/modals/EditPostDialog";
 import PostOptions from "../../components/PostOptions";
+import PostActions from "../../components/common/PostActions";
 import { getSinglePost, deletePost as deletePostAPI, likePost as likePostAPI, savePost as savePostAPI, commentPost as commentPostAPI } from "../../api/posts";
 
 const PostDetailPage = () => {
@@ -47,31 +44,137 @@ const PostDetailPage = () => {
     },
   });
 
-  // Like post mutation
-  const { mutate: likePost, isPending: isLiking } = useMutation({
+  // Like post mutation with optimistic update
+  const { mutate: likePost } = useMutation({
     mutationFn: () => likePostAPI(postId),
-    onSuccess: (updatedLikes) => {
+    onMutate: async () => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["post", postId] });
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+
+      // Snapshot previous values
+      const previousPost = queryClient.getQueryData(["post", postId]);
+      const previousPosts = queryClient.getQueryData(["posts"]);
+
+      // Optimistically update single post
       queryClient.setQueryData(["post", postId], (oldPost) => {
+        if (!oldPost) return oldPost;
+        const isCurrentlyLiked = oldPost.likes.includes(authUser?._id);
+        const newLikes = isCurrentlyLiked
+          ? oldPost.likes.filter((id) => id.toString() !== authUser?._id.toString())
+          : [...oldPost.likes, authUser?._id];
+        return { ...oldPost, likes: newLikes };
+      });
+
+      // Optimistically update posts list
+      queryClient.setQueryData(["posts"], (oldData) => {
+        if (!oldData || !Array.isArray(oldData)) return oldData;
+        return oldData.map((oldPost) => {
+          if (oldPost._id === postId) {
+            const isCurrentlyLiked = oldPost.likes.includes(authUser?._id);
+            const newLikes = isCurrentlyLiked
+              ? oldPost.likes.filter((id) => id.toString() !== authUser?._id.toString())
+              : [...oldPost.likes, authUser?._id];
+            return { ...oldPost, likes: newLikes };
+          }
+          return oldPost;
+        });
+      });
+
+      return { previousPost, previousPosts };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousPost) {
+        queryClient.setQueryData(["post", postId], context.previousPost);
+      }
+      if (context?.previousPosts) {
+        queryClient.setQueryData(["posts"], context.previousPosts);
+      }
+      toast.error(error.message);
+    },
+    onSuccess: (updatedLikes) => {
+      // Update cache with server response (optional, optimistic update already done)
+      queryClient.setQueryData(["post", postId], (oldPost) => {
+        if (!oldPost) return oldPost;
         return { ...oldPost, likes: updatedLikes };
       });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-    },
-    onError: (error) => {
-      toast.error(error.message);
+      queryClient.setQueryData(["posts"], (oldData) => {
+        if (!oldData || !Array.isArray(oldData)) return oldData;
+        return oldData.map((oldPost) => {
+          if (oldPost._id === postId) {
+            return { ...oldPost, likes: updatedLikes };
+          }
+          return oldPost;
+        });
+      });
     },
   });
 
-  // Save post mutation
-  const { mutate: savePost, isPending: isSaving } = useMutation({
+  // Save post mutation with optimistic update
+  const { mutate: savePost } = useMutation({
     mutationFn: () => savePostAPI(postId),
-    onSuccess: (updatedSaves) => {
+    onMutate: async () => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["post", postId] });
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+
+      // Snapshot previous values
+      const previousPost = queryClient.getQueryData(["post", postId]);
+      const previousPosts = queryClient.getQueryData(["posts"]);
+
+      // Optimistically update single post
       queryClient.setQueryData(["post", postId], (oldPost) => {
+        if (!oldPost) return oldPost;
+        const isCurrentlySaved = oldPost.saves.includes(authUser?._id);
+        const newSaves = isCurrentlySaved
+          ? oldPost.saves.filter((id) => id.toString() !== authUser?._id.toString())
+          : [...oldPost.saves, authUser?._id];
+        return { ...oldPost, saves: newSaves };
+      });
+
+      // Optimistically update posts list
+      queryClient.setQueryData(["posts"], (oldData) => {
+        if (!oldData || !Array.isArray(oldData)) return oldData;
+        return oldData.map((oldPost) => {
+          if (oldPost._id === postId) {
+            const isCurrentlySaved = oldPost.saves.includes(authUser?._id);
+            const newSaves = isCurrentlySaved
+              ? oldPost.saves.filter((id) => id.toString() !== authUser?._id.toString())
+              : [...oldPost.saves, authUser?._id];
+            return { ...oldPost, saves: newSaves };
+          }
+          return oldPost;
+        });
+      });
+
+      return { previousPost, previousPosts };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousPost) {
+        queryClient.setQueryData(["post", postId], context.previousPost);
+      }
+      if (context?.previousPosts) {
+        queryClient.setQueryData(["posts"], context.previousPosts);
+      }
+      toast.error(error.message);
+    },
+    onSuccess: (updatedSaves) => {
+      // Update cache with server response (optional, optimistic update already done)
+      queryClient.setQueryData(["post", postId], (oldPost) => {
+        if (!oldPost) return oldPost;
         return { ...oldPost, saves: updatedSaves };
       });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-    },
-    onError: (error) => {
-      toast.error(error.message);
+      queryClient.setQueryData(["posts"], (oldData) => {
+        if (!oldData || !Array.isArray(oldData)) return oldData;
+        return oldData.map((oldPost) => {
+          if (oldPost._id === postId) {
+            return { ...oldPost, saves: updatedSaves };
+          }
+          return oldPost;
+        });
+      });
     },
   });
 
@@ -140,13 +243,11 @@ const PostDetailPage = () => {
 
   const handleLikePost = (e) => {
     e.stopPropagation();
-    if (isLiking) return;
     likePost();
   };
 
   const handleSavePost = (e) => {
     e.stopPropagation();
-    if (isSaving) return;
     savePost();
   };
 
@@ -242,78 +343,18 @@ const PostDetailPage = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-3 border-t border-base-300 mt-2">
-              <div className="flex items-center gap-6">
-                {/* Comment Button */}
-                <div className="flex items-center gap-2 group cursor-pointer">
-                  <div className="p-2 rounded-full group-hover:bg-blue-500/10 transition-colors">
-                    <FaRegComment className="w-5 h-5 text-base-content/60 group-hover:text-blue-500 transition-colors" />
-                  </div>
-                  <span className="text-sm text-base-content/60 group-hover:text-blue-500 transition-colors">
-                    {post.comments.length}
-                  </span>
-                </div>
-
-                {/* Repost Button */}
-                <div className="flex items-center gap-2 group cursor-pointer">
-                  <div className="p-2 rounded-full group-hover:bg-green-500/10 transition-colors">
-                    <BiRepost className="w-5 h-5 text-base-content/60 group-hover:text-green-500 transition-colors" />
-                  </div>
-                  <span className="text-sm text-base-content/60 group-hover:text-green-500 transition-colors">
-                    0
-                  </span>
-                </div>
-
-                {/* Like Button */}
-                <div
-                  className="flex items-center gap-2 group cursor-pointer"
-                  onClick={handleLikePost}
-                >
-                  {isLiking ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    <div className="p-2 rounded-full group-hover:bg-pink-500/10 transition-colors">
-                      <FaHeart
-                        className={`w-5 h-5 transition-colors ${
-                          isLiked
-                            ? "fill-red-500 text-red-500"
-                            : "text-base-content/60 group-hover:text-pink-500"
-                        }`}
-                      />
-                    </div>
-                  )}
-                  <span
-                    className={`text-sm transition-colors ${
-                      isLiked
-                        ? "text-red-500"
-                        : "text-base-content/60 group-hover:text-pink-500"
-                    }`}
-                  >
-                    {post.likes.length}
-                  </span>
-                </div>
-
-                {/* Save Button */}
-                <div
-                  className="flex items-center gap-2 group cursor-pointer"
-                  onClick={handleSavePost}
-                >
-                  {isSaving ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    <div className="p-2 rounded-full group-hover:bg-blue-500/10 transition-colors">
-                      <IoMdBookmark
-                        className={`w-5 h-5 transition-colors ${
-                          isSaved
-                            ? "fill-blue-500 text-blue-500"
-                            : "text-base-content/60 group-hover:text-blue-500"
-                        }`}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <PostActions
+              post={post}
+              isLiked={isLiked}
+              isSaved={isSaved}
+              isLiking={false}
+              isSaving={false}
+              onLike={handleLikePost}
+              onSave={handleSavePost}
+              onComment={() => {}}
+              onRepost={() => {}}
+              showCounts={true}
+            />
           </div>
         </div>
       </div>
@@ -360,7 +401,7 @@ const PostDetailPage = () => {
 
       {/* Comments Section */}
       <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 'calc(100vh - 400px)' }}>
-        {post.comments.length === 0 ? (
+        {!post.comments || post.comments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <div className="w-20 h-20 rounded-full bg-base-200 flex items-center justify-center mb-4">
               <span className="text-4xl">💬</span>
@@ -374,7 +415,7 @@ const PostDetailPage = () => {
           </div>
         ) : (
           <div className="divide-y divide-base-300">
-            {post.comments.map((commentItem) => (
+            {post.comments?.map((commentItem) => (
               <div
                 key={commentItem._id}
                 className="flex gap-3 p-4 hover:bg-base-200/30 transition-colors"
