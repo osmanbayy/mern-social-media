@@ -12,20 +12,5 @@
         "distDir": "dist"
       }
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.js"
-    },
-    {
-      "handle": "filesystem"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/frontend/dist/index.html"
-    }
   ]
 }
