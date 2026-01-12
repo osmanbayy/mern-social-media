@@ -64,6 +64,29 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
+// Health check endpoint
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "OnSekiz API is running", 
+    status: "ok",
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get("/api", (req, res) => {
+  res.json({ 
+    message: "OnSekiz API", 
+    status: "ok",
+    endpoints: {
+      auth: "/api/auth",
+      user: "/api/user",
+      post: "/api/post",
+      notifications: "/api/notifications",
+      upload: "/api/upload"
+    }
+  });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/post", postRoutes);
