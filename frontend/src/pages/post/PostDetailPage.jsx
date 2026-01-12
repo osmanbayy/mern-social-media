@@ -1,5 +1,5 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
@@ -11,14 +11,14 @@ import DeletePostDialog from "../../components/modals/DeletePostDialog";
 import EditPostDialog from "../../components/modals/EditPostDialog";
 import PostOptions from "../../components/PostOptions";
 import PostActions from "../../components/common/PostActions";
-import { getSinglePost, deletePost as deletePostAPI, likePost as likePostAPI, savePost as savePostAPI, commentPost as commentPostAPI } from "../../api/posts";
+import { getSinglePost } from "../../api/posts";
+import usePostDetailActions from "../../hooks/usePostDetailActions";
 
 const PostDetailPage = () => {
   const { postId } = useParams();
   const navigate = useNavigate();
   const [comment, setComment] = useState("");
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const queryClient = useQueryClient();
 
   const { data: authUser, isLoading: isAuthLoading } = useQuery({
     queryKey: ["authUser"],
@@ -34,162 +34,30 @@ const PostDetailPage = () => {
     refetchOnWindowFocus: false,
   });
 
-  // Delete post mutation
-  const { mutate: deletePost, isPending: isDeleting } = useMutation({
-    mutationFn: () => deletePostAPI(postId),
-    onSuccess: () => {
-      toast.success("Gönderi silindi.");
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      navigate("/");
-    },
-  });
+  // Post actions (like, save, delete, comment)
+  const {
+    likePost,
+    savePost,
+    deletePost,
+    commentPost,
+    isDeleting,
+    isCommenting,
+  } = usePostDetailActions(postId);
 
-  // Like post mutation with optimistic update
-  const { mutate: likePost } = useMutation({
-    mutationFn: () => likePostAPI(postId),
-    onMutate: async () => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["post", postId] });
-      await queryClient.cancelQueries({ queryKey: ["posts"] });
+  // Handle delete with navigation
+  const handleDeletePost = () => {
+    deletePost();
+    toast.success("Gönderi silindi.");
+    navigate("/");
+  };
 
-      // Snapshot previous values
-      const previousPost = queryClient.getQueryData(["post", postId]);
-      const previousPosts = queryClient.getQueryData(["posts"]);
-
-      // Optimistically update single post
-      queryClient.setQueryData(["post", postId], (oldPost) => {
-        if (!oldPost) return oldPost;
-        const isCurrentlyLiked = oldPost.likes.includes(authUser?._id);
-        const newLikes = isCurrentlyLiked
-          ? oldPost.likes.filter((id) => id.toString() !== authUser?._id.toString())
-          : [...oldPost.likes, authUser?._id];
-        return { ...oldPost, likes: newLikes };
-      });
-
-      // Optimistically update posts list
-      queryClient.setQueryData(["posts"], (oldData) => {
-        if (!oldData || !Array.isArray(oldData)) return oldData;
-        return oldData.map((oldPost) => {
-          if (oldPost._id === postId) {
-            const isCurrentlyLiked = oldPost.likes.includes(authUser?._id);
-            const newLikes = isCurrentlyLiked
-              ? oldPost.likes.filter((id) => id.toString() !== authUser?._id.toString())
-              : [...oldPost.likes, authUser?._id];
-            return { ...oldPost, likes: newLikes };
-          }
-          return oldPost;
-        });
-      });
-
-      return { previousPost, previousPosts };
-    },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousPost) {
-        queryClient.setQueryData(["post", postId], context.previousPost);
-      }
-      if (context?.previousPosts) {
-        queryClient.setQueryData(["posts"], context.previousPosts);
-      }
-      toast.error(error.message);
-    },
-    onSuccess: (updatedLikes) => {
-      // Update cache with server response (optional, optimistic update already done)
-      queryClient.setQueryData(["post", postId], (oldPost) => {
-        if (!oldPost) return oldPost;
-        return { ...oldPost, likes: updatedLikes };
-      });
-      queryClient.setQueryData(["posts"], (oldData) => {
-        if (!oldData || !Array.isArray(oldData)) return oldData;
-        return oldData.map((oldPost) => {
-          if (oldPost._id === postId) {
-            return { ...oldPost, likes: updatedLikes };
-          }
-          return oldPost;
-        });
-      });
-    },
-  });
-
-  // Save post mutation with optimistic update
-  const { mutate: savePost } = useMutation({
-    mutationFn: () => savePostAPI(postId),
-    onMutate: async () => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["post", postId] });
-      await queryClient.cancelQueries({ queryKey: ["posts"] });
-
-      // Snapshot previous values
-      const previousPost = queryClient.getQueryData(["post", postId]);
-      const previousPosts = queryClient.getQueryData(["posts"]);
-
-      // Optimistically update single post
-      queryClient.setQueryData(["post", postId], (oldPost) => {
-        if (!oldPost) return oldPost;
-        const isCurrentlySaved = oldPost.saves.includes(authUser?._id);
-        const newSaves = isCurrentlySaved
-          ? oldPost.saves.filter((id) => id.toString() !== authUser?._id.toString())
-          : [...oldPost.saves, authUser?._id];
-        return { ...oldPost, saves: newSaves };
-      });
-
-      // Optimistically update posts list
-      queryClient.setQueryData(["posts"], (oldData) => {
-        if (!oldData || !Array.isArray(oldData)) return oldData;
-        return oldData.map((oldPost) => {
-          if (oldPost._id === postId) {
-            const isCurrentlySaved = oldPost.saves.includes(authUser?._id);
-            const newSaves = isCurrentlySaved
-              ? oldPost.saves.filter((id) => id.toString() !== authUser?._id.toString())
-              : [...oldPost.saves, authUser?._id];
-            return { ...oldPost, saves: newSaves };
-          }
-          return oldPost;
-        });
-      });
-
-      return { previousPost, previousPosts };
-    },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousPost) {
-        queryClient.setQueryData(["post", postId], context.previousPost);
-      }
-      if (context?.previousPosts) {
-        queryClient.setQueryData(["posts"], context.previousPosts);
-      }
-      toast.error(error.message);
-    },
-    onSuccess: (updatedSaves) => {
-      // Update cache with server response (optional, optimistic update already done)
-      queryClient.setQueryData(["post", postId], (oldPost) => {
-        if (!oldPost) return oldPost;
-        return { ...oldPost, saves: updatedSaves };
-      });
-      queryClient.setQueryData(["posts"], (oldData) => {
-        if (!oldData || !Array.isArray(oldData)) return oldData;
-        return oldData.map((oldPost) => {
-          if (oldPost._id === postId) {
-            return { ...oldPost, saves: updatedSaves };
-          }
-          return oldPost;
-        });
-      });
-    },
-  });
-
-  // Comment on post mutation
-  const { mutate: commentPost, isPending: isCommenting } = useMutation({
-    mutationFn: () => commentPostAPI(postId, comment),
-    onSuccess: () => {
-      setComment("");
-      queryClient.invalidateQueries({ queryKey: ["post", postId] });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-    },
-    onError: (error) => {
-      toast.error(error.message || "Yorum yapılırken bir hata oluştu.");
-    },
-  });
+  // Handle comment submission
+  const handlePostComment = (e) => {
+    e.preventDefault();
+    if (isCommenting || !comment.trim()) return;
+    commentPost(comment);
+    setComment("");
+  };
 
   if (isAuthLoading || isPostLoading) {
     return (
@@ -217,10 +85,6 @@ const PostDetailPage = () => {
   const formattedDate = formatPostDate(post.createdAt);
   const theme = localStorage.getItem("theme");
 
-  const handleDeletePost = () => {
-    deletePost();
-  };
-
   const handleEditPost = () => {
     setShowEditDialog(true);
     document.getElementById(`edit_post_modal_${post._id}`).showModal();
@@ -233,12 +97,6 @@ const PostDetailPage = () => {
 
   const handleOptions = (e) => {
     e.stopPropagation();
-  };
-
-  const handlePostComment = (e) => {
-    e.preventDefault();
-    if (isCommenting || !comment.trim()) return;
-    commentPost();
   };
 
   const handleLikePost = (e) => {
