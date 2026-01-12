@@ -2,7 +2,6 @@ import { FaRegComment } from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
 import { IoMdBookmark } from "react-icons/io";
 import { FaHeart } from "react-icons/fa6";
-import LoadingSpinner from "./LoadingSpinner";
 
 const PostActions = ({
   post,
@@ -27,7 +26,7 @@ const PostActions = ({
               onClick={onComment}
             >
               <div className="p-1.5 rounded-full group-hover:bg-blue-500/10 transition-all duration-200">
-                <FaRegComment className="w-4 h-4 text-base-content/60 group-hover:text-blue-500 transition-all duration-200 group-hover:scale-110" />
+                <FaRegComment className="w-5 h-5 text-base-content/60 group-hover:text-blue-500 transition-all duration-200 group-hover:scale-110" />
               </div>
               {showCounts && (
                 <span className="text-sm text-base-content/60 group-hover:text-blue-500 transition-colors font-medium">
@@ -43,7 +42,7 @@ const PostActions = ({
               onClick={onRepost}
             >
               <div className="p-1.5 rounded-full group-hover:bg-green-500/10 transition-all duration-200">
-                <BiRepost className="w-5 h-5 text-base-content/60 group-hover:text-green-500 transition-all duration-200 group-hover:scale-110" />
+                <BiRepost className="w-6 h-6 text-base-content/60 group-hover:text-green-500 transition-all duration-200 group-hover:scale-110" />
               </div>
               {showCounts && (
                 <span className="text-sm text-base-content/60 group-hover:text-green-500 transition-colors font-medium">

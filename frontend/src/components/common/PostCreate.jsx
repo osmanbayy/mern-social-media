@@ -101,7 +101,7 @@ const PostCreate = () => {
         onSubmit={handleSubmit}
       >
         <textarea
-          className="textarea w-full p-0 text-base resize-none border-none outline-none focus:outline-none bg-transparent placeholder:text-base-content/50 modern-input"
+          className="textarea w-full px-2 py-2 text-base resize-none border-none outline-none focus:outline-none bg-transparent placeholder:text-base-content/50 modern-input"
           placeholder="Neler oluyor?"
           value={text}
           onChange={(e) => setText(e.target.value)}
