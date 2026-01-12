@@ -126,27 +126,41 @@ export const login = async (req, res) => {
 };
 export const logout = async (req, res) => {
   try {
-    // Cookie'yi silmek için oluşturulduğu ayarlarla aynı ayarları kullan
-    // Vercel cross-domain için sameSite: "none" ve secure: true gerekli
+    // Vercel cross-domain için cookie silme ayarları
+    const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+    
+    // Cookie silme seçenekleri
     const cookieOptions = {
       httpOnly: true,
       maxAge: 0,
-      expires: new Date(0), // Expire immediately
-      sameSite: process.env.NODE_ENV === "production" || process.env.VERCEL === "1" ? "none" : "strict",
-      secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1",
-      path: "/", // Cookie path'i belirt
+      expires: new Date(0),
+      sameSite: isProduction ? "none" : "strict",
+      secure: isProduction,
+      path: "/",
     };
     
-    // Cookie'yi boş string ve expire date ile set et
+    // Önce clearCookie ile dene
+    res.clearCookie("jwt", cookieOptions);
+    
+    // Sonra cookie'yi boş string ile set et
     res.cookie("jwt", "", cookieOptions);
     
-    // Alternatif olarak clearCookie da kullanılabilir
-    res.clearCookie("jwt", {
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" || process.env.VERCEL === "1" ? "none" : "strict",
-      secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1",
-      path: "/",
-    });
+    // Manuel Set-Cookie header'ı ekle (en güvenilir yöntem)
+    // Vercel cross-domain için domain belirtilmemeli
+    const expireDate = new Date(0).toUTCString();
+    if (isProduction) {
+      // Production/Vercel için SameSite=None ve Secure
+      res.setHeader(
+        "Set-Cookie",
+        `jwt=; Path=/; Expires=${expireDate}; HttpOnly; Secure; SameSite=None`
+      );
+    } else {
+      // Development için SameSite=Strict
+      res.setHeader(
+        "Set-Cookie",
+        `jwt=; Path=/; Expires=${expireDate}; HttpOnly; SameSite=Strict`
+      );
+    }
     
     res.status(200).json({ message: "Çıkış yapıldı." });
   } catch (error) {
