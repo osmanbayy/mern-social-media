@@ -35,50 +35,50 @@ app.use(cookieParser());
 
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://localhost:5173",
   "https://onsekiz-frontend.vercel.app",
   "https://onsekiz-frontend.vercel.app/",
   process.env.FRONTEND_URL
-].filter(Boolean); // undefined değerleri filtrele
+].filter(Boolean);
 
 // CORS middleware - Vercel için optimize edilmiş
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
-  // Tüm Vercel frontend URL'lerine izin ver
-  if (origin && (origin.includes('onsekiz-frontend') && origin.includes('.vercel.app'))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Expires, Cache-Control, Pragma');
-    
-    // Preflight request için hemen response döndür
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
-  } else if (allowedOrigins.includes(origin) || !origin) {
-    // Allowed origins veya origin yoksa (Postman gibi)
+  // Preflight OPTIONS request'i önce handle et
+  if (req.method === 'OPTIONS') {
     if (origin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
     }
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Expires, Cache-Control, Pragma');
-    
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
-  } else {
-    // Diğer origin'ler için de izin ver (geçici)
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    return res.status(200).end();
+  }
+  
+  // Vercel frontend URL'lerine izin ver
+  if (origin && origin.includes('.vercel.app')) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Expires, Cache-Control, Pragma');
-    
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
+  } else if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Expires, Cache-Control, Pragma');
+  } else if (!origin) {
+    // Origin yoksa (Postman, curl gibi)
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  } else {
+    // Diğer origin'ler için de izin ver (development için)
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Expires, Cache-Control, Pragma');
   }
   
   next();
