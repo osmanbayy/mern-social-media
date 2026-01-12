@@ -14,28 +14,36 @@ const Sidebar = () => {
   const queryClient = useQueryClient();
 
   const { mutate: logoutMutation } = useMutation({
-    mutationFn: logout,
+    mutationFn: async () => {
+      await logout();
+      await new Promise(resolve => setTimeout(resolve, 200));
+    },
     onSuccess: () => {
       // Clear all queries and cache
       queryClient.clear();
       queryClient.removeQueries();
-      // Clear React Query cache completely
       queryClient.getQueryCache().clear();
+      
+      localStorage.clear();
+      sessionStorage.clear();
+      
       toast.success("Çıkış yapıldı.");
-      // Force a hard redirect to login page
+      
       setTimeout(() => {
-        window.location.replace("/login");
-      }, 100);
+        window.location.href = "/login";
+      }, 300);
     },
     onError: (error) => {
       console.error("Çıkış hatası:", error.message);
-      // Even if there's an error, try to clear and redirect
       queryClient.clear();
       queryClient.removeQueries();
       queryClient.getQueryCache().clear();
+      localStorage.clear();
+      sessionStorage.clear();
+      
       setTimeout(() => {
-        window.location.replace("/login");
-      }, 100);
+        window.location.href = "/login";
+      }, 300);
     },
   });
 
