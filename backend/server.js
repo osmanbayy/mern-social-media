@@ -1,5 +1,6 @@
 import path from "path";
 import express from "express";
+import mongoose from "mongoose";
 import authRoutes from "./routes/auth_routes.js";
 import userRoutes from "./routes/user_routes.js";
 import postRoutes from "./routes/post_routes.js";
@@ -19,8 +20,6 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
-// Cron job'ı sadece Vercel dışında çalıştır (Vercel'de serverless functions kullanılıyor)
 if (process.env.VERCEL !== "1") {
   job.start();
 }
@@ -114,18 +113,22 @@ app.use("/api/post", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
 
-// MongoDB bağlantısını başlat (async olarak)
-let mongoConnected = false;
-
 const ensureMongoConnection = async () => {
-  if (!mongoConnected) {
-    try {
-      await connect_mongodb();
-      mongoConnected = true;
-    } catch (error) {
-      console.error("MongoDB connection error:", error);
-      mongoConnected = false;
+  if (mongoose.connection.readyState === 1) {
+    return true;
+  }
+
+  try {
+    await connect_mongodb();
+    
+    if (mongoose.connection.readyState === 1) {
+      return true;
+    } else {
+      throw new Error("MongoDB connection not ready");
     }
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    throw error;
   }
 };
 
@@ -133,12 +136,6 @@ const ensureMongoConnection = async () => {
 app.use(async (req, res, next) => {
   try {
     await ensureMongoConnection();
-    if (!mongoConnected) {
-      return res.status(503).json({ 
-        message: "Veritabanı bağlantısı kurulamadı. Lütfen daha sonra tekrar deneyin.",
-        error: "MongoDB connection failed"
-      });
-    }
     next();
   } catch (error) {
     console.error("MongoDB connection middleware error:", error);
@@ -149,10 +146,9 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Vercel serverless function için app'i export et
+
 export default app;
 
-// Eğer standalone server olarak çalışıyorsa (development)
 if (process.env.NODE_ENV !== "production" || process.env.VERCEL !== "1") {
   if (process.env.NODE_ENV == "production") {
     app.use(express.static(path.join(__dirname, "../frontend/dist")));

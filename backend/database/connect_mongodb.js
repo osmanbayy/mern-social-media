@@ -8,8 +8,21 @@ if (!cached) {
 }
 
 const connect_mongodb = async () => {
-  if (cached.conn) {
+  if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
+  }
+
+  if (cached.promise) {
+    try {
+      cached.conn = await cached.promise;
+      if (mongoose.connection.readyState === 1) {
+        return cached.conn;
+      }
+    } catch (e) {
+      cached.promise = null;
+      cached.conn = null;
+      throw e;
+    }
   }
 
   if (!cached.promise) {
@@ -18,13 +31,25 @@ const connect_mongodb = async () => {
     };
 
     cached.promise = mongoose.connect(process.env.MONGODB_URI, opts).then((mongoose) => {
-      console.log(`MongoDB connected`);
+      console.log(`MongoDB connected - readyState: ${mongoose.connection.readyState}`);
       return mongoose;
     });
   }
 
   try {
     cached.conn = await cached.promise;
+
+    if (mongoose.connection.readyState !== 1) {
+      await new Promise((resolve) => {
+        if (mongoose.connection.readyState === 1) {
+          resolve();
+        } else {
+          mongoose.connection.once('connected', resolve);
+        }
+      });
+    }
+
+    return cached.conn;
   } catch (e) {
     cached.promise = null;
     cached.conn = null;
@@ -32,8 +57,6 @@ const connect_mongodb = async () => {
     console.error("MongoDB URI exists:", !!process.env.MONGODB_URI);
     throw e;
   }
-
-  return cached.conn;
 };
 
 export default connect_mongodb;
