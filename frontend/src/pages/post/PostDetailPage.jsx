@@ -148,27 +148,29 @@ const PostDetailPage = () => {
             </div>
           </Link>
           <div className="flex flex-col flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Link
-                to={`/profile/${postOwner.username}`}
-                className="font-bold hover:underline"
-                onClick={handleProfileClick}
-              >
-                {postOwner.fullname}
-              </Link>
-              <span className="text-base-content/60 text-sm">
+            <div className="flex items-start gap-2 mb-1 flex-wrap">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 <Link
                   to={`/profile/${postOwner.username}`}
-                  className="hover:underline"
+                  className="font-bold hover:underline truncate"
                   onClick={handleProfileClick}
                 >
-                  @{postOwner.username}
+                  {postOwner.fullname}
                 </Link>
-                <span className="mx-1">·</span>
-                <span>{formattedDate}</span>
-              </span>
+                <span className="text-base-content/60 text-sm whitespace-nowrap flex-shrink-0">
+                  <Link
+                    to={`/profile/${postOwner.username}`}
+                    className="hover:underline"
+                    onClick={handleProfileClick}
+                  >
+                    @{postOwner.username}
+                  </Link>
+                  <span className="mx-1">·</span>
+                  <span>{formattedDate}</span>
+                </span>
+              </div>
               <div
-                className="flex flex-1 justify-end"
+                className="flex flex-shrink-0"
                 onClick={handleOptions}
               >
                 <PostOptions
