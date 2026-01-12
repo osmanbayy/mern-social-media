@@ -275,34 +275,93 @@ export const sendVerifyOtp = async (req, res) => {
 };
 
 export const verifyEmail = async (req, res) => {
-  const { userId, otp } = req.body;
-
-  if (!userId || !otp) {
-    return res.json({ success: false, message: "Missing details." });
-  }
-
   try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.json({ success: false, message: "User not found." });
+    const { userId, otp } = req.body;
+
+    if (!userId || !otp) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Kullanıcı ID ve OTP gereklidir." 
+      });
     }
 
-    if (user.verifyOtp === "" || user.verifyOtp !== otp) {
-      return res.json({ success: false, message: "Invalid OTP." });
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Geçersiz kullanıcı ID." 
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Kullanıcı bulunamadı." 
+      });
+    }
+
+    if (user.isAccountVerified) {
+      return res.json({ 
+        success: false, 
+        message: "Bu hesap zaten doğrulanmış." 
+      });
+    }
+
+    // OTP kontrolü
+    if (!user.verifyOtp || user.verifyOtp === "" || user.verifyOtp !== otp) {
+      console.log("OTP mismatch:", {
+        provided: otp,
+        stored: user.verifyOtp,
+        userId: userId
+      });
+      return res.status(400).json({ 
+        success: false, 
+        message: "Geçersiz doğrulama kodu." 
+      });
+    }
+
+    // OTP süresi kontrolü
+    if (!user.verifyOtpExpiresAt || user.verifyOtpExpiresAt === 0) {
+      console.log("OTP expiration not set for user:", userId);
+      return res.status(400).json({ 
+        success: false, 
+        message: "Doğrulama kodu süresi dolmuş. Lütfen yeni bir kod isteyin." 
+      });
     }
 
     if (user.verifyOtpExpiresAt < Date.now()) {
-      return res.json({ success: false, message: "OTP Expired." });
+      console.log("OTP expired:", {
+        expiresAt: new Date(user.verifyOtpExpiresAt),
+        now: new Date(),
+        userId: userId
+      });
+      return res.status(400).json({ 
+        success: false, 
+        message: "Doğrulama kodunun süresi dolmuş. Lütfen yeni bir kod isteyin." 
+      });
     }
 
+    // Hesabı doğrula
     user.isAccountVerified = true;
     user.verifyOtp = "";
     user.verifyOtpExpiresAt = 0;
 
     await user.save();
-    return res.json({ success: true, message: "Mail başarıyla doğrulandı." });
+    
+    console.log("Email verified successfully for user:", userId);
+    
+    return res.json({ 
+      success: true, 
+      message: "Mail başarıyla doğrulandı." 
+    });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    console.error("Error in verifyEmail:", error);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ 
+      success: false, 
+      message: "Sunucu hatası oluştu.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
