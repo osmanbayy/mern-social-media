@@ -35,8 +35,8 @@ app.use(express.urlencoded({ extended: true })); // to parse form data(urlencode
 app.use(cookieParser());
 
 const allowedOrigins = [
-  "http://localhost:3000", 
-  "https://onsekiz.onrender.com",
+  "http://localhost:3000",
+  "https://onsekiz-frontend.vercel.app",
   process.env.FRONTEND_URL
 ].filter(Boolean); // undefined değerleri filtrele
 
