@@ -16,7 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
 import { GoDotFill } from "react-icons/go";
-import LogoutDialog from "../LogoutDialog";
+import LogoutDialog from "../modals/LogoutDialog";
 
 const Sidebar = () => {
   const [activeTab, setActiveTab] = useState("home");

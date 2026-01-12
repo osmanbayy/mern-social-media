@@ -21,7 +21,7 @@ const LogoutDialog = ({ handleLogout }) => {
           <button
             onClick={() => {
               handleLogout();
-              document.getElementById("delete_modal").close();
+              document.getElementById("logout_modal").close();
             }}
             className="btn btn-md btn-error text-white"
           >

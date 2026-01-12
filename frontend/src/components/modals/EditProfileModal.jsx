@@ -120,7 +120,7 @@ const EditProfileModal = ({ authUser }) => {
           </form>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button className="outline-none">close</button>
+          <button className="outline-none">Kapat</button>
         </form>
       </dialog>
     </>

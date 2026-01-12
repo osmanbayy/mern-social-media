@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import LoadingSpinner from "../common/LoadingSpinner";
-import EditProfileModal from "../../pages/profile/EditProfileModal";
+import EditProfileModal from "../modals/EditProfileModal";
 
 const AccountInformation = () => {
   const { data: authUser, isLoading } = useQuery({ queryKey: ["authUser"] });

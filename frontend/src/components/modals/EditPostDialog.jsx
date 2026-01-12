@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import LoadingSpinner from "./common/LoadingSpinner";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   const [text, setText] = useState(post.text || "");
@@ -156,10 +156,10 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
         </form>
       </div>
       <form method="dialog" className="modal-backdrop">
-        <button className="outline-none">close</button>
+        <button className="outline-none">Kapat</button>
       </form>
     </dialog>
   );
 };
 
-export default EditPostDialog; 
+export default EditPostDialog;
