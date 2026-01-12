@@ -20,9 +20,7 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-if (process.env.VERCEL !== "1") {
-  job.start();
-}
+job.start();
 const app = express();
 const PORT = process.env.PORT || 8000;
 
@@ -36,16 +34,14 @@ app.use(cookieParser());
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
-  "https://onsekiz-frontend.vercel.app",
-  "https://onsekiz-frontend.vercel.app/",
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
-// CORS middleware - Vercel için optimize edilmiş
+// CORS middleware
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
-  // Preflight OPTIONS request'i önce handle et
+  // Preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     if (origin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
@@ -59,22 +55,17 @@ app.use((req, res, next) => {
     return res.status(200).end();
   }
   
-  // Vercel frontend URL'lerine izin ver
-  if (origin && origin.includes('.vercel.app')) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Expires, Cache-Control, Pragma');
-  } else if (origin && allowedOrigins.includes(origin)) {
+  // Set CORS headers
+  if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Expires, Cache-Control, Pragma');
   } else if (!origin) {
-    // Origin yoksa (Postman, curl gibi)
+    // No origin (Postman, curl, etc.)
     res.setHeader('Access-Control-Allow-Origin', '*');
   } else {
-    // Diğer origin'ler için de izin ver (development için)
+    // Allow other origins for development
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -127,18 +118,16 @@ app.use("/api/post", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
 
-export default app;
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
-if (process.env.NODE_ENV !== "production" || process.env.VERCEL !== "1") {
-  if (process.env.NODE_ENV == "production") {
-    app.use(express.static(path.join(__dirname, "../frontend/dist")));
-
-    app.get("*", (req, res) => {
-      res.sendFile(path.resolve(__dirname, "../frontend", "dist", "index.html"));
-    });
-  }
-
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "../frontend", "dist", "index.html"));
   });
 }
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+export default app;

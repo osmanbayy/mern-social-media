@@ -126,8 +126,7 @@ export const login = async (req, res) => {
   }
 };
 export const logout = (req, res) => {
-  const isProduction =
-    process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  const isProduction = process.env.NODE_ENV === "production";
 
   res.cookie("jwt", null, {
     httpOnly: true,

@@ -5,7 +5,7 @@ export const generateTokenAndSetCookie = (userId, res) => {
     expiresIn: "7d",
   });
 
-  const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  const isProduction = process.env.NODE_ENV === "production";
 
   res.cookie("jwt", token, {
     httpOnly: true,
