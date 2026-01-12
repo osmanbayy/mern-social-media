@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import RightPanelSkeleton from "../skeletons/RightPanelSkeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import LoadingSpinner from "./LoadingSpinner";
 import { followUser, getSuggestedUsers } from "../../api/users";
@@ -8,19 +9,26 @@ import toast from "react-hot-toast";
 
 const RightPanel = () => {
   const queryClient = useQueryClient();
+  const [loadingUserId, setLoadingUserId] = useState(null);
+  
   const { data: suggestedUsers, isLoading } = useQuery({
     queryKey: ["suggestedUsers"],
     queryFn: getSuggestedUsers,
   });
 
-  const { mutate: follow, isPending } = useMutation({
+  const { mutate: follow } = useMutation({
     mutationFn: (userId) => followUser(userId),
+    onMutate: (userId) => {
+      setLoadingUserId(userId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] });
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      setLoadingUserId(null);
     },
     onError: (error) => {
       toast.error(error.message);
+      setLoadingUserId(null);
     },
   });
 
@@ -74,8 +82,9 @@ const RightPanel = () => {
                       e.preventDefault();
                       follow(user._id);
                     }}
+                    disabled={loadingUserId === user._id}
                   >
-                    {isPending ? <LoadingSpinner size="sm" /> : "Takip et"}
+                    {loadingUserId === user._id ? <LoadingSpinner size="sm" /> : "Takip et"}
                   </button>
                 </div>
               </Link>

@@ -24,6 +24,7 @@ const Sidebar = () => {
 
   const navigate = useNavigate();
   const theme = localStorage.getItem("theme");
+  const isDark = (theme || "").toLowerCase() === "dark";
 
   const queryClient = useQueryClient();
   const { mutate: logoutMutation } = useMutation({
@@ -99,7 +100,11 @@ const Sidebar = () => {
                 <img
                   src={authUser.profileImage || defaultProfilePicture}
                   alt=""
-                  className="object-cover w-32 h-32 rounded-full border-4 border-base-300 shadow-lg hover:shadow-xl transition-shadow duration-300"
+                  className={`object-cover w-32 h-32 rounded-full border-4 transition-shadow duration-300 ${
+                    isDark
+                      ? "border-white/25 shadow-[0_8px_32px_rgba(255,255,255,0.1),0_4px_16px_rgba(0,0,0,0.5)] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15),0_6px_20px_rgba(0,0,0,0.6)]"
+                      : "border-base-300 shadow-[0_4px_16px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.12),0_3px_10px_rgba(0,0,0,0.08)]"
+                  }`}
                 />
               </Link>
             </div>
@@ -231,10 +236,16 @@ const Sidebar = () => {
               className="mt-auto mb-10 flex gap-2 items-start transition-all duration-300 hover:bg-base-200 py-2 px-4 rounded-full"
             >
               <div className="avatar hidden md:inline-flex">
-                <div className="w-8 rounded-full">
+                <div
+                  className={`w-8 rounded-full overflow-hidden border transition-shadow duration-300 ${
+                    isDark
+                      ? "border-white/25 shadow-[0_2px_8px_rgba(255,255,255,0.1),0_1px_4px_rgba(0,0,0,0.4)]"
+                      : "border-base-300 shadow-[0_2px_6px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.05)]"
+                  }`}
+                >
                   <img
                     src={authUser?.profileImage || defaultProfilePicture}
-                    className="w-8 rounded-full"
+                    className="w-8 h-8 object-cover"
                   />
                 </div>
               </div>
@@ -262,82 +273,161 @@ const Sidebar = () => {
       </div>
 
       {/* Bottom Navigation - For Mobile */}
-      <div className="md:hidden z-10 fixed bottom-0 left-0 w-full bg-base-100/80 backdrop-blur-xl border-t border-base-300/50 py-4 rounded-t-3xl shadow-2xl flex justify-around items-center">
-        <Link 
-          to="/" 
-          className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
-            isHomeActive ? "text-indigo-600" : "hover:bg-gray-700"
-          }`}
-        >
-          <LuHouse className="w-7 h-7" />
-        </Link>
-        <Link 
-          to="/create-post" 
-          className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
-            isCreatePostActive ? "text-indigo-600" : "hover:bg-gray-700"
-          }`}
-        >
-          <LuSquarePlus className="w-7 h-7" />
-        </Link>
-        <Link
-          to="/notifications"
-          className={`relative flex flex-col items-center p-2 rounded-lg transition-colors ${
-            isNotificationsActive ? "text-indigo-600" : "hover:bg-gray-700"
-          }`}
-        >
-          <LuBell className="w-7 h-7" />
-          {isNotRead && (
-            <GoDotFill className="absolute top-0 left-5 text-lg fill-green-500" />
-          )}
-        </Link>
-        <Link
-          to={`/profile/${authUser.username}`}
-          className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
-            isProfileActive ? "text-indigo-600" : "hover:bg-gray-700"
-          }`}
-        >
-          <LuUser className="w-7 h-7" />
-        </Link>
-        <div className="dropdown dropdown-top dropdown-end">
-          <LuMenu className="w-7 h-7" tabIndex={0} role="button" />
-          <ul
-            tabIndex={0}
-            className={`dropdown-content menu bg-base-100 border border-gray-600 rounded-box z-1 w-52 p-2 shadow-lg ${
-              theme === "fantasy" ? "shadow-black/20" : "shadow-white/10"
-            } `}
+      <div className="md:hidden z-50 fixed bottom-0 left-0 w-full bg-base-100/95 backdrop-blur-2xl border-t border-base-300/30 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+        <div className="flex justify-around items-center px-2 py-2.5 safe-area-bottom">
+          {/* Home */}
+          <Link 
+            to="/" 
+            className="relative flex flex-col items-center justify-center min-w-[60px] py-2 rounded-2xl transition-all duration-300 group"
           >
-            <li>
-              <Link to={`/settings`} className="flex items-center gap-2">
-                <LuSettings className="w-5 h-5" />
-                <span>Ayarlar</span>
-              </Link>
-            </li>
-            <li>
-              <Link to={`/saved-posts`} className="flex items-center gap-2">
-                <LuBookmark className="w-5 h-5" />
-                <span>Kaydedilenler</span>
-              </Link>
-            </li>
-            <li>
-              <Link to={`/hidden-posts`} className="flex items-center gap-2">
-                <LuEyeOff className="w-5 h-5" />
-                <span>Gizlenenler</span>
-              </Link>
-            </li>
-            <li>
-              <div
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById("logout_modal").showModal();
-                  navigate("/login");
-                }}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <LuLogOut className="w-5 h-5" />
-                Çıkış Yap
+            <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
+              isHomeActive 
+                ? "bg-primary/15 scale-100" 
+                : "bg-transparent scale-95 group-active:scale-100 group-active:bg-base-200/50"
+            }`} />
+            <LuHouse className={`relative w-6 h-6 transition-all duration-300 ${
+              isHomeActive 
+                ? "text-primary scale-110" 
+                : "text-base-content/60 group-active:scale-105"
+            }`} />
+            {isHomeActive && (
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+            )}
+          </Link>
+
+          {/* Create Post */}
+          <Link 
+            to="/create-post" 
+            className="relative flex flex-col items-center justify-center min-w-[60px] py-2 rounded-2xl transition-all duration-300 group"
+          >
+            <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
+              isCreatePostActive 
+                ? "bg-primary/15 scale-100" 
+                : "bg-transparent scale-95 group-active:scale-100 group-active:bg-base-200/50"
+            }`} />
+            <LuSquarePlus className={`relative w-6 h-6 transition-all duration-300 ${
+              isCreatePostActive 
+                ? "text-primary scale-110" 
+                : "text-base-content/60 group-active:scale-105"
+            }`} />
+            {isCreatePostActive && (
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+            )}
+          </Link>
+
+          {/* Notifications */}
+          <Link
+            to="/notifications"
+            className="relative flex flex-col items-center justify-center min-w-[60px] py-2 rounded-2xl transition-all duration-300 group"
+          >
+            <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
+              isNotificationsActive 
+                ? "bg-primary/15 scale-100" 
+                : "bg-transparent scale-95 group-active:scale-100 group-active:bg-base-200/50"
+            }`} />
+            <div className="relative">
+              <LuBell className={`w-6 h-6 transition-all duration-300 ${
+                isNotificationsActive 
+                  ? "text-primary scale-110" 
+                  : "text-base-content/60 group-active:scale-105"
+              }`} />
+              {isNotRead && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-base-100 animate-pulse" />
+              )}
+            </div>
+            {isNotificationsActive && (
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+            )}
+          </Link>
+
+          {/* Profile */}
+          <Link
+            to={`/profile/${authUser?.username}`}
+            className="relative flex flex-col items-center justify-center min-w-[60px] py-2 rounded-2xl transition-all duration-300 group"
+          >
+            <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
+              isProfileActive 
+                ? "bg-primary/15 scale-100" 
+                : "bg-transparent scale-95 group-active:scale-100 group-active:bg-base-200/50"
+            }`} />
+            {authUser?.profileImage ? (
+              <div className={`relative w-6 h-6 rounded-full overflow-hidden border-2 transition-all duration-300 ${
+                isProfileActive 
+                  ? "border-primary scale-110" 
+                  : "border-base-300 group-active:scale-105"
+              }`}>
+                <img
+                  src={authUser.profileImage || defaultProfilePicture}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
               </div>
-            </li>
-          </ul>
+            ) : (
+              <LuUser className={`relative w-6 h-6 transition-all duration-300 ${
+                isProfileActive 
+                  ? "text-primary scale-110" 
+                  : "text-base-content/60 group-active:scale-105"
+              }`} />
+            )}
+            {isProfileActive && (
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+            )}
+          </Link>
+
+          {/* Menu Dropdown */}
+          <div className="dropdown dropdown-top dropdown-end">
+            <div
+              tabIndex={0}
+              role="button"
+              className="relative flex flex-col items-center justify-center min-w-[60px] py-2 rounded-2xl transition-all duration-300 group active:bg-base-200/50"
+            >
+              <LuMenu className="w-6 h-6 text-base-content/60 transition-all duration-300 group-active:scale-105" />
+            </div>
+            <ul
+              tabIndex={0}
+              className="dropdown-content menu bg-base-100/95 backdrop-blur-xl border border-base-300/50 rounded-2xl z-[100] w-56 p-2 shadow-2xl mt-2 mb-2"
+            >
+              <li>
+                <Link 
+                  to={`/settings`} 
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-200/50 transition-colors"
+                >
+                  <LuSettings className="w-5 h-5" />
+                  <span className="font-medium">Ayarlar</span>
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to={`/saved-posts`} 
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-200/50 transition-colors"
+                >
+                  <LuBookmark className="w-5 h-5" />
+                  <span className="font-medium">Kaydedilenler</span>
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to={`/hidden-posts`} 
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-200/50 transition-colors"
+                >
+                  <LuEyeOff className="w-5 h-5" />
+                  <span className="font-medium">Gizlenenler</span>
+                </Link>
+              </li>
+              <li>
+                <div
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById("logout_modal").showModal();
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors cursor-pointer"
+                >
+                  <LuLogOut className="w-5 h-5" />
+                  <span className="font-medium">Çıkış Yap</span>
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 

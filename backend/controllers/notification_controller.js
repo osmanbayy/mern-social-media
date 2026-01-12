@@ -3,15 +3,17 @@ import Notification from "../models/notification_model.js";
 export const gel_all_notifications = async (req, res) => {
   try {
     const userId = req.user._id;
-    const notifications = await Notification.find({ to: userId }).populate({
-      path: "from",
-      select: "username profileImage",
-    }).sort("desc");
+    const notifications = await Notification.find({ to: userId })
+      .populate({
+        path: "from",
+        select: "username profileImage fullname",
+      })
+      .sort({ createdAt: -1 }); // En yeni bildirimler en üste
 
     await Notification.updateMany({ to: userId }, { read: true });
     res.status(200).json(notifications);
   } catch (error) {
-    console.log.log("Error in get notifications controller", error.message);
+    console.log("Error in get notifications controller", error.message);
     res.status(500).json({ message: "Sunucu hatası" });
   }
 };
@@ -22,7 +24,7 @@ export const delete_all_notifications = async (req, res) => {
     await Notification.deleteMany({ to: userId });
     res.status(200).json({ message: "Tüm bildirimler silindi." });
   } catch (error) {
-    console.log.log(
+    console.log(
       "Error in delete all notifications controller",
       error.message
     );
@@ -51,7 +53,7 @@ export const delete_notification = async (req, res) => {
     await Notification.findByIdAndDelete(notificationId);
     res.status(200).json({ message: "Bildirim silindi." });
   } catch (error) {
-    console.log.log("Error in delete notification controller", error.message);
+    console.log("Error in delete notification controller", error.message);
     res.status(500).json({ message: "Sunucu hatası" });
   }
 };
