@@ -84,7 +84,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
+// Health check endpoints (no MongoDB required)
 app.get("/", (req, res) => {
   res.json({ 
     message: "OnSekiz API is running", 
@@ -107,15 +107,25 @@ app.get("/api", (req, res) => {
   });
 });
 
+// MongoDB connection middleware - ensures connection before handling API requests
+app.use(async (req, res, next) => {
+  try {
+    await connect_mongodb();
+    next();
+  } catch (error) {
+    console.error("MongoDB connection error:", error.message);
+    return res.status(503).json({
+      message: "Database connection failed. Please try again later.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
+  }
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/post", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
-
-// MongoDB bağlantısını başlat
-connect_mongodb();
-
 
 export default app;
 
