@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { updateUserProfile } from "../api/users";
 
 const useUpdateProfile = () => {
   const queryClient = useQueryClient();
@@ -9,24 +10,7 @@ const useUpdateProfile = () => {
   const authUser = queryClient.getQueryData({ queryKey: ["authUser"] });
 
   const { mutateAsync: updateProfile, isPending: isUpdatingProfile } = useMutation({
-    mutationFn: async (formData) => {
-      try {
-        const response = await fetch(`/api/user/update`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir hata oluştu.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message || "Bir hata oluştu.");
-      }
-    },
+    mutationFn: (formData) => updateUserProfile(formData),
     onSuccess: (formData) => {
       toast.success("Profil güncellendi.");
       Promise.all([

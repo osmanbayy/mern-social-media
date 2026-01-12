@@ -39,20 +39,6 @@ const VerifyAccount = () => {
 
   const { data: authUser } = useQuery({
     queryKey: ["authUser"],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/auth/me");
-        const data = await response.json();
-        if (data.error) return null;
-        if (!response.ok) {
-          throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error);
-      }
-    },
-    retry: false,
   });
 
   const userId = authUser?._id;

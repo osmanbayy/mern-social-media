@@ -14,6 +14,7 @@ import PostImageModal from "../../components/modals/PostImageModal";
 import DeletePostDialog from "../../components/modals/DeletePostDialog";
 import EditPostDialog from "../../components/modals/EditPostDialog";
 import PostOptions from "../../components/PostOptions";
+import { getSinglePost, deletePost as deletePostAPI, likePost as likePostAPI, savePost as savePostAPI, commentPost as commentPostAPI } from "../../api/posts";
 
 const PostDetailPage = () => {
   const { postId } = useParams();
@@ -29,54 +30,7 @@ const PostDetailPage = () => {
   // Fetch single post
   const { data: post, isLoading: isPostLoading } = useQuery({
     queryKey: ["post", postId],
-    queryFn: async () => {
-      try {
-        // Add timestamp to bypass cache
-        const timestamp = new Date().getTime();
-        const response = await fetch(`/api/post/${postId}?t=${timestamp}`, {
-          credentials: "include",
-          cache: "no-store",
-          headers: {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
-            "Accept": "application/json",
-          },
-        });
-        
-        // Check if response is HTML (error page)
-        const contentType = response.headers.get("content-type");
-        if (contentType && !contentType.includes("application/json")) {
-          const text = await response.text();
-          console.error("Non-JSON response:", text.substring(0, 200));
-          throw new Error("Sunucu hatası: JSON beklenirken HTML döndü.");
-        }
-        
-        if (response.status === 304) {
-          // If 304, force a fresh request
-          const freshResponse = await fetch(`/api/post/${postId}?t=${new Date().getTime()}`, {
-            credentials: "include",
-            cache: "reload",
-            headers: {
-              "Accept": "application/json",
-            },
-          });
-          const data = await freshResponse.json();
-          if (!freshResponse.ok) {
-            throw new Error(data.message || "Gönderi bulunamadı.");
-          }
-          return data;
-        }
-        
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Gönderi bulunamadı.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    queryFn: () => getSinglePost(postId),
     enabled: !!postId,
     staleTime: 0,
     refetchOnMount: true,
@@ -85,23 +39,7 @@ const PostDetailPage = () => {
 
   // Delete post mutation
   const { mutate: deletePost, isPending: isDeleting } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`/api/post/${postId}`, {
-          method: "DELETE",
-          credentials: "include",
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Hay aksi. Sunucuda bir sorun var gibi görünüyor."
-          );
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error);
-      }
-    },
+    mutationFn: () => deletePostAPI(postId),
     onSuccess: () => {
       toast.success("Gönderi silindi.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
@@ -111,21 +49,7 @@ const PostDetailPage = () => {
 
   // Like post mutation
   const { mutate: likePost, isPending: isLiking } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`/api/post/like/${postId}`, {
-          method: "POST",
-          credentials: "include",
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir şeyler yanlış gitti");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    mutationFn: () => likePostAPI(postId),
     onSuccess: (updatedLikes) => {
       queryClient.setQueryData(["post", postId], (oldPost) => {
         return { ...oldPost, likes: updatedLikes };
@@ -139,21 +63,7 @@ const PostDetailPage = () => {
 
   // Save post mutation
   const { mutate: savePost, isPending: isSaving } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`/api/post/save/${postId}`, {
-          method: "POST",
-          credentials: "include",
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir şeyler yanlış gitti!");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    mutationFn: () => savePostAPI(postId),
     onSuccess: (updatedSaves) => {
       queryClient.setQueryData(["post", postId], (oldPost) => {
         return { ...oldPost, saves: updatedSaves };
@@ -167,25 +77,7 @@ const PostDetailPage = () => {
 
   // Comment on post mutation
   const { mutate: commentPost, isPending: isCommenting } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`/api/post/comment/${postId}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ text: comment }),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Yorum yapılırken bir hata oluştu.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    mutationFn: () => commentPostAPI(postId, comment),
     onSuccess: () => {
       setComment("");
       queryClient.invalidateQueries({ queryKey: ["post", postId] });

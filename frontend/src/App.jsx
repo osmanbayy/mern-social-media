@@ -10,6 +10,7 @@ import NotificationPage from "./pages/notification/NotificationPage";
 import { Toaster } from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
 import LoadingSpinner from "./components/common/LoadingSpinner";
+import { getCurrentUser } from "./api/auth";
 import PostCreate from "./components/common/PostCreate";
 import VerifyAccount from "./pages/VerifyAccount";
 import ResetPassword from "./pages/ResetPassword";
@@ -21,19 +22,12 @@ import PostDetailPage from "./pages/post/PostDetailPage";
 function App() {
   const { data: authUser, isLoading } = useQuery({
     queryKey: ["authUser"],
-    queryFn: async () => {
-      const response = await fetch("/api/auth/me", {
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
-      }
-      return data;
-    },
-
+    queryFn: getCurrentUser,
     retry: false,
   });
+
+  const location = useLocation();
+  const isSettingPage = location.pathname === "/settings";
 
   if (isLoading || authUser === null) {
     return (
@@ -44,9 +38,6 @@ function App() {
   }
 
   const isAccountVerified = authUser?.isAccountVerified;
-
-  const location = useLocation();
-  const isSettingPage = location.pathname === "/settings";
   
   return (
     <div className="flex max-w-6xl mx-auto">

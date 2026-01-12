@@ -8,6 +8,7 @@ import { FaUserPlus } from "react-icons/fa6";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { LuEye, LuEyeClosed } from "react-icons/lu";
+import { login } from "../../../api/auth";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -19,24 +20,7 @@ const LoginPage = () => {
 
   const queryClient = useQueryClient();
   const { mutate, isError, error, isPending } = useMutation({
-    mutationFn: async ({ username, password }) => {
-      try {
-        const response = await fetch("api/auth/login", {
-          method: "POST",
-          headers: {
-            "Content-type": "application/json",
-          },
-          body: JSON.stringify({ username, password }),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    mutationFn: ({ username, password }) => login(username, password),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
       toast.success("Hoşgeldin!");

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import LoadingSpinner from "../common/LoadingSpinner";
+import { editPost } from "../../api/posts";
 
 const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   const [text, setText] = useState(post.text || "");
@@ -11,26 +12,8 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   const queryClient = useQueryClient();
 
   // Edit post mutation
-  const { mutate: editPost, isPending: isEditing } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`/api/post/${post._id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ text, img }),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Gönderi düzenlenirken bir hata oluştu.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+  const { mutate: editPostMutation, isPending: isEditing } = useMutation({
+    mutationFn: () => editPost(post._id, { text, img }),
     onSuccess: () => {
       toast.success("Gönderi başarıyla düzenlendi.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
@@ -74,7 +57,7 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
       toast.error("Gönderiniz boş olamaz.");
       return;
     }
-    editPost();
+    editPostMutation();
   };
 
   const handleRemoveImage = () => {

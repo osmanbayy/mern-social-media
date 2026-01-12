@@ -13,6 +13,7 @@ import DeletePostDialog from "../modals/DeletePostDialog";
 import EditPostDialog from "../modals/EditPostDialog";
 import PostImageModal from "../modals/PostImageModal";
 import PostOptions from "../PostOptions";
+import { deletePost as deletePostAPI, likePost as likePostAPI, savePost as savePostAPI, hidePost as hidePostAPI, unhidePost as unhidePostAPI } from "../../api/posts";
 
 const Post = ({ post, isHidden = false }) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -23,22 +24,7 @@ const Post = ({ post, isHidden = false }) => {
 
   // Delete post mutation
   const { mutate: deletePost, isPending: isDeleting } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`api/post/${post._id}`, {
-          method: "DELETE",
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Hay aksi. Sunucuda bir sorun var gibi görünüyor."
-          );
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error);
-      }
-    },
+    mutationFn: () => deletePostAPI(post._id),
     onSuccess: () => {
       toast.success("Gönderi silindi.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
@@ -47,20 +33,7 @@ const Post = ({ post, isHidden = false }) => {
 
   // Like post mutation
   const { mutate: likePost, isPending: isLiking } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`api/post/like/${post._id}`, {
-          method: "POST",
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir şeyler yanlış gitti");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    mutationFn: () => likePostAPI(post._id),
     onSuccess: (updatedLikes) => {
       queryClient.setQueryData(["posts"], (oldData) => {
         return oldData.map((oldPost) => {
@@ -78,20 +51,7 @@ const Post = ({ post, isHidden = false }) => {
 
   // Save post mutation
   const { mutate: savePost, isPending: isSaving } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`api/post/save/${post._id}`, {
-          method: "POST",
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir şeyler yanlış gitti!");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    mutationFn: () => savePostAPI(post._id),
     onSuccess: (updatedSaves) => {
       queryClient.setQueryData(["posts"], (oldData) => {
         return oldData.map((oldPost) => {
@@ -109,20 +69,7 @@ const Post = ({ post, isHidden = false }) => {
 
   // Hide post mutation
   const { mutate: hidePost, isPending: isHiding } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`api/post/hide/${post._id}`, {
-          method: "POST",
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir şeyler yanlış gitti!");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    mutationFn: () => hidePostAPI(post._id),
     onSuccess: () => {
       toast.success("Gönderi gizlendi.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
@@ -134,20 +81,7 @@ const Post = ({ post, isHidden = false }) => {
 
   // Unhide post mutation
   const { mutate: unhidePost, isPending: isUnhiding } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch(`api/post/hide/${post._id}`, {
-          method: "DELETE",
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir şeyler yanlış gitti!");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    mutationFn: () => unhidePostAPI(post._id),
     onSuccess: () => {
       toast.success("Gönderi görünür hale getirildi.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });

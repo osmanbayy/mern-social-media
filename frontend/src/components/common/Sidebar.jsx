@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
 import { GoDotFill } from "react-icons/go";
 import LogoutDialog from "../modals/LogoutDialog";
+import { logout } from "../../api/auth";
 
 const Sidebar = () => {
   const [activeTab, setActiveTab] = useState("home");
@@ -25,21 +26,8 @@ const Sidebar = () => {
   const theme = localStorage.getItem("theme");
 
   const queryClient = useQueryClient();
-  const { mutate: logout } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch("/api/auth/logout", {
-          method: "POST",
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error);
-      }
-    },
+  const { mutate: logoutMutation } = useMutation({
+    mutationFn: logout,
     onSuccess: () => {
       toast.success("Çıkış yapıldı.");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
@@ -341,7 +329,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <LogoutDialog handleLogout={logout} />
+      <LogoutDialog handleLogout={logoutMutation} />
     </>
   );
 };

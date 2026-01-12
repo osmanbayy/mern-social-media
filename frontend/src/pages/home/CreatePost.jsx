@@ -60,29 +60,12 @@ const CreatePost = () => {
   };
 
   const {
-    mutate: createPost,
+    mutate: createPostMutation,
     isPending,
     isError,
     error,
   } = useMutation({
-    mutationFn: async ({ text, img }) => {
-      try {
-        const response = await fetch("/api/post/create", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ text, img }),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    mutationFn: ({ text, img }) => createPost({ text, img }),
     onSuccess: () => {
       setText("");
       setImg(null);
@@ -93,7 +76,7 @@ const CreatePost = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createPost({ text, img });
+      createPostMutation({ text, img });
   };
 
   const handleImgChange = (e) => {

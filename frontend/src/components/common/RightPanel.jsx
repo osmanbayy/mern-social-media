@@ -1,28 +1,28 @@
 import { Link } from "react-router-dom";
 import RightPanelSkeleton from "../skeletons/RightPanelSkeleton";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
-import useFollow from "../../hooks/useFollow";
 import LoadingSpinner from "./LoadingSpinner";
+import { followUser, getSuggestedUsers } from "../../api/users";
+import toast from "react-hot-toast";
 
 const RightPanel = () => {
+  const queryClient = useQueryClient();
   const { data: suggestedUsers, isLoading } = useQuery({
     queryKey: ["suggestedUsers"],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/user/suggested");
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir şeyler yanlış gitti");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    queryFn: getSuggestedUsers,
   });
 
-  const { follow, isPending } = useFollow();
+  const { mutate: follow, isPending } = useMutation({
+    mutationFn: (userId) => followUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] });
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   if (suggestedUsers?.length === 0) <div className="md:w-64 w-0"></div>;
 

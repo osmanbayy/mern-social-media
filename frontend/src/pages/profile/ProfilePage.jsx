@@ -10,6 +10,7 @@ import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { useQuery } from "@tanstack/react-query";
+import { getUserProfile, getFollowers, getFollowing } from "../../api/users";
 import { formatMemberSinceDate } from "../../utils/date";
 import useFollow from "../../hooks/useFollow";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
@@ -30,7 +31,7 @@ const ProfilePage = () => {
   const { username } = useParams();
   const navigate = useNavigate();
 
-  const { follow, isPending } = useFollow();
+  const { follow, isPending } = useFollow(user?._id);
 
   const { data: authUser } = useQuery({
     queryKey: ["authUser"],
@@ -42,20 +43,7 @@ const ProfilePage = () => {
     refetch: refetchFollowers,
   } = useQuery({
     queryKey: ["followers", username],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`/api/user/followers/${username}`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Takipçiler alınırken bir hata oluştu."
-          );
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    queryFn: () => getFollowers(username),
     enabled: isFollowersModalOpen,
   });
 
@@ -65,20 +53,7 @@ const ProfilePage = () => {
     refetch: refetchFollowings,
   } = useQuery({
     queryKey: ["followings", username],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`/api/user/following/${username}`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Takip edilenler alınırken bir hata oluştu."
-          );
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
+    queryFn: () => getFollowing(username),
     enabled: isFollowingModalOpen,
   });
 
@@ -88,19 +63,8 @@ const ProfilePage = () => {
     refetch: refetchUser,
     isRefetching,
   } = useQuery({
-    queryKey: ["user"],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`/api/user/profile/${username}`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Bir hata oluştu.");
-        }
-        return data;
-      } catch (error) {
-        throw new Error(error.message || "Bir hata oluştu.");
-      }
-    },
+    queryKey: ["user", username],
+    queryFn: () => getUserProfile(username),
   });
 
   const {

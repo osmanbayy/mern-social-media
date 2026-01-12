@@ -8,6 +8,7 @@ import OSSvg from "../../../components/svgs/OS";
 import { FaUserPlus } from "react-icons/fa6";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { signup } from "../../../api/auth";
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -20,25 +21,8 @@ const SignUpPage = () => {
   const queryClient = useQueryClient();
 
   const { mutate, isError, error, isPending } = useMutation({
-    mutationFn: async ({ email, username, fullname, password }) => {
-      try {
-        const response = await fetch("api/auth/signup", {
-          method: "POST",
-          headers: {
-            "Content-type": "application/json",
-          },
-          body: JSON.stringify({ email, username, fullname, password }),
-        });
-        const data = await response.json();
-        if (!response.ok)
-          throw new Error(data.message || "Hay aksi. Bir şeyler yanlış gitti.");
-
-        return data;
-      } catch (error) {
-        console.error(error);
-        throw error;
-      }
-    },
+    mutationFn: ({ email, username, fullname, password }) => 
+      signup({ email, username, fullname, password }),
     onSuccess: async() => {
       toast.success("Hesabın oluşturuldu.");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });

@@ -5,39 +5,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { FaArrowLeft } from "react-icons/fa";
+import { getNotifications, deleteAllNotifications } from "../../api/notifications";
 
 const NotificationPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: notifications, isLoading } = useQuery({
     queryKey: ["notifications"],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/notifications");
-        const data = await response.json();
-        if (!response.ok)
-          throw new Error(data.message || "Bir şeyler yanlış gitti");
-        return data;
-      } catch (error) {
-        throw new Error(error);
-      }
-    },
+    queryFn: getNotifications,
   });
 
   const { mutate: deleteNotifications } = useMutation({
-    mutationFn: async () => {
-      try {
-        const response = await fetch("/api/notifications", {
-          method: "DELETE",
-        });
-        const data = await response.json();
-        if (!response.ok)
-          throw new Error(data.message || "Bir şeyler yanlış gitti");
-        return data;
-      } catch (error) {
-        throw new Error(error);
-      }
-    },
+    mutationFn: deleteAllNotifications,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("Bildirimler silindi");
