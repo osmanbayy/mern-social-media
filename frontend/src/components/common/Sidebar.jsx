@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
 import LogoutDialog from "../modals/LogoutDialog";
 import { logout } from "../../api/auth";
+import { getNotifications } from "../../api/notifications";
 import DesktopSidebar from "./DesktopSidebar";
 import MobileBottomNav from "./MobileBottomNav";
 import MobileSlideMenu from "./MobileSlideMenu";
@@ -53,17 +54,7 @@ const Sidebar = () => {
 
   const { data: notifications } = useQuery({
     queryKey: ["notifications"],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/notifications");
-        const data = await response.json();
-        if (!response.ok)
-          throw new Error(data.message || "Bir şeyler yanlış gitti");
-        return data;
-      } catch (error) {
-        throw new Error(error);
-      }
-    },
+    queryFn: getNotifications,
   });
 
   const isNotRead = notifications?.map((item) => item?.read).includes(false);
