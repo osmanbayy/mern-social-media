@@ -15,26 +15,36 @@ const Sidebar = () => {
 
   const { mutate: logoutMutation } = useMutation({
     mutationFn: async () => {
-      await logout();
-      await new Promise(resolve => setTimeout(resolve, 200));
+      console.log("🔴 Logout başlatılıyor...");
+      const response = await logout();
+      console.log("✅ Logout response:", response);
+      // Response'u görmek ve cookie silme işleminin tamamlanması için bekle
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      console.log("✅ Logout başarılı, response:", response);
+      
       // Clear all queries and cache
       queryClient.clear();
       queryClient.removeQueries();
       queryClient.getQueryCache().clear();
       
+      // Clear storage
       localStorage.clear();
       sessionStorage.clear();
       
       toast.success("Çıkış yapıldı.");
       
+      // Cookie silme işleminin tamamlanması için daha uzun bekle
+      console.log("⏳ Login sayfasına yönlendiriliyor (2 saniye sonra)...");
       setTimeout(() => {
+        console.log("🚀 Yönlendirme yapılıyor...");
         window.location.href = "/login";
-      }, 300);
+      }, 2000);
     },
     onError: (error) => {
-      console.error("Çıkış hatası:", error.message);
+      console.error("❌ Logout hatası:", error);
       queryClient.clear();
       queryClient.removeQueries();
       queryClient.getQueryCache().clear();
@@ -43,7 +53,7 @@ const Sidebar = () => {
       
       setTimeout(() => {
         window.location.href = "/login";
-      }, 300);
+      }, 2000);
     },
   });
 
