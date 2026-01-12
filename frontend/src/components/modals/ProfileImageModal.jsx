@@ -1,7 +1,7 @@
 import { MdEdit } from "react-icons/md";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 
-const ProfileImageModal = ({ user, isMyProfile, profileImgRef }) => {
+const ProfileImageModal = ({ user, isMyProfile, profileImgRef, profileImage }) => {
   if (!user) return null;
 
   const handleEditClick = async () => {
@@ -16,7 +16,7 @@ const ProfileImageModal = ({ user, isMyProfile, profileImgRef }) => {
     >
       <div className="modal-box p-0 max-w-screen-sm relative">
         <img
-          src={user?.profileImage || defaultProfilePicture}
+          src={profileImage || user?.profileImage || defaultProfilePicture}
           className="w-full object-contain rounded-lg"
           alt="Profile"
         />

@@ -1,7 +1,7 @@
 import { MdEdit } from "react-icons/md";
 import defaultCoverPicture from "../../assets/default-cover.jpg";
 
-const CoverImageModal = ({ user, isMyProfile, coverImgRef }) => {
+const CoverImageModal = ({ user, isMyProfile, coverImgRef, coverImg }) => {
   if (!user) return null;
 
   const handleEditClick = async () => {
@@ -16,7 +16,7 @@ const CoverImageModal = ({ user, isMyProfile, coverImgRef }) => {
     >
       <div className="modal-box p-0 max-w-screen-sm relative">
         <img
-          src={user?.coverImg || defaultCoverPicture}
+          src={coverImg || user?.coverImg || defaultCoverPicture}
           className="w-full object-contain rounded-lg"
           alt="Cover"
         />

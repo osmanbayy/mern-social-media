@@ -11,18 +11,19 @@ const useUpdateProfile = () => {
 
   const { mutateAsync: updateProfile, isPending: isUpdatingProfile } = useMutation({
     mutationFn: (formData) => updateUserProfile(formData),
-    onSuccess: (formData) => {
+    onSuccess: (updatedUser, formData) => {
       toast.success("Profil güncellendi.");
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["authUser"] }),
         queryClient.invalidateQueries({ queryKey: ["user"] }),
-      ]);
-      if (authUser?.username !== formData?.username) {
-        navigate(`/profile/${formData.username}`);
-      }
+      ]).then(() => {
+        if (authUser?.username !== formData?.username && formData?.username) {
+          navigate(`/profile/${formData.username}`);
+        }
+      });
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(error.message || "Profil güncellenirken bir hata oluştu.");
     },
   });
 

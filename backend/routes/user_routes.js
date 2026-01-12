@@ -9,6 +9,6 @@ router.get("/followers/:username", protect_route, get_followers);
 router.get("/following/:username", protect_route, get_following);
 router.get("/suggested", protect_route, get_suggested_users);
 router.post("/follow/:id", protect_route, follow_unfollow_user);
-router.post("/update", protect_route, update_user_profile);
+router.put("/update", protect_route, update_user_profile);
 
 export default router;

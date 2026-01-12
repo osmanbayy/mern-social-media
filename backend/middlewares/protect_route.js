@@ -28,6 +28,11 @@ export const protect_route = async (req, res, next) => {
     next();
   } catch (error) {
     console.log("Error in protect route middleware", error.message);
+    if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ message: "Oturum süreniz dolmuş. Lütfen tekrar giriş yapın." });
+    }
     res
       .status(401)
       .json({ message: "Bu işlemi yapabilmek için giriş yapmalısınız." });

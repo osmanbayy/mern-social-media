@@ -87,6 +87,7 @@ const ProfilePage = () => {
   const handleUpdateProfile = async () => {
     await updateProfile({ coverImg, profileImage });
     resetImages();
+    refetchUser();
   };
 
   useEffect(() => {
@@ -128,7 +129,7 @@ const ProfilePage = () => {
             <div className="relative">
               <div className="h-52 w-full bg-base-200">
                 <img
-                  src={user?.coverImg || defaultCoverPicture}
+                  src={coverImg || user?.coverImg || defaultCoverPicture}
                   className="h-full w-full object-cover"
                   alt="cover"
                   onClick={handleCoverImageClick}
@@ -168,7 +169,7 @@ const ProfilePage = () => {
                 <div className="relative">
                   <div className="w-32 h-32 rounded-full border-4 border-base-100 bg-base-100 overflow-hidden">
                     <img
-                      src={user?.profileImage || defaultProfilePicture}
+                      src={profileImage || user?.profileImage || defaultProfilePicture}
                       alt={user?.fullname}
                       className="w-full h-full object-cover cursor-pointer"
                       onClick={handleProfileImageClick}
@@ -318,6 +319,7 @@ const ProfilePage = () => {
         user={user}
         isMyProfile={isMyProfile}
         profileImgRef={profileImgRef}
+        profileImage={profileImage}
       />
 
       {/* Cover Image Modal */}
@@ -325,6 +327,7 @@ const ProfilePage = () => {
         user={user}
         isMyProfile={isMyProfile}
         coverImgRef={coverImgRef}
+        coverImg={coverImg}
       />
     </>
   );
