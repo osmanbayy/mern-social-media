@@ -27,7 +27,9 @@ const connect_mongodb = async () => {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
-    console.error("Error connecting to MongoDB", e.message);
+    cached.conn = null;
+    console.error("Error connecting to MongoDB:", e.message);
+    console.error("MongoDB URI exists:", !!process.env.MONGODB_URI);
     throw e;
   }
 

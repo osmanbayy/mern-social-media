@@ -114,8 +114,40 @@ app.use("/api/post", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
 
-// MongoDB bağlantısını başlat
-connect_mongodb();
+// MongoDB bağlantısını başlat (async olarak)
+let mongoConnected = false;
+
+const ensureMongoConnection = async () => {
+  if (!mongoConnected) {
+    try {
+      await connect_mongodb();
+      mongoConnected = true;
+    } catch (error) {
+      console.error("MongoDB connection error:", error);
+      mongoConnected = false;
+    }
+  }
+};
+
+// Her request'te MongoDB bağlantısını kontrol et
+app.use(async (req, res, next) => {
+  try {
+    await ensureMongoConnection();
+    if (!mongoConnected) {
+      return res.status(503).json({ 
+        message: "Veritabanı bağlantısı kurulamadı. Lütfen daha sonra tekrar deneyin.",
+        error: "MongoDB connection failed"
+      });
+    }
+    next();
+  } catch (error) {
+    console.error("MongoDB connection middleware error:", error);
+    return res.status(503).json({ 
+      message: "Veritabanı bağlantısı kurulamadı. Lütfen daha sonra tekrar deneyin.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
+  }
+});
 
 // Vercel serverless function için app'i export et
 export default app;

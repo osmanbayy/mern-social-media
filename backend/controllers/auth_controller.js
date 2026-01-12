@@ -82,16 +82,23 @@ export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
-      return res.status(400).json({ message: "LÜtfen tüm alanları doldurun." });
+      return res.status(400).json({ message: "Lütfen tüm alanları doldurun." });
     }
 
     const user = await User.findOne({ username });
+    
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Kullanıcı adı veya şifre hatalı." });
+    }
+
     const isPasswordCorrect = await bcrypt.compare(
       password,
-      user?.password || ""
+      user.password || ""
     );
 
-    if (!user || !isPasswordCorrect) {
+    if (!isPasswordCorrect) {
       return res
         .status(400)
         .json({ message: "Kullanıcı adı veya şifre hatalı." });
@@ -109,8 +116,12 @@ export const login = async (req, res) => {
       coverImg: user.coverImg,
     });
   } catch (error) {
-    console.log("Error in login controller", error.message);
-    res.status(500).json({ error: "Sunucu hatası!" });
+    console.error("Error in login controller:", error);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ 
+      message: "Sunucu hatası!",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 export const logout = async (req, res) => {
