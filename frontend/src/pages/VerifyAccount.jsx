@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { verifyAccount, sendVerifyOtp } from "../../api/auth.js";
+import { verifyAccount, sendVerifyOtp } from "../api/auth.js";
 
 const VerifyAccount = () => {
   const [otpSent, setOtpSent] = useState(false);
