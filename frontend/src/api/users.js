@@ -37,17 +37,33 @@ export const getUserProfile = async (username) => {
   return handleResponse(response);
 };
 
-// Update user profile
 export const updateUserProfile = async (userData) => {
-  const response = await fetch(`${API_BASE}/update`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify(userData),
-  });
-  return handleResponse(response);
+  try {
+    const response = await fetch(`${API_BASE}/update`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(userData),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = "Failed to update profile";
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+    
+    return handleResponse(response);
+  } catch (error) {
+    throw error;
+  }
 };
 
 // Follow user
