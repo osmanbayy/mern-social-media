@@ -37,10 +37,32 @@ app.use(cookieParser());
 const allowedOrigins = [
   "http://localhost:3000",
   "https://onsekiz-frontend.vercel.app",
+  "https://onsekiz-frontend.vercel.app/",
   process.env.FRONTEND_URL
 ].filter(Boolean); // undefined değerleri filtrele
 
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+// CORS middleware - daha esnek yapılandırma
+app.use(cors({
+  origin: function (origin, callback) {
+    // Origin yoksa (mobile app, Postman gibi) izin ver
+    if (!origin) return callback(null, true);
+    
+    // Eğer origin allowedOrigins içindeyse veya Vercel preview URL'i ise izin ver
+    if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed.replace(/\/$/, '')))) {
+      return callback(null, true);
+    }
+    
+    // Vercel preview URL'leri için kontrol (örn: onsekiz-frontend-*.vercel.app)
+    if (origin.includes('onsekiz-frontend') && origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    callback(null, true); // Geçici olarak tüm origin'lere izin ver (production'da kısıtlayın)
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);

@@ -1,6 +1,14 @@
 // Auth API - All authentication-related API calls
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/auth` : "/api/auth";
+// API base URL'i normalize et (çift slash'ları temizle)
+const getApiBase = () => {
+  const base = import.meta.env.VITE_API_BASE_URL;
+  if (!base) return "/api/auth";
+  const normalized = base.replace(/\/+$/, ''); // Sonundaki slash'ları temizle
+  return `${normalized}/auth`;
+};
+
+const API_BASE = getApiBase();
 
 const handleResponse = async (response) => {
   const data = await response.json();
