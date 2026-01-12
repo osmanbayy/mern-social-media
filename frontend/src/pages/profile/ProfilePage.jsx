@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
 import EditProfileModal from "../../components/modals/EditProfileModal";
 import ProfileImageModal from "../../components/modals/ProfileImageModal";
 import CoverImageModal from "../../components/modals/CoverImageModal";
-import FollowersModal from "../../components/modals/FollowersModal";
-import FollowingModal from "../../components/modals/FollowingModal";
 import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
@@ -23,10 +21,9 @@ import useProfileImage from "../../hooks/useProfileImage";
 
 const ProfilePage = () => {
   const [feedType, setFeedType] = useState("posts");
-  const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
-  const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
 
   const { username } = useParams();
+  const navigate = useNavigate();
 
   const { data: authUser } = useQuery({
     queryKey: ["authUser"],
@@ -75,17 +72,15 @@ const ProfilePage = () => {
 
   const handleFollowersClick = (e) => {
     e.stopPropagation();
-    setIsFollowersModalOpen(true);
-    if (user?._id) {
-      document.getElementById(`followers_modal${user._id}`).showModal();
+    if (username) {
+      navigate(`/profile/${username}/followers`);
     }
   };
 
   const handleFollowingClick = (e) => {
     e.stopPropagation();
-    setIsFollowingModalOpen(true);
-    if (user?._id) {
-      document.getElementById(`following_modal${user._id}`).showModal();
+    if (username) {
+      navigate(`/profile/${username}/following`);
     }
   };
 
@@ -112,12 +107,13 @@ const ProfilePage = () => {
           <>
             {/* Üst başlık - Twitter benzeri */}
             <div className="sticky top-0 z-20 flex items-center gap-4 px-4 py-2 border-b border-base-300 bg-base-100/95 backdrop-blur-md">
-              <Link
-                to="/"
+              <button
+                type="button"
                 className="p-2 rounded-full hover:bg-base-200 transition-colors"
+                onClick={() => navigate(-1)}
               >
                 <FaArrowLeft className="w-5 h-5" />
-              </Link>
+              </button>
               <div className="flex flex-col">
                 <span className="font-bold text-lg leading-tight">
                   {user?.fullname}
@@ -308,11 +304,13 @@ const ProfilePage = () => {
                 Beğeniler
               </button>
             </div>
+
+            {/* Orta içerik: gönderiler */}
+            <div className="px-0">
+              <Posts feedType={feedType} username={username} userId={user?._id} />
+            </div>
           </>
         )}
-
-        {/* Gönderiler listesi */}
-        <Posts feedType={feedType} username={username} userId={user?._id} />
       </div>
 
       {/* Profile Image Modal */}
@@ -327,21 +325,6 @@ const ProfilePage = () => {
         user={user}
         isMyProfile={isMyProfile}
         coverImgRef={coverImgRef}
-      />
-
-      {/* Followers Modal */}
-      <FollowersModal
-        user={user}
-        isOpen={isFollowersModalOpen}
-        onClose={() => setIsFollowersModalOpen(false)}
-      />
-
-      {/* Following Modal */}
-      <FollowingModal
-        user={user}
-        authUser={authUser}
-        isOpen={isFollowingModalOpen}
-        onClose={() => setIsFollowingModalOpen(false)}
       />
     </>
   );
