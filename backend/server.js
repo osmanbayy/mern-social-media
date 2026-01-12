@@ -113,38 +113,8 @@ app.use("/api/post", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
 
-const ensureMongoConnection = async () => {
-  if (mongoose.connection.readyState === 1) {
-    return true;
-  }
-
-  try {
-    await connect_mongodb();
-    
-    if (mongoose.connection.readyState === 1) {
-      return true;
-    } else {
-      throw new Error("MongoDB connection not ready");
-    }
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-    throw error;
-  }
-};
-
-// Her request'te MongoDB bağlantısını kontrol et
-app.use(async (req, res, next) => {
-  try {
-    await ensureMongoConnection();
-    next();
-  } catch (error) {
-    console.error("MongoDB connection middleware error:", error);
-    return res.status(503).json({ 
-      message: "Veritabanı bağlantısı kurulamadı. Lütfen daha sonra tekrar deneyin.",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined
-    });
-  }
-});
+// MongoDB bağlantısını başlat
+connect_mongodb();
 
 
 export default app;
