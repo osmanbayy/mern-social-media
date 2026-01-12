@@ -12,7 +12,6 @@ export const generateTokenAndSetCookie = (userId, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     sameSite: isProduction ? "none" : "strict",
     secure: isProduction,
-    path: "/", // Path belirt (cookie silme için gerekli)
-    // Domain belirtme - Vercel'de domain belirtmemek daha iyi
+    path: "/",
   });
 };

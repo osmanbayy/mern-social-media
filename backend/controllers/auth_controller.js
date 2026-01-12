@@ -78,6 +78,7 @@ export const signup = async (req, res) => {
     res.status(500).json({ error: "Sunucu hatası!" });
   }
 };
+
 export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -128,7 +129,7 @@ export const logout = (req, res) => {
   const isProduction =
     process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
-  res.cookie("jwt", "", {
+  res.cookie("jwt", null, {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? "none" : "strict",
