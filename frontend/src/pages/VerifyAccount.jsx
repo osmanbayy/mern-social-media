@@ -2,9 +2,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import toast from "react-hot-toast";
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { verifyAccount, sendVerifyOtp } from "../../api/auth.js";
 
 const VerifyAccount = () => {
   const [otpSent, setOtpSent] = useState(false);
@@ -45,22 +45,20 @@ const VerifyAccount = () => {
 
   const sendVerificationOtp = async () => {
     try {
-      axios.defaults.withCredentials = true;
+      if (!userId) {
+        toast.error("Kullanıcı bilgisi bulunamadı.");
+        return;
+      }
 
-      const { data } = await axios.post(
-        `http://localhost:5000/api/auth/send-verify-otp`,
-        {
-          userId,
-        }
-      );
+      const data = await sendVerifyOtp(userId);
       if (data.success) {
         toast.success(data.message);
         setOtpSent(true);
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Doğrulama kodu gönderilemedi.");
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Bir hata oluştu.");
     }
   };
 
@@ -72,19 +70,26 @@ const VerifyAccount = () => {
       const otpArray = inputRefs.current.map((e) => e.value);
       const otp = otpArray.join("");
 
-      const { data } = await axios.post(
-        `http://localhost:5000/api/auth/verify-account`,
-        { userId, otp }
-      );
+      if (!userId) {
+        toast.error("Kullanıcı bilgisi bulunamadı.");
+        return;
+      }
+
+      if (otp.length !== 6) {
+        toast.error("Lütfen 6 haneli doğrulama kodunu girin.");
+        return;
+      }
+
+      const data = await verifyAccount(userId, otp);
       if (data.success) {
         authUser.isAccountVerified = true;
         toast.success(data.message);
         navigate("/");
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Doğrulama başarısız.");
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Bir hata oluştu.");
     }
   };
 

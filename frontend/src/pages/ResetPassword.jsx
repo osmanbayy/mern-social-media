@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import mail_icon from "../assets/mail_icon.svg";
 import lock_icon from "../assets/lock_icon.svg";
 import toast from "react-hot-toast";
-import axios from "axios";
 import { FaArrowLeft } from "react-icons/fa";
+import { requestPasswordReset, resetPassword } from "../api/auth.js";
 
 const ResetPassword = () => {
   const [isEmailSent, setIsEmailSent] = useState(false);
@@ -45,14 +45,15 @@ const ResetPassword = () => {
   const onSubmitEmail = async (event) => {
     event.preventDefault();
     try {
-      const { data } = await axios.post(
-        `http://localhost:5000/api/auth/send-reset-otp`,
-        { email }
-      );
-      data.success ? toast.success(data.message) : toast.error(data.message);
-      data.success && setIsEmailSent(true);
+      const data = await requestPasswordReset(email);
+      if (data.success) {
+        toast.success(data.message);
+        setIsEmailSent(true);
+      } else {
+        toast.error(data.message || "E-posta gönderilemedi.");
+      }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Bir hata oluştu.");
     }
   };
 
@@ -66,14 +67,24 @@ const ResetPassword = () => {
   const onSubmitNewPassword = async (event) => {
     event.preventDefault();
     try {
-      const { data } = await axios.post(
-        `http://localhost:5000/api/auth/reset-password`,
-        { email, otp, newPassword }
-      );
-      data.success ? toast.success(data.message) : toast.error(data.message);
-      data.success && navigate("/login");
+      if (!otp || otp.length !== 6) {
+        toast.error("Lütfen 6 haneli doğrulama kodunu girin.");
+        return;
+      }
+      if (!newPassword || newPassword.length < 6) {
+        toast.error("Şifre en az 6 karakter olmalıdır.");
+        return;
+      }
+      
+      const data = await resetPassword(email, otp, newPassword);
+      if (data.success) {
+        toast.success(data.message);
+        navigate("/login");
+      } else {
+        toast.error(data.message || "Şifre sıfırlama başarısız.");
+      }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Bir hata oluştu.");
     }
   };
 

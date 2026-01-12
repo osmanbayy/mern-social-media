@@ -81,10 +81,26 @@ export const logout = async () => {
   return handleResponse(response);
 };
 
-export const verifyAccount = async (verificationCode) => {
-  const response = await fetch(`${API_BASE}/verify/${verificationCode}`, {
+export const verifyAccount = async (userId, otp) => {
+  const response = await fetch(`${API_BASE}/verify-account`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     credentials: "include",
+    body: JSON.stringify({ userId, otp }),
+  });
+  return handleResponse(response);
+};
+
+export const sendVerifyOtp = async (userId) => {
+  const response = await fetch(`${API_BASE}/send-verify-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ userId }),
   });
   return handleResponse(response);
 };
@@ -98,7 +114,7 @@ export const resendVerificationCode = async () => {
 };
 
 export const requestPasswordReset = async (email) => {
-  const response = await fetch(`${API_BASE}/forgot-password`, {
+  const response = await fetch(`${API_BASE}/send-reset-otp`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -109,14 +125,14 @@ export const requestPasswordReset = async (email) => {
   return handleResponse(response);
 };
 
-export const resetPassword = async (token, newPassword) => {
-  const response = await fetch(`${API_BASE}/reset-password/${token}`, {
+export const resetPassword = async (email, otp, newPassword) => {
+  const response = await fetch(`${API_BASE}/reset-password`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify({ newPassword }),
+    body: JSON.stringify({ email, otp, newPassword }),
   });
   return handleResponse(response);
 };
