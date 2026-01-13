@@ -220,3 +220,33 @@ export const get_following = async (req, res) => {
     res.status(500).json({ message: 'Takip edilenler alınırken hata oluştu.', error: error.message });
   }
 };
+
+// Search users for mentions
+export const search_users = async (req, res) => {
+  try {
+    const { query } = req.query;
+    const userId = req.user._id;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const searchQuery = query.trim().toLowerCase();
+    
+    // Search by username or fullname (case insensitive)
+    const users = await User.find({
+      _id: { $ne: userId }, // Exclude current user
+      $or: [
+        { username: { $regex: searchQuery, $options: "i" } },
+        { fullname: { $regex: searchQuery, $options: "i" } }
+      ]
+    })
+    .select("username fullname profileImage")
+    .limit(10);
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.log("Error in search users controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};

@@ -30,6 +30,18 @@ const postSchema = new mongoose.Schema(
           ref: "User",
           required: true,
         },
+        mentions: [
+          {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+          },
+        ],
+      },
+    ],
+    mentions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
       },
     ],
     saves: [

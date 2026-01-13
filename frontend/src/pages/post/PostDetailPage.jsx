@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { LuPin } from "react-icons/lu";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
@@ -14,12 +14,26 @@ import PostOptions from "../../components/PostOptions";
 import PostActions from "../../components/common/PostActions";
 import { getSinglePost } from "../../api/posts";
 import usePostDetailActions from "../../hooks/usePostDetailActions";
+import useMention from "../../hooks/useMention";
+import MentionDropdown from "../../components/common/MentionDropdown";
+import MentionText from "../../components/common/MentionText";
 
 const PostDetailPage = () => {
   const { postId } = useParams();
   const navigate = useNavigate();
   const [comment, setComment] = useState("");
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const commentTextareaRef = useRef(null);
+
+  // Mention functionality for comments
+  const {
+    showMentionDropdown,
+    mentionQuery,
+    mentionPosition,
+    handleTextChange: handleCommentTextChange,
+    handleSelectUser,
+    closeMentionDropdown,
+  } = useMention(comment, setComment, commentTextareaRef);
 
   const { data: authUser, isLoading: isAuthLoading } = useQuery({
     queryKey: ["authUser"],
@@ -224,8 +238,8 @@ const PostDetailPage = () => {
                 />
               </div>
             </div>
-            <p className="text-base-content text-[15px] leading-relaxed whitespace-pre-wrap break-words mb-3">
-              {post.text}
+            <p className="text-base-content text-[15px] leading-relaxed mb-3">
+              <MentionText text={post.text} />
             </p>
             {post.img && (
               <div className="rounded-2xl overflow-hidden border border-base-300/50 mb-4 hover:border-base-300 transition-all duration-300 group/image">
@@ -267,13 +281,21 @@ const PostDetailPage = () => {
               />
             </div>
           </div>
-          <div className="flex-1 flex flex-col gap-2">
+          <div className="flex-1 flex flex-col gap-2 relative">
             <textarea
+              ref={commentTextareaRef}
               className="textarea textarea-bordered w-full min-h-[80px] max-h-32 resize-none rounded-2xl text-sm bg-base-200/50 border-base-300 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-base-content/40"
               placeholder="Yorumunu yaz..."
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={handleCommentTextChange}
               rows={3}
+            />
+            <MentionDropdown
+              show={showMentionDropdown}
+              position={mentionPosition}
+              searchQuery={mentionQuery}
+              onSelectUser={handleSelectUser}
+              onClose={closeMentionDropdown}
             />
             <div className="flex justify-end">
               <button
@@ -344,8 +366,8 @@ const PostDetailPage = () => {
                         @{commentItem.user.username}
                       </span>
                     </div>
-                    <p className="text-base-content text-sm leading-relaxed whitespace-pre-wrap break-words">
-                      {commentItem.text}
+                    <p className="text-base-content text-sm leading-relaxed">
+                      <MentionText text={commentItem.text} />
                     </p>
                   </div>
                 </div>

@@ -3,6 +3,45 @@ import User from "../models/user_model.js";
 import Notification from "../models/notification_model.js";
 import { v2 as cloudinary } from "cloudinary";
 
+// Helper function to parse mentions from text
+const parseMentions = async (text, excludeUserId) => {
+  if (!text) return [];
+  
+  // Match @username pattern (username can contain letters, numbers, underscores)
+  const mentionRegex = /@(\w+)/g;
+  const matches = [...text.matchAll(mentionRegex)];
+  const usernames = [...new Set(matches.map(match => match[1]))]; // Remove duplicates
+  
+  if (usernames.length === 0) return [];
+  
+  // Find users by username
+  const users = await User.find({
+    username: { $in: usernames },
+    _id: { $ne: excludeUserId } // Exclude the user who is mentioning
+  }).select("_id");
+  
+  return users.map(user => user._id);
+};
+
+// Helper function to send mention notifications
+const sendMentionNotifications = async (mentionedUserIds, fromUserId, postId, commentId = null) => {
+  if (!mentionedUserIds || mentionedUserIds.length === 0) return;
+  
+  const notifications = mentionedUserIds.map(mentionedUserId => ({
+    from: fromUserId,
+    to: mentionedUserId,
+    type: "mention",
+    post: postId,
+    comment: commentId || undefined,
+  }));
+  
+  try {
+    await Notification.insertMany(notifications);
+  } catch (error) {
+    console.log("Error creating mention notifications:", error.message);
+  }
+};
+
 export const create_post = async (req, res) => {
   try {
     const { text } = req.body;
@@ -22,13 +61,21 @@ export const create_post = async (req, res) => {
       img = uploadedResponse.secure_url;
     }
 
+    // Parse mentions from text
+    const mentions = await parseMentions(text, userId);
+
     const newPost = new Post({
       user: userId,
       text,
       img,
+      mentions,
     });
 
     await newPost.save();
+    
+    // Send mention notifications
+    await sendMentionNotifications(mentions, userId, newPost._id);
+    
     res.status(201).json(newPost);
   } catch (error) {
     console.log("Error in create post controller", error.message);
@@ -97,9 +144,15 @@ export const edit_post = async (req, res) => {
       img = uploadedResponse.secure_url;
     }
 
+    // Parse mentions from text if text is updated
+    let mentions = post.mentions;
+    if (text) {
+      mentions = await parseMentions(text, userId);
+    }
+
     const updatedPost = await Post.findByIdAndUpdate(
       postId,
-      { text, img },
+      { text, img, mentions },
       { new: true }
     ).populate({
       path: "user",
@@ -108,6 +161,11 @@ export const edit_post = async (req, res) => {
       path: "comments.user",
       select: "-password",
     });
+
+    // Send mention notifications if mentions changed
+    if (text && JSON.stringify(mentions.sort()) !== JSON.stringify(post.mentions.map(m => m.toString()).sort())) {
+      await sendMentionNotifications(mentions, userId, postId);
+    }
 
     res.status(200).json(updatedPost);
   } catch (error) {
@@ -133,7 +191,14 @@ export const comment_on_post = async (req, res) => {
       });
     }
 
-    const comment = { user: userId, text };
+    // Parse mentions from comment text
+    const commentMentions = await parseMentions(text, userId);
+
+    const comment = { 
+      user: userId, 
+      text,
+      mentions: commentMentions,
+    };
     post.comments.push(comment);
     await post.save();
 
@@ -151,6 +216,10 @@ export const comment_on_post = async (req, res) => {
         console.log("Error creating comment notification:", error.message);
       }
     }
+
+    // Send mention notifications for comment
+    const newComment = post.comments[post.comments.length - 1];
+    await sendMentionNotifications(commentMentions, userId, postId, newComment._id);
 
     // Post'u populate ederek döndür
     const populatedPost = await Post.findById(postId)

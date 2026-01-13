@@ -113,3 +113,14 @@ export const getSuggestedUsers = async (page = 1, limit = 5) => {
   }
   return data;
 };
+
+// Search users for mentions
+export const searchUsers = async (query) => {
+  if (!query || query.trim().length === 0) {
+    return [];
+  }
+  const response = await fetch(`${API_BASE}/search?query=${encodeURIComponent(query)}`, {
+    credentials: "include",
+  });
+  return handleResponse(response);
+};

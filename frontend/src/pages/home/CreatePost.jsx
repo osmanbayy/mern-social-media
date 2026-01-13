@@ -9,6 +9,8 @@ import { toast } from "react-hot-toast";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useNavigate } from "react-router-dom";
 import { createPost } from "../../api/posts";
+import useMention from "../../hooks/useMention";
+import MentionDropdown from "../../components/common/MentionDropdown";
 
 const CreatePost = () => {
   const [text, setText] = useState("");
@@ -18,6 +20,17 @@ const CreatePost = () => {
 
   const [showPicker, setShowPicker] = useState(false);
   const imgRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  // Mention functionality
+  const {
+    showMentionDropdown,
+    mentionQuery,
+    mentionPosition,
+    handleTextChange,
+    handleSelectUser,
+    closeMentionDropdown,
+  } = useMention(text, setText, textareaRef);
 
   const getTheme = () => {
     const dataTheme = document.documentElement.getAttribute("data-theme");
@@ -108,13 +121,25 @@ const CreatePost = () => {
         className="relative flex flex-col gap-3 w-full"
         onSubmit={handleSubmit}
       >
-        <textarea
-          className="textarea w-full px-2 py-2 text-base resize-none border-none outline-none focus:outline-none bg-transparent placeholder:text-base-content/50 modern-input"
-          placeholder="Neler oluyor?"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={3}
-        />
+        <div className="relative w-full">
+          <textarea
+            ref={textareaRef}
+            className="textarea w-full px-2 py-2 text-base resize-none border-none outline-none focus:outline-none bg-transparent placeholder:text-base-content/50 modern-input"
+            placeholder="Neler oluyor?"
+            value={text}
+            onChange={handleTextChange}
+            rows={3}
+          />
+          {showMentionDropdown && (
+            <MentionDropdown
+              show={showMentionDropdown}
+              position={mentionPosition}
+              searchQuery={mentionQuery}
+              onSelectUser={handleSelectUser}
+              onClose={closeMentionDropdown}
+            />
+          )}
+        </div>
         {img && (
           <div className="relative w-full max-w-md mx-auto rounded-2xl overflow-hidden border border-base-300/50 group">
             <button

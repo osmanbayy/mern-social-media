@@ -12,6 +12,7 @@ import PostOptions from "../PostOptions";
 import PostActions from "./PostActions";
 import usePostCache from "../../hooks/usePostCache";
 import usePostActions from "../../hooks/usePostActions";
+import MentionText from "./MentionText";
 
 const Post = ({ post, isHidden = false }) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -187,7 +188,9 @@ const Post = ({ post, isHidden = false }) => {
           </div>
           {/* Post Content */}
           <div className="flex flex-col gap-3 overflow-hidden mt-2">
-            <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">{updatedPost.text}</p>
+            <p className="text-sm md:text-base leading-relaxed">
+              <MentionText text={updatedPost.text} />
+            </p>
             {updatedPost.img && (
               <div className="rounded-2xl overflow-hidden border border-base-300/50 hover:border-base-300 transition-all duration-300 group/image">
                 <img

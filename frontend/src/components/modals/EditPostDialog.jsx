@@ -1,15 +1,28 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import LoadingSpinner from "../common/LoadingSpinner";
 import { editPost } from "../../api/posts";
+import useMention from "../../hooks/useMention";
+import MentionDropdown from "../common/MentionDropdown";
 
 const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   const [text, setText] = useState(post.text || "");
   const [img, setImg] = useState(post.img || "");
   const [isImageUploading, setIsImageUploading] = useState(false);
+  const textareaRef = useRef(null);
 
   const queryClient = useQueryClient();
+
+  // Mention functionality
+  const {
+    showMentionDropdown,
+    mentionQuery,
+    mentionPosition,
+    handleTextChange,
+    handleSelectUser,
+    closeMentionDropdown,
+  } = useMention(text, setText, textareaRef);
 
   // Edit post mutation
   const { mutate: editPostMutation, isPending: isEditing } = useMutation({
@@ -70,13 +83,21 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
         <h3 className="font-bold text-lg mb-4">Gönderiyi Düzenle</h3>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <div className="relative">
             <textarea
+              ref={textareaRef}
               className="textarea w-full p-3 rounded-lg text-md resize-none border focus:outline-none border-gray-700 bg-base-200"
               placeholder="Ne düşünüyorsun?"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={handleTextChange}
               rows={2}
+            />
+            <MentionDropdown
+              show={showMentionDropdown}
+              position={mentionPosition}
+              searchQuery={mentionQuery}
+              onSelectUser={handleSelectUser}
+              onClose={closeMentionDropdown}
             />
           </div>
 
