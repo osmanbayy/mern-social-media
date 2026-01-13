@@ -49,7 +49,7 @@ function App() {
   const isAccountVerified = authUser?.isAccountVerified;
   
   return (
-    <div className="flex max-w-6xl mx-auto">
+    <div className="flex max-w-6xl mx-auto overflow-x-hidden">
       {isLoggedIn && isAccountVerified && <Sidebar />}
       <Routes>
         <Route

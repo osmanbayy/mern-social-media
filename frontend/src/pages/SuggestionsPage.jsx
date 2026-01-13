@@ -14,23 +14,32 @@ const SuggestionsPage = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [hasMore, setHasMore] = useState(true);
   const [loadingUserId, setLoadingUserId] = useState(null);
-  const limit = 5;
+  const limit = 10; // 10 kullanıcı per page
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["suggestedUsers", page],
+    queryKey: ["suggestedUsersPage", page], // Farklı query key kullan
     queryFn: () => getSuggestedUsers(page, limit),
     enabled: hasMore,
   });
 
   useEffect(() => {
     if (data) {
-      const users = Array.isArray(data) ? data : data.users;
+      const users = Array.isArray(data) ? data : data.users || [];
+      const hasMoreData = Array.isArray(data) ? false : (data.hasMore || false);
+      
       if (page === 1) {
+        // First page - replace all users
         setAllUsers(users);
       } else {
-        setAllUsers((prev) => [...prev, ...users]);
+        // Subsequent pages - append users
+        setAllUsers((prev) => {
+          // Avoid duplicates
+          const existingIds = new Set(prev.map(u => u._id));
+          const newUsers = users.filter(u => !existingIds.has(u._id));
+          return [...prev, ...newUsers];
+        });
       }
-      const hasMoreData = Array.isArray(data) ? false : data.hasMore;
+      
       setHasMore(hasMoreData);
     }
   }, [data, page]);
@@ -42,6 +51,7 @@ const SuggestionsPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] });
+      queryClient.invalidateQueries({ queryKey: ["suggestedUsersPage"] });
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
       setLoadingUserId(null);
       toast.success("Kullanıcı takip edildi");
@@ -55,13 +65,19 @@ const SuggestionsPage = () => {
   const handleScroll = useCallback(() => {
     if (
       window.innerHeight + document.documentElement.scrollTop >=
-        document.documentElement.offsetHeight - 100 &&
+        document.documentElement.offsetHeight - 200 &&
       !isFetching &&
-      hasMore
+      hasMore &&
+      !isLoading
     ) {
       setPage((prev) => prev + 1);
     }
-  }, [isFetching, hasMore]);
+  }, [isFetching, hasMore, isLoading]);
+
+  // Scroll to top when page first loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll);

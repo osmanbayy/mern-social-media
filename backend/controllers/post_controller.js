@@ -217,15 +217,25 @@ export const like_unlike_post = async (req, res) => {
 export const get_all_posts = async (req, res) => {
   try {
     const userId = req.user._id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     
     // Kullanıcının gizlediği gönderileri al
     const user = await User.findById(userId);
     const hiddenPostIds = user.hiddenPosts.map(id => id.toString());
     
+    // Get total count
+    const totalPosts = await Post.countDocuments({
+      _id: { $nin: hiddenPostIds }
+    });
+    
     const posts = await Post.find({
       _id: { $nin: hiddenPostIds } // Gizlenen gönderileri hariç tut
     })
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .populate({
         path: "user",
         select: "-password",
@@ -234,10 +244,16 @@ export const get_all_posts = async (req, res) => {
         path: "comments.user",
         select: "-password",
       });
-    if (posts.length === 0) {
-      return res.status(200).json([]);
-    }
-    res.status(200).json(posts);
+    
+    const hasMore = skip + posts.length < totalPosts;
+    
+    res.status(200).json({
+      posts,
+      hasMore,
+      page,
+      limit,
+      total: totalPosts
+    });
   } catch (error) {
     console.log("Error in get all posts controller", error.message);
     res.status(500).json({ message: "Sunucu hatası." });

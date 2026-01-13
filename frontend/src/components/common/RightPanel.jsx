@@ -21,6 +21,11 @@ const RightPanel = () => {
   const suggestedUsers = Array.isArray(suggestedUsersData) 
     ? suggestedUsersData 
     : suggestedUsersData?.users || [];
+  
+  // Check if there are more users available
+  const hasMore = Array.isArray(suggestedUsersData) 
+    ? suggestedUsersData.length > 5
+    : suggestedUsersData?.hasMore || false;
 
   const { mutate: follow } = useMutation({
     mutationFn: (userId) => followUser(userId),
@@ -97,10 +102,10 @@ const RightPanel = () => {
                 </div>
               </Link>
             ))}
-          {!isLoading && suggestedUsers && suggestedUsers.length > 5 && (
+          {!isLoading && displayedUsers.length > 0 && (
             <button
               onClick={() => navigate("/suggestions")}
-              className="btn btn-ghost btn-sm w-full mt-2 hover:bg-base-200/50 transition-all duration-200"
+              className="btn btn-ghost btn-sm w-full mt-2 hover:bg-base-200/50 transition-all duration-200 text-center"
             >
               Daha fazla öneri göster
             </button>

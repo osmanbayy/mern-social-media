@@ -70,9 +70,11 @@ export const get_suggested_users = async (req, res) => {
     const followingIds = usersFollowedByMe.following.map(id => id.toString());
     
     // Get random sample of users (larger sample to account for filtering)
-    const sampleSize = Math.min(50, await User.countDocuments({
+    // Get more users to ensure we have enough after filtering
+    const totalUsers = await User.countDocuments({
       _id: { $ne: userId },
-    }));
+    });
+    const sampleSize = Math.min(100, totalUsers);
 
     if (sampleSize === 0) {
       return res.status(200).json({
