@@ -97,7 +97,7 @@ const ProfilePage = () => {
 
   return (
     <>
-      <div className="flex-[4_4_0] border-r border-base-300/50 min-h-screen pb-20 lg:pb-0">
+      <div className="w-full min-h-screen pb-20 lg:pb-0">
         {(isLoading || isRefetching) && <ProfileHeaderSkeleton />}
         {!isLoading && !isRefetching && !user && (
           <p className="text-center text-lg mt-4">Kullanıcı bulunamadı.</p>

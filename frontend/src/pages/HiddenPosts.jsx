@@ -12,7 +12,7 @@ const HiddenPosts = () => {
   }
 
   return (
-    <div className="flex-[4_4_0] border-r border-base-300/50 min-h-screen pb-20 lg:pb-0">
+    <div className="w-full min-h-screen pb-20 lg:pb-0">
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 flex justify-between items-center px-4 py-3 border-b border-base-300 bg-base-100/95 backdrop-blur-md">
         <div className="flex items-center gap-4">

@@ -22,8 +22,7 @@ const HomePage = () => {
   }, [location.pathname]);
 
   return (
-    <>
-      <div className="flex-[4_4_0] mr-auto border-r border-base-300/50 min-h-screen mb-14 md:mb-0 pb-15 md:pb-0 overflow-x-hidden">
+    <div className="w-full min-h-screen mb-14 md:mb-0">
         {/* Header */}
         <div className="flex w-full border-b border-base-300/50 bg-base-100/80 backdrop-blur-sm sticky top-0 z-10">
           <div
@@ -61,8 +60,7 @@ const HomePage = () => {
 
         {/* POSTS */}
         <Posts ref={postsRef} feedType={feedType} />
-      </div>
-    </>
+    </div>
   );
 };
 export default HomePage;

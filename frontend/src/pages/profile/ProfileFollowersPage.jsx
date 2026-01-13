@@ -176,7 +176,7 @@ const ProfileFollowersPage = () => {
 
   if (isUserLoading || isUserRefetching) {
     return (
-      <div className="flex-[4_4_0] border-r border-base-300/50 min-h-screen pb-20 lg:pb-0">
+      <div className="w-full min-h-screen pb-20 lg:pb-0">
         <ProfileHeaderSkeleton />
       </div>
     );

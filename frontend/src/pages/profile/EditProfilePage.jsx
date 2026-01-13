@@ -102,14 +102,14 @@ const EditProfilePage = () => {
 
   if (!authUser) {
     return (
-      <div className="flex-[4_4_0] flex items-center justify-center min-h-screen">
+      <div className="w-full flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="flex-[4_4_0] border-r border-base-300/50 min-h-screen">
+    <div className="w-full min-h-screen">
       {/* Header */}
       <div className="sticky top-0 z-20 flex items-center gap-4 px-4 py-3 border-b border-base-300/50 bg-base-100/95 backdrop-blur-md">
         <button

@@ -49,8 +49,9 @@ const RightPanel = () => {
   if (suggestedUsers?.length === 0) return <div className="md:w-64 w-0"></div>;
 
   return (
-    <div className="hidden lg:block flex-shrink-0 w-72 my-4 mx-2">
-      <div className="sticky top-4 p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 shadow w-full">
+    <div className="hidden lg:flex flex-shrink-0 w-72">
+      <div className="sticky top-0 h-screen flex flex-col p-5 pt-4 overflow-y-auto">
+        <div className="p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 shadow w-full">
         <p className="font-bold text-lg mb-5 text-base-content">Kimi takip etmeli?</p>
         <div className="flex flex-col gap-4">
           {/* item */}
@@ -111,6 +112,7 @@ const RightPanel = () => {
             </button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

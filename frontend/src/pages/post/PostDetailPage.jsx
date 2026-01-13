@@ -78,7 +78,7 @@ const PostDetailPage = () => {
 
   if (isAuthLoading || isPostLoading) {
     return (
-      <div className="flex-[4_4_0] flex items-center justify-center min-h-screen">
+      <div className="w-full flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -86,7 +86,7 @@ const PostDetailPage = () => {
 
   if (!post) {
     return (
-      <div className="flex-[4_4_0] flex flex-col items-center justify-center min-h-screen">
+      <div className="w-full flex flex-col items-center justify-center min-h-screen">
         <p className="text-xl mb-4">Gönderi bulunamadı</p>
         <button onClick={() => navigate("/")} className="btn btn-primary">
           Ana Sayfaya Dön
@@ -136,7 +136,7 @@ const PostDetailPage = () => {
   };
 
   return (
-    <div className="flex-[4_4_0] border-r border-gray-700 min-h-screen">
+    <div className="w-full min-h-screen">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-base-100/95 backdrop-blur-xl border-b border-base-300/50 px-5 py-4 flex items-center gap-4 shadow-sm">
         <button

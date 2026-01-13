@@ -49,9 +49,58 @@ function App() {
   const isAccountVerified = authUser?.isAccountVerified;
 
   return (
-    <div className="flex max-w-6xl mx-auto overflow-x-hidden">
-      {isLoggedIn && isAccountVerified && <Sidebar />}
-      <Routes>
+    <div className="w-full min-h-screen">
+      {/* Desktop Layout: Sidebar | Content | RightPanel */}
+      {isLoggedIn && isAccountVerified ? (
+        <div className="hidden md:flex w-full max-w-6xl mx-auto">
+          {/* Left Sidebar - Fixed */}
+          <Sidebar />
+          
+          {/* Middle Content - Scrollable */}
+          <div className="flex-1 min-w-0 border-r border-base-300/50">
+            <Routes>
+              <Route
+                path="/"
+                element={<HomePage />}
+              />
+              <Route
+                path="/notifications"
+                element={<NotificationPage />}
+              />
+              <Route
+                path="/profile/:username"
+                element={<ProfilePage />}
+              />
+              <Route
+                path="/profile/:username/followers"
+                element={<ProfileFollowersPage />}
+              />
+              <Route
+                path="/profile/:username/following"
+                element={<ProfileFollowersPage />}
+              />
+              <Route
+                path="/create-post"
+                element={<PostCreate />}
+              />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/saved-posts" element={<BookmarkedPosts />} />
+              <Route path="/hidden-posts" element={<HiddenPosts />} />
+              <Route path="/post/:postId" element={<PostDetailPage />} />
+              <Route path="/edit-profile" element={<EditProfilePage />} />
+              <Route path="/suggestions" element={<SuggestionsPage />} />
+            </Routes>
+          </div>
+          
+          {/* Right Panel - Fixed */}
+          {!isSettingPage && <RightPanel />}
+        </div>
+      ) : null}
+      
+      {/* Mobile/Unauthenticated Layout: Single Column */}
+      <div className="md:hidden w-full">
+        {isLoggedIn && isAccountVerified && <Sidebar />}
+        <Routes>
           <Route
             path="/"
             element={
@@ -108,16 +157,15 @@ function App() {
             path="/reset-password"
             element={!isLoggedIn ? <ResetPassword /> : <Navigate to={"/"} />}
           />
-          <Route path="/settings"
-            element={isLoggedIn && <Settings />}
-          />
+          <Route path="/settings" element={isLoggedIn && <Settings />} />
           <Route path="/saved-posts" element={isLoggedIn && <BookmarkedPosts />} />
           <Route path="/hidden-posts" element={isLoggedIn && <HiddenPosts />} />
           <Route path="/post/:postId" element={isLoggedIn && isAccountVerified ? <PostDetailPage /> : <Navigate to="/login" />} />
           <Route path="/edit-profile" element={isLoggedIn && isAccountVerified ? <EditProfilePage /> : <Navigate to="/login" />} />
           <Route path="/suggestions" element={isLoggedIn && isAccountVerified ? <SuggestionsPage /> : <Navigate to="/login" />} />
-      </Routes>
-      {isLoggedIn && isAccountVerified && !isSettingPage && <RightPanel />}
+        </Routes>
+      </div>
+      
       <Toaster />
     </div>
   );

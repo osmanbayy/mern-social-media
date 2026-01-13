@@ -226,7 +226,7 @@ const Settings = () => {
       )}
 
       {/* Content Area */}
-      <div className="flex-[4] min-h-screen pb-20 md:pb-0">
+      <div className="w-full min-h-screen pb-20 md:pb-0">
         <div className="p-4 md:p-6 lg:p-8">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">
