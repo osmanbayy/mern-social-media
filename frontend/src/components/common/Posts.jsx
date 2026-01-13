@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from "react";
 import { useLocation } from "react-router-dom";
 import Post from "./Post";
 import PostSkeleton from "../skeletons/PostSkeleton";
@@ -6,7 +6,7 @@ import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-quer
 import { getAllPosts, getFollowingPosts, getUserPosts, getLikedPosts, getSavedPosts, getHiddenPosts } from "../../api/posts";
 import MobileSuggestedUsers from "./MobileSuggestedUsers";
 
-const Posts = ({ feedType, username, userId }) => {
+const Posts = forwardRef(({ feedType, username, userId }, ref) => {
   const location = useLocation();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
@@ -42,12 +42,12 @@ const Posts = ({ feedType, username, userId }) => {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["posts", feedType, username, userId, page],
+    queryKey: ["posts", feedType, username, userId, page, location.pathname],
     queryFn: getPostQueryFn(feedType, page),
     enabled: feedType === "forYou" ? hasMore : true,
     placeholderData: keepPreviousData, // Keep previous data while fetching new data
     staleTime: 0, // Always consider data stale, refetch on mount
-    refetchOnMount: true, // Refetch when component mounts
+    refetchOnMount: "always", // Always refetch when component mounts
     refetchOnWindowFocus: false, // Don't refetch on window focus (to avoid unnecessary requests)
     gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes (formerly cacheTime)
   });
@@ -63,7 +63,7 @@ const Posts = ({ feedType, username, userId }) => {
 
   // Handle paginated response - preserve scroll position smoothly
   useEffect(() => {
-    if (postsData && !isLoading) {
+    if (postsData && (!isLoading || isRefetching)) {
       const posts = Array.isArray(postsData) ? postsData : postsData?.posts || [];
       const hasMoreData = Array.isArray(postsData) ? false : (postsData?.hasMore || false);
       
@@ -98,7 +98,7 @@ const Posts = ({ feedType, username, userId }) => {
       
       setHasMore(hasMoreData);
     }
-  }, [postsData, page, isLoading, feedType]);
+  }, [postsData, page, isLoading, isRefetching, feedType]);
 
   // Subscribe to cache updates to sync allPosts state
   useEffect(() => {
@@ -127,6 +127,18 @@ const Posts = ({ feedType, username, userId }) => {
     }
   }, [feedType, allPosts.length, queryClient, username, userId]);
 
+  // Expose refetch method to parent component
+  useImperativeHandle(ref, () => ({
+    refetch: async () => {
+      setPage(1);
+      setAllPosts([]);
+      setHasMore(true);
+      setSuggestionPosition(null);
+      // Wait for refetch to complete
+      await refetch();
+    }
+  }));
+
   // Reset when feedType changes
   useEffect(() => {
     setPage(1);
@@ -139,16 +151,19 @@ const Posts = ({ feedType, username, userId }) => {
   // Refetch when returning to home page from another page
   useEffect(() => {
     const isReturningToHome = previousLocationRef.current !== "/" && location.pathname === "/";
-    const isReturningToThisPage = previousLocationRef.current !== location.pathname && previousLocationRef.current !== "/";
     
-    if ((isReturningToHome || isReturningToThisPage) && page === 1 && feedType === "forYou") {
-      // Invalidate cache and refetch when returning to page
-      queryClient.invalidateQueries({ queryKey: ["posts", feedType] });
+    if (isReturningToHome && feedType === "forYou") {
+      // Reset to page 1 and clear posts when returning to home
+      setPage(1);
+      setAllPosts([]);
+      setHasMore(true);
+      setSuggestionPosition(null);
+      // Directly refetch without invalidateQueries
       refetch();
     }
     
     previousLocationRef.current = location.pathname;
-  }, [location.pathname, refetch, page, feedType, queryClient]);
+  }, [location.pathname, refetch, feedType]);
 
   // Throttle scroll handler using useRef
   const scrollTimeoutRef = useRef(null);
@@ -184,18 +199,21 @@ const Posts = ({ feedType, username, userId }) => {
     }
   }, [handleScroll, feedType]);
 
-  const posts = feedType === "forYou" ? allPosts : (Array.isArray(postsData) ? postsData : postsData?.posts || postsData || []);
+  // Use allPosts for forYou feed, but fallback to postsData if allPosts is empty
+  const posts = feedType === "forYou" 
+    ? (allPosts.length > 0 ? allPosts : (Array.isArray(postsData) ? postsData : postsData?.posts || postsData || []))
+    : (Array.isArray(postsData) ? postsData : postsData?.posts || postsData || []);
 
   return (
     <>
-      {isLoading && page === 1 && (
+      {(isLoading || (isRefetching && page === 1 && allPosts.length === 0)) && page === 1 && (
         <div className="flex flex-col justify-center">
           <PostSkeleton />
           <PostSkeleton />
           <PostSkeleton />
         </div>
       )}
-      {!isLoading && posts?.length === 0 && (
+      {!isLoading && !isRefetching && posts?.length === 0 && (
         <p className="text-center my-4">
           {feedType === "hidden" 
             ? "Henüz gizlenen gönderiniz yok. 👻" 
@@ -203,7 +221,7 @@ const Posts = ({ feedType, username, userId }) => {
           }
         </p>
       )}
-      {!isLoading && posts && posts.length > 0 && (
+      {(!isLoading || (isRefetching && posts && posts.length > 0)) && posts && posts.length > 0 && (
         <div className="w-full overflow-x-hidden">
           {posts.map((post, index) => (
             <div key={post._id} className="w-full">
@@ -229,5 +247,8 @@ const Posts = ({ feedType, username, userId }) => {
       )}
     </>
   );
-};
+});
+
+Posts.displayName = "Posts";
+
 export default Posts;

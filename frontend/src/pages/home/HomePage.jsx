@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import Posts from "../../components/common/Posts";
 import CreatePost from "./CreatePost";
@@ -6,6 +6,20 @@ import CreatePost from "./CreatePost";
 const HomePage = () => {
   const [feedType, setFeedType] = useState("forYou");
   const location = useLocation();
+  const postsRef = useRef(null);
+  const previousPathRef = useRef(location.pathname);
+
+  // Refetch posts when returning to home page from another page
+  useEffect(() => {
+    const isReturningToHome = previousPathRef.current !== "/" && location.pathname === "/";
+    
+    if (isReturningToHome && postsRef.current) {
+      // Directly refetch posts when returning to home page
+      postsRef.current.refetch();
+    }
+    
+    previousPathRef.current = location.pathname;
+  }, [location.pathname]);
 
   return (
     <>
@@ -46,7 +60,7 @@ const HomePage = () => {
         <CreatePost />
 
         {/* POSTS */}
-        <Posts feedType={feedType} />
+        <Posts ref={postsRef} feedType={feedType} />
       </div>
     </>
   );
