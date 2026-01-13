@@ -1,14 +1,17 @@
+import { useState, useRef, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { HiDotsHorizontal } from "react-icons/hi";
 import { BsEmojiFrown } from "react-icons/bs";
 import { SlUserFollow, SlUserUnfollow } from "react-icons/sl";
 import { FaTrash } from "react-icons/fa";
 import { TbEdit } from "react-icons/tb";
-import { LuPin, LuEyeOff } from "react-icons/lu";
+import { LuPin, LuEyeOff, LuShare2 } from "react-icons/lu";
 import { MdOutlineShowChart } from "react-icons/md";
 import { GoBlocked, GoMute } from "react-icons/go";
 import { CiFlag1 } from "react-icons/ci";
 import LoadingSpinner from "./common/LoadingSpinner";
 import useFollow from "../hooks/useFollow";
+import ShareModal from "./modals/ShareModal";
 
 const PostOptions = ({ 
   post, 
@@ -23,12 +26,47 @@ const PostOptions = ({
   onUnhide,
   theme 
 }) => {
-  const { follow, isPending, amIFollowing } = useFollow(postOwner._id);
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { follow, unfollow, isPending } = useFollow(postOwner._id);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const dropdownTriggerRef = useRef(null);
+  
+  // Check if current user is following the post owner
+  const amIFollowing = authUser?.following?.some(
+    (userId) => userId._id === postOwner._id || userId === postOwner._id
+  ) || false;
+
+  // Close dropdown when share modal opens
+  useEffect(() => {
+    if (showShareModal && dropdownTriggerRef.current) {
+      dropdownTriggerRef.current.blur();
+      // Force close by removing focus
+      if (document.activeElement) {
+        document.activeElement.blur();
+      }
+    }
+  }, [showShareModal]);
+
+  const handleShareClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Close dropdown immediately
+    if (dropdownTriggerRef.current) {
+      dropdownTriggerRef.current.blur();
+    }
+    
+    // Small delay to ensure dropdown closes before modal opens
+    setTimeout(() => {
+      setShowShareModal(true);
+    }, 100);
+  };
 
   return (
     <div className="flex flex-1 justify-end w-12">
       <div className="dropdown dropdown-left">
         <HiDotsHorizontal
+          ref={dropdownTriggerRef}
           tabIndex={0}
           role="button"
           className="size-5 rounded-full hover:invert-50"
@@ -47,9 +85,19 @@ const PostOptions = ({
             animation: "dropdownFadeIn 0.2s ease-out"
           }}
         >
+          {/* Share Option - Always visible */}
+          <li 
+            className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
+            onClick={handleShareClick}
+          >
+            <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+              <LuShare2 /> <span>Paylaş</span>
+            </a>
+          </li>
+
           {isHidden && (
             <li 
-              className=""
+              className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -136,23 +184,34 @@ const PostOptions = ({
           )}
           
           {!isMyPost && (
-            <li onClick={() => follow(postOwner._id)}>
+            <li 
+              className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (amIFollowing) {
+                  unfollow();
+                } else {
+                  follow();
+                }
+              }}
+            >
               {isPending ? (
                 <div className="flex items-center gap-2 whitespace-nowrap">
                   <LoadingSpinner size="xs" /> <span className="text-xs">Yükleniyor...</span>
                 </div>
               ) : (
-                <a className="rounded-none whitespace-nowrap">
+                <a className="rounded-none flex whitespace-nowrap cursor-pointer">
                   {amIFollowing ? (
                     <>
-                      <SlUserUnfollow /> Takipten Çık
+                      <SlUserUnfollow /> <span>Takipten Çık</span>
                     </>
                   ) : (
                     <>
-                      <SlUserFollow /> Takip et
+                      <SlUserFollow /> <span>Takip et</span>
                     </>
                   )}
-                  <span className="text-gray-500">
+                  <span className="text-base-content/60 ml-1">
                     @{postOwner.username}
                   </span>
                 </a>
@@ -191,6 +250,14 @@ const PostOptions = ({
           )}
         </ul>
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        post={post}
+        postOwner={postOwner}
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+      />
     </div>
   );
 };

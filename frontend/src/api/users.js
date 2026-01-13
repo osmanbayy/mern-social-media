@@ -75,9 +75,9 @@ export const followUser = async (userId) => {
   return handleResponse(response);
 };
 
-// Unfollow user
+// Unfollow user (uses same endpoint as follow - backend handles toggle)
 export const unfollowUser = async (userId) => {
-  const response = await fetch(`${API_BASE}/unfollow/${userId}`, {
+  const response = await fetch(`${API_BASE}/follow/${userId}`, {
     method: "POST",
     credentials: "include",
   });
