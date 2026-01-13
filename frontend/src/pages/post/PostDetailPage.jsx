@@ -1,8 +1,9 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { LuPin } from "react-icons/lu";
+import { FaHeart, FaRegComment } from "react-icons/fa";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { formatPostDate } from "../../utils/date";
@@ -11,8 +12,10 @@ import PostImageModal from "../../components/modals/PostImageModal";
 import DeletePostDialog from "../../components/modals/DeletePostDialog";
 import EditPostDialog from "../../components/modals/EditPostDialog";
 import PostOptions from "../../components/PostOptions";
+import CommentOptions from "../../components/CommentOptions";
+import CommentItem from "../../components/CommentItem";
 import PostActions from "../../components/common/PostActions";
-import { getSinglePost } from "../../api/posts";
+import { getSinglePost, likeComment, replyToComment, deleteComment, editComment } from "../../api/posts";
 import usePostDetailActions from "../../hooks/usePostDetailActions";
 import useMention from "../../hooks/useMention";
 import MentionDropdown from "../../components/common/MentionDropdown";
@@ -21,10 +24,17 @@ import MentionText from "../../components/common/MentionText";
 const PostDetailPage = () => {
   const { postId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [editingComment, setEditingComment] = useState(null);
+  const [replyTexts, setReplyTexts] = useState({});
+  const [deletingCommentId, setDeletingCommentId] = useState(null);
+  const [editingCommentId, setEditingCommentId] = useState(null);
   const commentTextareaRef = useRef(null);
+  const replyTextareaRefs = useRef({});
 
   // Mention functionality for comments
   const {
@@ -69,6 +79,66 @@ const PostDetailPage = () => {
     navigate("/");
   };
 
+  // Comment like mutation
+  const likeCommentMutation = useMutation({
+    mutationFn: ({ postId, commentId }) => likeComment(postId, commentId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["post", postId], data);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Bir hata oluştu.");
+    },
+  });
+
+  // Reply to comment mutation
+  const replyToCommentMutation = useMutation({
+    mutationFn: ({ postId, commentId, replyText }) => replyToComment(postId, commentId, replyText),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["post", postId], data);
+      setReplyingTo(null);
+      setReplyTexts(prev => ({ ...prev, [commentId]: "" }));
+      toast.success("Yanıt gönderildi.");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Bir hata oluştu.");
+    },
+  });
+
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: ({ postId, commentId }) => deleteComment(postId, commentId),
+    onMutate: ({ commentId }) => {
+      setDeletingCommentId(commentId);
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["post", postId], data);
+      setDeletingCommentId(null);
+      toast.success("Yorum silindi.");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Bir hata oluştu.");
+      setDeletingCommentId(null);
+    },
+  });
+
+  // Edit comment mutation
+  const editCommentMutation = useMutation({
+    mutationFn: ({ postId, commentId, commentText }) => editComment(postId, commentId, commentText),
+    onMutate: ({ commentId }) => {
+      setEditingCommentId(commentId);
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["post", postId], data);
+      setEditingCommentId(null);
+      setEditingComment(null);
+      toast.success("Yorum güncellendi.");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Bir hata oluştu.");
+      setEditingCommentId(null);
+    },
+  });
+
   // Handle comment submission
   const handlePostComment = (e) => {
     e.preventDefault();
@@ -102,6 +172,51 @@ const PostDetailPage = () => {
   const isMyPost = authUser?._id === post.user?._id;
   const formattedDate = formatPostDate(post.createdAt);
   const theme = localStorage.getItem("theme");
+
+  // Comment handlers
+  const handleLikeComment = (commentId, e) => {
+    e.stopPropagation();
+    likeCommentMutation.mutate({ postId, commentId });
+  };
+
+  const handleReplyToComment = (commentId, e) => {
+    e.stopPropagation();
+    setReplyingTo(commentId);
+  };
+
+  const handleSubmitReply = (commentId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const replyText = replyTexts[commentId] || "";
+    if (!replyText.trim()) return;
+    replyToCommentMutation.mutate({ postId, commentId, replyText });
+  };
+
+  const handleDeleteComment = (commentId) => {
+    deleteCommentMutation.mutate({ postId, commentId });
+  };
+
+  const handleEditComment = (commentItem) => {
+    setEditingComment({ ...commentItem, text: commentItem.text });
+    setEditingCommentId(commentItem._id);
+  };
+
+  const handleUpdateEditingComment = (updatedComment) => {
+    setEditingComment(updatedComment);
+  };
+
+  const handleSubmitEditComment = (commentId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const commentText = editingComment?.text || "";
+    if (!commentText.trim()) return;
+    editCommentMutation.mutate({ postId, commentId, commentText });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingComment(null);
+    setEditingCommentId(null);
+  };
 
   const handleEditPost = () => {
     setShowEditDialog(true);
@@ -148,7 +263,7 @@ const PostDetailPage = () => {
   };
 
   return (
-    <div className="w-full min-h-screen">
+    <div className="w-full min-h-screen pb-20 lg:pb-0">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-base-100/95 backdrop-blur-xl border-b border-base-300/50 px-5 py-4 flex items-center gap-4 shadow-sm">
         <button
@@ -357,40 +472,51 @@ const PostDetailPage = () => {
               // Skip comments with null user
               if (!commentItem.user) return null;
               
+              const isMyComment = authUser?._id === commentItem.user?._id;
+              const isPostOwner = authUser?._id === post.user?._id;
+              const isLiked = commentItem.likes?.some(
+                (id) => id?._id === authUser?._id || id === authUser?._id
+              ) || false;
+              const isEditing = editingCommentId === commentItem._id;
+              const isDeleting = deletingCommentId === commentItem._id;
+              const isReplying = replyingTo === commentItem._id;
+              
               return (
-                <div
+                <CommentItem
                   key={commentItem._id}
-                  className="flex gap-3 p-4 hover:bg-base-200/30 transition-all duration-200 rounded-xl my-2 fade-in"
-                >
-                  <Link
-                    to={`/profile/${commentItem.user.username}`}
-                    className="avatar flex-shrink-0"
-                  >
-                    <div className="w-10 h-10 rounded-full ring-2 ring-base-300 hover:ring-primary transition-all duration-300">
-                      <img
-                        src={commentItem.user.profileImage || defaultProfilePicture}
-                        alt={commentItem.user.fullname || "Kullanıcı"}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    </div>
-                  </Link>
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Link
-                        to={`/profile/${commentItem.user.username}`}
-                        className="font-semibold text-sm hover:text-primary transition-colors"
-                      >
-                        {commentItem.user.fullname || "Kullanıcı"}
-                      </Link>
-                      <span className="text-base-content/50 text-xs">
-                        @{commentItem.user.username}
-                      </span>
-                    </div>
-                    <p className="text-base-content text-sm leading-relaxed">
-                      <MentionText text={commentItem.text} />
-                    </p>
-                  </div>
-                </div>
+                  commentItem={commentItem}
+                  authUser={authUser}
+                  post={post}
+                  postOwner={postOwner}
+                  isMyComment={isMyComment}
+                  isPostOwner={isPostOwner}
+                  isLiked={isLiked}
+                  isEditing={isEditing}
+                  isDeleting={isDeleting}
+                  isReplying={isReplying}
+                  editingComment={editingComment}
+                  replyText={replyTexts[commentItem._id] || ""}
+                  onLike={(e) => handleLikeComment(commentItem._id, e)}
+                  onReply={(e) => handleReplyToComment(commentItem._id, e)}
+                  onEdit={handleUpdateEditingComment}
+                  onDelete={() => handleDeleteComment(commentItem._id)}
+                  onStartEdit={() => handleEditComment(commentItem)}
+                  onSubmitEdit={(e) => handleSubmitEditComment(commentItem._id, e)}
+                  onSubmitReply={(e) => handleSubmitReply(commentItem._id, e)}
+                  onCancelEdit={handleCancelEdit}
+                  onCancelReply={() => {
+                    setReplyingTo(null);
+                    setReplyTexts(prev => ({ ...prev, [commentItem._id]: "" }));
+                  }}
+                  onReplyTextChange={(text) => setReplyTexts(prev => ({ ...prev, [commentItem._id]: text }))}
+                  replyTextareaRef={(el) => {
+                    if (el) replyTextareaRefs.current[commentItem._id] = el;
+                  }}
+                  theme={theme}
+                  defaultProfilePicture={defaultProfilePicture}
+                  editCommentMutation={editCommentMutation}
+                  replyToCommentMutation={replyToCommentMutation}
+                />
               );
             })}
           </div>

@@ -1,40 +1,72 @@
+import { useState, useEffect } from "react";
+
 const PostImageModal = ({ post }) => {
-  if (!post || !post._id) return null;
+  const [isOpen, setIsOpen] = useState(false);
   
-  const modalId = `image_modal${post._id}`;
+  const modalId = post && post._id ? `image_modal${post._id}` : null;
+
+  useEffect(() => {
+    if (!modalId) return;
+    
+    // Create a dummy element for showModal API compatibility
+    let modalElement = document.getElementById(modalId);
+    if (!modalElement) {
+      modalElement = document.createElement('div');
+      modalElement.id = modalId;
+      modalElement.style.display = 'none';
+      document.body.appendChild(modalElement);
+    }
+
+    // Override showModal
+    modalElement.showModal = function() {
+      setIsOpen(true);
+    };
+
+    // Override close
+    modalElement.close = function() {
+      setIsOpen(false);
+    };
+
+    // Listen for custom events
+    const handleOpen = () => setIsOpen(true);
+    const handleClose = () => setIsOpen(false);
+    
+    modalElement.addEventListener('open', handleOpen);
+    modalElement.addEventListener('close', handleClose);
+
+    return () => {
+      modalElement.removeEventListener('open', handleOpen);
+      modalElement.removeEventListener('close', handleClose);
+    };
+  }, [modalId]);
+
+  const handleClose = () => {
+    setIsOpen(false);
+    const modal = document.getElementById(modalId);
+    if (modal && modal.close) modal.close();
+  };
+
+  if (!post || !post._id || !isOpen) return null;
   
   return (
-    <dialog
-      id={modalId}
-      className="modal border-none outline-none z-[9999]"
-      style={{ 
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        margin: 'auto',
-        maxWidth: '100vw',
-        maxHeight: '100vh',
-        padding: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'transparent'
-      }}
+    <div 
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={handleClose}
+      style={{ touchAction: 'manipulation' }}
     >
-      <div className="modal-box p-0 max-w-screen-sm w-full m-0" style={{ maxHeight: '100vh', overflow: 'auto', backgroundColor: 'transparent', border: 'none' }}>
+      <div 
+        className="relative max-w-screen-sm w-full p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <img 
           src={post.img} 
-          className="w-full h-auto object-contain" 
+          className="w-full h-auto object-contain rounded-lg" 
           alt="Gönderi Resmi"
-          style={{ maxHeight: '100vh' }}
+          style={{ maxHeight: '90vh' }}
           draggable="false"
         />
       </div>
-      <form method="dialog" className="modal-backdrop bg-black/80" style={{ position: 'fixed', inset: 0 }}>
-        <button type="button" className="outline-none w-full h-full">Kapat</button>
-      </form>
-    </dialog>
+    </div>
   );
 };
 

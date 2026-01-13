@@ -9,6 +9,7 @@ import { FaUserPlus } from "react-icons/fa6";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { signup } from "../../../api/auth";
+import { LuEye, LuEyeClosed } from "react-icons/lu";
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -21,9 +22,9 @@ const SignUpPage = () => {
   const queryClient = useQueryClient();
 
   const { mutate, isError, error, isPending } = useMutation({
-    mutationFn: ({ email, username, fullname, password }) => 
+    mutationFn: ({ email, username, fullname, password }) =>
       signup({ email, username, fullname, password }),
-    onSuccess: async() => {
+    onSuccess: async () => {
       toast.success("Hesabın oluşturuldu.");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
     },
@@ -45,12 +46,12 @@ const SignUpPage = () => {
       </div>
       <div className="flex-1 flex flex-col justify-center items-center">
         <form
-          className="lg:w-2/3 mx-auto md:mx-20 flex gap-4 flex-col items-center"
+          className="w-full lg:w-2/3 mx-auto md:mx-20 flex gap-4 flex-col items-center"
           onSubmit={handleSubmit}
         >
           <OSSvg forceDark className="w-32 h-32 md:hidden flex-shrink-0" />
           <h1 className="signup-title text-4xl font-extrabold">OnSekiz</h1>
-          <label className="input input-bordered rounded flex items-center gap-2">
+          <label className="input input-bordered rounded flex items-center gap-2 w-full">
             <HiOutlineMail />
             <input
               type="email"
@@ -63,7 +64,7 @@ const SignUpPage = () => {
             />
           </label>
 
-          <label className="input input-bordered rounded flex items-center gap-2">
+          <label className="input input-bordered rounded flex items-center gap-2 w-full">
             <FiUser />
             <input
               type="text"
@@ -75,7 +76,7 @@ const SignUpPage = () => {
               value={formData.username}
             />
           </label>
-          <label className="input input-bordered rounded flex items-center gap-2">
+          <label className="input input-bordered rounded flex items-center gap-2 w-full">
             <ImPencil2 />
             <input
               type="text"
@@ -88,7 +89,7 @@ const SignUpPage = () => {
             />
           </label>
 
-          <label className="input input-bordered rounded flex items-center gap-2">
+          <label className="input input-bordered rounded flex items-center gap-2 w-full">
             <GoLock />
             <input
               type={showPassword ? "text" : "password"}
@@ -104,9 +105,9 @@ const SignUpPage = () => {
               className="btn btn-ghost btn-sm p-1"
             >
               {showPassword ? (
-                <img src="/src/assets/close-eye.svg" alt="Hide password" className="w-4 h-4" />
+                <LuEye />
               ) : (
-                <img src="/src/assets/open-eye.svg" alt="Show password" className="w-4 h-4" />
+                <LuEyeClosed />
               )}
             </button>
           </label>

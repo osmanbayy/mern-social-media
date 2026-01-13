@@ -56,8 +56,24 @@ const MobileSlideMenu = ({ authUser, isOpen, onClose }) => {
 
   const handleLogout = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     onClose();
-    document.getElementById("logout_modal").showModal();
+    // Use setTimeout to ensure modal opens after menu closes and DOM updates
+    setTimeout(() => {
+      const modal = document.getElementById("logout_modal");
+      if (modal) {
+        // Force close any open mobile menu elements
+        const mobileMenu = document.querySelector('[class*="z-[101]"]');
+        if (mobileMenu) {
+          mobileMenu.style.display = 'none';
+        }
+        const backdrop = document.querySelector('[class*="z-[100]"][class*="backdrop"]');
+        if (backdrop) {
+          backdrop.style.display = 'none';
+        }
+        modal.showModal();
+      }
+    }, 200);
   };
 
   return (
@@ -149,9 +165,10 @@ const MobileSlideMenu = ({ authUser, isOpen, onClose }) => {
 
           <div className="h-px bg-base-300/50 my-2" />
 
-          <div
+          <button
+            type="button"
             onClick={handleLogout}
-            className={`flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 group cursor-pointer ${
+            className={`flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 group cursor-pointer w-full text-left ${
               isOpen ? "opacity-100 translate-x-0 delay-300" : "opacity-0 translate-x-4"
             }`}
           >
@@ -175,7 +192,7 @@ const MobileSlideMenu = ({ authUser, isOpen, onClose }) => {
                 d="M9 5l7 7-7 7"
               />
             </svg>
-          </div>
+          </button>
         </div>
       </div>
     </>

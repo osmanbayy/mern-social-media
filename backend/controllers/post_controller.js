@@ -24,7 +24,7 @@ const parseMentions = async (text, excludeUserId) => {
 };
 
 // Helper function to send mention notifications
-const sendMentionNotifications = async (mentionedUserIds, fromUserId, postId, commentId = null) => {
+const sendMentionNotifications = async (mentionedUserIds, fromUserId, postId, commentId = null, replyId = null) => {
   if (!mentionedUserIds || mentionedUserIds.length === 0) return;
   
   const notifications = mentionedUserIds.map(mentionedUserId => ({
@@ -32,7 +32,7 @@ const sendMentionNotifications = async (mentionedUserIds, fromUserId, postId, co
     to: mentionedUserId,
     type: "mention",
     post: postId,
-    comment: commentId || undefined,
+    comment: commentId || replyId || undefined,
   }));
   
   try {
@@ -415,6 +415,10 @@ export const get_single_post = async (req, res) => {
       .populate({
         path: "comments.user",
         select: "-password",
+      })
+      .populate({
+        path: "comments.replies.user",
+        select: "-password",
       });
 
     if (!post) {
@@ -629,6 +633,256 @@ export const pin_unpin_post = async (req, res) => {
     res.status(200).json({ message: "Gönderi başa sabitlendi.", post });
   } catch (error) {
     console.log("Error in pin/unpin post controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+// Like/Unlike Comment
+export const like_unlike_comment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+    const userId = req.user._id;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Gönderi bulunamadı." });
+    }
+
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Yorum bulunamadı." });
+    }
+
+    const userLikedComment = comment.likes.some(
+      (id) => id.toString() === userId.toString()
+    );
+
+    if (userLikedComment) {
+      // Unlike comment
+      comment.likes = comment.likes.filter(
+        (id) => id.toString() !== userId.toString()
+      );
+    } else {
+      // Like comment
+      comment.likes.push(userId);
+      
+      // Send notification if user is not liking their own comment
+      if (comment.user.toString() !== userId.toString()) {
+        try {
+          const notification = new Notification({
+            from: userId,
+            to: comment.user,
+            type: "like",
+            post: postId,
+            comment: commentId,
+          });
+          await notification.save();
+        } catch (error) {
+          console.log("Error creating comment like notification:", error.message);
+        }
+      }
+    }
+
+    await post.save();
+
+    const populatedPost = await Post.findById(postId)
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.replies.user",
+        select: "-password",
+      });
+
+    res.status(200).json(populatedPost);
+  } catch (error) {
+    console.log("Error in like/unlike comment controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+// Reply to Comment
+export const reply_to_comment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+    const { text } = req.body;
+    const userId = req.user._id;
+
+    if (!text) {
+      return res.status(400).json({ message: "Boş yanıt yapılamaz." });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Gönderi bulunamadı." });
+    }
+
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Yorum bulunamadı." });
+    }
+
+    // Parse mentions from reply text
+    const replyMentions = await parseMentions(text, userId);
+
+    const reply = {
+      user: userId,
+      text,
+      mentions: replyMentions,
+    };
+
+    comment.replies.push(reply);
+    await post.save();
+
+    // Send notification to comment owner if not replying to own comment
+    if (comment.user.toString() !== userId.toString()) {
+      try {
+        const notification = new Notification({
+          from: userId,
+          to: comment.user,
+          type: "comment",
+          post: postId,
+          comment: commentId,
+        });
+        await notification.save();
+      } catch (error) {
+        console.log("Error creating reply notification:", error.message);
+      }
+    }
+
+    // Send mention notifications for reply
+    const newReply = comment.replies[comment.replies.length - 1];
+    await sendMentionNotifications(replyMentions, userId, postId, commentId, newReply._id);
+
+    const populatedPost = await Post.findById(postId)
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.replies.user",
+        select: "-password",
+      });
+
+    res.status(200).json(populatedPost);
+  } catch (error) {
+    console.log("Error in reply to comment controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+// Delete Comment
+export const delete_comment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+    const userId = req.user._id;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Gönderi bulunamadı." });
+    }
+
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Yorum bulunamadı." });
+    }
+
+    // Check permissions: user can delete if:
+    // 1. They own the comment, OR
+    // 2. They own the post (post owner can delete any comment on their post)
+    const isCommentOwner = comment.user.toString() === userId.toString();
+    const isPostOwner = post.user.toString() === userId.toString();
+
+    if (!isCommentOwner && !isPostOwner) {
+      return res.status(403).json({ message: "Bu yorumu silme yetkiniz yok." });
+    }
+
+    post.comments.pull(commentId);
+    await post.save();
+
+    const populatedPost = await Post.findById(postId)
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.replies.user",
+        select: "-password",
+      });
+
+    res.status(200).json(populatedPost);
+  } catch (error) {
+    console.log("Error in delete comment controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+// Edit Comment
+export const edit_comment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+    const { text } = req.body;
+    const userId = req.user._id;
+
+    if (!text) {
+      return res.status(400).json({ message: "Boş yorum yapılamaz." });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Gönderi bulunamadı." });
+    }
+
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Yorum bulunamadı." });
+    }
+
+    // Only comment owner can edit
+    if (comment.user.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Bu yorumu düzenleme yetkiniz yok." });
+    }
+
+    // Parse mentions from updated comment text
+    const commentMentions = await parseMentions(text, userId);
+
+    comment.text = text;
+    comment.mentions = commentMentions;
+    await post.save();
+
+    // Send mention notifications if mentions changed
+    await sendMentionNotifications(commentMentions, userId, postId, commentId);
+
+    const populatedPost = await Post.findById(postId)
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.replies.user",
+        select: "-password",
+      });
+
+    res.status(200).json(populatedPost);
+  } catch (error) {
+    console.log("Error in edit comment controller", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };

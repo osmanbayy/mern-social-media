@@ -16,7 +16,11 @@ import {
   hide_post,
   unhide_post,
   get_hidden_posts,
-  pin_unpin_post
+  pin_unpin_post,
+  like_unlike_comment,
+  reply_to_comment,
+  delete_comment,
+  edit_comment
 } from "../controllers/post_controller.js";
 
 const router = express.Router();
@@ -37,6 +41,12 @@ router.post("/like/:id", protect_route, like_unlike_post);
 router.post("/comment/:id", protect_route, comment_on_post);
 router.post("/pin/:id", protect_route, pin_unpin_post);
 router.delete("/hide/:id", protect_route, unhide_post);
+
+// Comment routes
+router.post("/comment/:postId/:commentId/like", protect_route, like_unlike_comment);
+router.post("/comment/:postId/:commentId/reply", protect_route, reply_to_comment);
+router.delete("/comment/:postId/:commentId", protect_route, delete_comment);
+router.put("/comment/:postId/:commentId", protect_route, edit_comment);
 
 // Parameterized routes last (/:id)
 router.get("/:id", protect_route, get_single_post);

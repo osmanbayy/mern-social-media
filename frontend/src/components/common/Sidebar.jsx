@@ -25,10 +25,15 @@ const Sidebar = () => {
       queryClient.clear();
       queryClient.removeQueries();
       queryClient.getQueryCache().clear();
+      // Keep _has_visited to prevent splash screen on logout
+      const hasVisited = sessionStorage.getItem("_has_visited");
       sessionStorage.clear();
+      if (hasVisited) {
+        sessionStorage.setItem("_has_visited", "true");
+      }
       toast.success("Çıkış yapıldı.");
       setTimeout(() => {
-        localStorage.clear();
+        localStorage.removeItem("_logout_in_progress");
         window.location.href = "/login";
       }, 500);
     },
@@ -36,8 +41,13 @@ const Sidebar = () => {
       queryClient.clear();
       queryClient.removeQueries();
       queryClient.getQueryCache().clear();
-      localStorage.clear();
+      // Keep _has_visited to prevent splash screen on logout
+      const hasVisited = sessionStorage.getItem("_has_visited");
       sessionStorage.clear();
+      if (hasVisited) {
+        sessionStorage.setItem("_has_visited", "true");
+      }
+      localStorage.removeItem("_logout_in_progress");
       setTimeout(() => {
         window.location.href = "/login";
       }, 500);

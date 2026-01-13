@@ -18,6 +18,8 @@ const PostCreate = () => {
   const [showPicker, setShowPicker] = useState(false);
   const imgRef = useRef(null);
   const textareaRef = useRef(null);
+  const emojiButtonRef = useRef(null);
+  const emojiPickerRef = useRef(null);
 
   // Mention functionality
   const {
@@ -69,6 +71,64 @@ const PostCreate = () => {
   const handleEmojiClick = (emojiObject) => {
     setText((prevText) => prevText + emojiObject.emoji);
   };
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    if (!showPicker) return;
+
+    const handleClickOutside = (e) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(e.target) &&
+        emojiButtonRef.current &&
+        !emojiButtonRef.current.contains(e.target)
+      ) {
+        setShowPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showPicker]);
+
+  // Calculate emoji picker position
+  useEffect(() => {
+    if (!showPicker || !emojiButtonRef.current || !emojiPickerRef.current) return;
+
+    const button = emojiButtonRef.current;
+    const picker = emojiPickerRef.current;
+    const buttonRect = button.getBoundingClientRect();
+    const pickerRect = picker.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let left = 0;
+    let top = buttonRect.height + 8; // mt-2 equivalent
+    let transform = '';
+
+    // Check if picker would overflow on the right
+    if (buttonRect.left + pickerRect.width > viewportWidth) {
+      left = viewportWidth - buttonRect.right;
+      transform = 'translateX(-100%)';
+    }
+
+    // Check if picker would overflow on the bottom (mobile)
+    if (buttonRect.bottom + pickerRect.height > viewportHeight) {
+      top = -(pickerRect.height + 8);
+      transform = transform ? `${transform} translateY(-100%)` : 'translateY(-100%)';
+    }
+
+    picker.style.left = `${left}px`;
+    picker.style.top = `${top}px`;
+    if (transform) {
+      picker.style.transform = transform;
+    }
+  }, [showPicker]);
 
   const navigate = useNavigate();
 
@@ -161,7 +221,10 @@ const PostCreate = () => {
               />
             </div>
             <div className="relative">
-              <div className="p-2 rounded-full hover:bg-primary/10 transition-all duration-200 cursor-pointer group">
+              <div 
+                ref={emojiButtonRef}
+                className="p-2 rounded-full hover:bg-primary/10 transition-all duration-200 cursor-pointer group"
+              >
                 <BsEmojiSmileFill
                   onClick={() => setShowPicker(!showPicker)}
                   className={`w-5 h-5 transition-all duration-200 group-hover:scale-110 ${
@@ -170,12 +233,44 @@ const PostCreate = () => {
                 />
               </div>
               {showPicker && (
-                <div className="absolute top-full left-0 z-20 mt-2 shadow-2xl rounded-2xl overflow-hidden">
-                  <EmojiPicker
-                    onEmojiClick={handleEmojiClick}
-                    theme={theme === "dark" ? "dark" : "light"}
+                <>
+                  {/* Backdrop for mobile */}
+                  <div 
+                    className="fixed inset-0 z-[50] md:hidden bg-black/20"
+                    onClick={() => setShowPicker(false)}
                   />
-                </div>
+                  <div 
+                    ref={emojiPickerRef}
+                    className="absolute z-[60] shadow-2xl rounded-2xl overflow-hidden bg-base-100 border border-base-300/50 animate-dropdownFadeIn"
+                    style={{
+                      maxWidth: 'calc(100vw - 2rem)',
+                      maxHeight: 'calc(100vh - 200px)',
+                    }}
+                  >
+                    <div className="md:hidden max-h-[400px] overflow-y-auto">
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiClick}
+                        theme={theme === "dark" ? "dark" : "light"}
+                        width="100%"
+                        height={400}
+                        previewConfig={{ showPreview: false }}
+                        searchDisabled={false}
+                        skinTonesDisabled={true}
+                      />
+                    </div>
+                    <div className="hidden md:block">
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiClick}
+                        theme={theme === "dark" ? "dark" : "light"}
+                        width={352}
+                        height={435}
+                        previewConfig={{ showPreview: true }}
+                        searchDisabled={false}
+                        skinTonesDisabled={true}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>

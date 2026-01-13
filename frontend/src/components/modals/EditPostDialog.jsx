@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { LuX } from "react-icons/lu";
 import LoadingSpinner from "../common/LoadingSpinner";
 import { editPost } from "../../api/posts";
 import useMention from "../../hooks/useMention";
@@ -10,9 +11,47 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   const [text, setText] = useState(post.text || "");
   const [img, setImg] = useState(post.img || "");
   const [isImageUploading, setIsImageUploading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const textareaRef = useRef(null);
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    // Create a dummy element for showModal API compatibility
+    let modalElement = document.getElementById(modalId);
+    if (!modalElement) {
+      modalElement = document.createElement('div');
+      modalElement.id = modalId;
+      modalElement.style.display = 'none';
+      document.body.appendChild(modalElement);
+    }
+
+    // Override showModal
+    modalElement.showModal = function() {
+      setIsOpen(true);
+    };
+
+    // Override close
+    modalElement.close = function() {
+      setIsOpen(false);
+      onClose();
+    };
+
+    // Listen for custom events
+    const handleOpen = () => setIsOpen(true);
+    const handleClose = () => {
+      setIsOpen(false);
+      onClose();
+    };
+    
+    modalElement.addEventListener('open', handleOpen);
+    modalElement.addEventListener('close', handleClose);
+
+    return () => {
+      modalElement.removeEventListener('open', handleOpen);
+      modalElement.removeEventListener('close', handleClose);
+    };
+  }, [modalId, onClose]);
 
   // Mention functionality
   const {
@@ -30,7 +69,7 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
     onSuccess: () => {
       toast.success("Gönderi başarıyla düzenlendi.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      onClose();
+      handleClose();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -49,7 +88,6 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
     setIsImageUploading(true);
 
     try {
-      // Convert file to base64
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64String = event.target.result;
@@ -77,9 +115,35 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
     setImg("");
   };
 
+  const handleClose = () => {
+    setIsOpen(false);
+    const modal = document.getElementById(modalId);
+    if (modal && modal.close) modal.close();
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <dialog id={modalId} className="modal border-none outline-none">
-      <div className="modal-box rounded shadow-2xl max-w-2xl">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={handleClose}
+      />
+      
+      {/* Modal Content */}
+      <div 
+        className="relative bg-base-100 rounded shadow-2xl max-w-2xl w-full p-6 overflow-hidden rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button 
+          type="button"
+          className="btn btn-sm btn-circle btn-ghost absolute right-3 top-3 z-10 hover:bg-base-200/50 transition-all duration-200"
+          onClick={handleClose}
+        >
+          <LuX className="w-4 h-4" />
+        </button>
+
         <h3 className="font-bold text-lg mb-4">Gönderiyi Düzenle</h3>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -143,7 +207,7 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="btn btn-ghost"
               disabled={isEditing}
             >
@@ -159,10 +223,7 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
           </div>
         </form>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button className="outline-none">Kapat</button>
-      </form>
-    </dialog>
+    </div>
   );
 };
 

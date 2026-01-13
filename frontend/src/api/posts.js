@@ -210,3 +210,47 @@ export const unhidePost = async (postId) => {
   });
   return handleResponse(response);
 };
+
+// Like/Unlike comment
+export const likeComment = async (postId, commentId) => {
+  const response = await fetch(`${API_BASE}/comment/${postId}/${commentId}/like`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
+
+// Reply to comment
+export const replyToComment = async (postId, commentId, replyText) => {
+  const response = await fetch(`${API_BASE}/comment/${postId}/${commentId}/reply`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ text: replyText }),
+  });
+  return handleResponse(response);
+};
+
+// Delete comment
+export const deleteComment = async (postId, commentId) => {
+  const response = await fetch(`${API_BASE}/comment/${postId}/${commentId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
+
+// Edit comment
+export const editComment = async (postId, commentId, commentText) => {
+  const response = await fetch(`${API_BASE}/comment/${postId}/${commentId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ text: commentText }),
+  });
+  return handleResponse(response);
+};
