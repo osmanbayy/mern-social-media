@@ -28,6 +28,7 @@ const PostDetailPage = () => {
   const [comment, setComment] = useState("");
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
   const [editingComment, setEditingComment] = useState(null);
   const [replyTexts, setReplyTexts] = useState({});
@@ -220,7 +221,19 @@ const PostDetailPage = () => {
 
   const handleEditPost = () => {
     setShowEditDialog(true);
-    document.getElementById(`edit_post_modal_${post._id}`).showModal();
+    const openModal = () => {
+      const modal = document.getElementById(`edit_post_modal_${post._id}`);
+      if (modal && typeof modal.showModal === 'function') {
+        modal.showModal();
+      } else if (modal) {
+        // If showModal is not yet overridden, wait a bit and try again
+        setTimeout(openModal, 50);
+      } else {
+        // If modal element doesn't exist, wait a bit and try again
+        setTimeout(openModal, 50);
+      }
+    };
+    openModal();
   };
 
   const handleCloseEditDialog = () => {
@@ -352,6 +365,7 @@ const PostDetailPage = () => {
                   isUnhiding={false}
                   isPinning={isPinning}
                   onEdit={handleEditPost}
+                  onDelete={() => setShowDeleteDialog(true)}
                   onHide={() => {}}
                   onUnhide={() => {}}
                   onPin={pinPost}
@@ -542,6 +556,8 @@ const PostDetailPage = () => {
       <DeletePostDialog
         modalId={`delete_modal_${post._id}`}
         handleDeletePost={handleDeletePost}
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
       />
       {showEditDialog && (
         <EditPostDialog

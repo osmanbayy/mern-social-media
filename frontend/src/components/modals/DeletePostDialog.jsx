@@ -1,46 +1,8 @@
 import { LuX, LuTrash2 } from "react-icons/lu";
-import { useState, useEffect } from "react";
 
-const DeletePostDialog = ({ handleDeletePost, modalId = "delete_modal" }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    // Create a dummy element for showModal API compatibility
-    let modalElement = document.getElementById(modalId);
-    if (!modalElement) {
-      modalElement = document.createElement('div');
-      modalElement.id = modalId;
-      modalElement.style.display = 'none';
-      document.body.appendChild(modalElement);
-    }
-
-    // Override showModal
-    modalElement.showModal = function() {
-      setIsOpen(true);
-    };
-
-    // Override close
-    modalElement.close = function() {
-      setIsOpen(false);
-    };
-
-    // Listen for custom events
-    const handleOpen = () => setIsOpen(true);
-    const handleClose = () => setIsOpen(false);
-    
-    modalElement.addEventListener('open', handleOpen);
-    modalElement.addEventListener('close', handleClose);
-
-    return () => {
-      modalElement.removeEventListener('open', handleOpen);
-      modalElement.removeEventListener('close', handleClose);
-    };
-  }, [modalId]);
-
+const DeletePostDialog = ({ handleDeletePost, modalId = "delete_modal", isOpen = false, onClose }) => {
   const handleClose = () => {
-    setIsOpen(false);
-    const modal = document.getElementById(modalId);
-    if (modal && modal.close) modal.close();
+    if (onClose) onClose();
   };
 
   const handleConfirm = async () => {
@@ -48,10 +10,10 @@ const DeletePostDialog = ({ handleDeletePost, modalId = "delete_modal" }) => {
     handleClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+    <>
+      {isOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -109,6 +71,8 @@ const DeletePostDialog = ({ handleDeletePost, modalId = "delete_modal" }) => {
         </div>
       </div>
     </div>
+      )}
+    </>
   );
 };
 

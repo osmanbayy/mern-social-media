@@ -5,7 +5,7 @@ import OSSvg from "../svgs/OS";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useQueryClient } from "@tanstack/react-query";
 
-const DesktopSidebar = ({ authUser, activeTab, setActiveTab, isNotRead, isSettingPage }) => {
+const DesktopSidebar = ({ authUser, activeTab, setActiveTab, isNotRead, isSettingPage, onLogoutClick }) => {
   const theme = localStorage.getItem("theme");
   const isDark = (theme || "").toLowerCase() === "dark";
   const queryClient = useQueryClient();
@@ -122,7 +122,10 @@ const DesktopSidebar = ({ authUser, activeTab, setActiveTab, isNotRead, isSettin
                 className="w-5 h-5 cursor-pointer"
                 onClick={(e) => {
                   e.preventDefault();
-                  document.getElementById("logout_modal").showModal();
+                  e.stopPropagation();
+                  if (onLogoutClick) {
+                    onLogoutClick();
+                  }
                 }}
               />
             </div>

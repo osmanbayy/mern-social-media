@@ -17,6 +17,7 @@ import MentionText from "./MentionText";
 const Post = ({ post, isHidden = false }) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const navigate = useNavigate();
   const { data: authUser, isLoading } = useQuery({ queryKey: ["authUser"] });
 
@@ -54,7 +55,19 @@ const Post = ({ post, isHidden = false }) => {
 
   const handleEditPost = () => {
     setShowEditDialog(true);
-    document.getElementById(`edit_post_modal_${updatedPost._id}`).showModal();
+    const openModal = () => {
+      const modal = document.getElementById(`edit_post_modal_${updatedPost._id}`);
+      if (modal && typeof modal.showModal === 'function') {
+        modal.showModal();
+      } else if (modal) {
+        // If showModal is not yet overridden, wait a bit and try again
+        setTimeout(openModal, 50);
+      } else {
+        // If modal element doesn't exist, wait a bit and try again
+        setTimeout(openModal, 50);
+      }
+    };
+    openModal();
   };
 
   const handleCloseEditDialog = () => {
@@ -182,7 +195,7 @@ const Post = ({ post, isHidden = false }) => {
                 isHiding={isHiding}
                 isUnhiding={isUnhiding}
                 isPinning={isPinning}
-                onDelete={handleDeletePost}
+                onDelete={() => setShowDeleteDialog(true)}
                 onEdit={handleEditPost}
                 onHide={hidePost}
                 onUnhide={unhidePost}
@@ -261,7 +274,9 @@ const Post = ({ post, isHidden = false }) => {
       {/* Delete Post Modal */}
       <DeletePostDialog 
         modalId={`delete_modal_${updatedPost._id}`}
-        handleDeletePost={handleDeletePost} 
+        handleDeletePost={handleDeletePost}
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
       />
 
       {/* Edit Post Modal */}

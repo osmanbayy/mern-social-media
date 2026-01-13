@@ -23,6 +23,7 @@ const PostOptions = ({
   isUnhiding,
   isPinning,
   onEdit, 
+  onDelete,
   onHide, 
   onUnhide,
   onPin,
@@ -121,9 +122,13 @@ const PostOptions = ({
           {isMyPost && (
             <li
               className=""
-              onClick={() =>
-                document.getElementById(`delete_modal_${post._id}`).showModal()
-              }
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onDelete) {
+                  onDelete();
+                }
+              }}
             >
               {!isDeleting && (
                 <div>

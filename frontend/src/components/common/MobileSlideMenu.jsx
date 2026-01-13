@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { LuSettings, LuBookmark, LuEyeOff, LuLogOut } from "react-icons/lu";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 
-const MobileSlideMenu = ({ authUser, isOpen, onClose }) => {
+const MobileSlideMenu = ({ authUser, isOpen, onClose, onLogoutClick }) => {
   const getColorClasses = (color) => {
     const colors = {
       primary: {
@@ -59,21 +59,11 @@ const MobileSlideMenu = ({ authUser, isOpen, onClose }) => {
     e.stopPropagation();
     onClose();
     // Use setTimeout to ensure modal opens after menu closes and DOM updates
-    setTimeout(() => {
-      const modal = document.getElementById("logout_modal");
-      if (modal) {
-        // Force close any open mobile menu elements
-        const mobileMenu = document.querySelector('[class*="z-[101]"]');
-        if (mobileMenu) {
-          mobileMenu.style.display = 'none';
-        }
-        const backdrop = document.querySelector('[class*="z-[100]"][class*="backdrop"]');
-        if (backdrop) {
-          backdrop.style.display = 'none';
-        }
-        modal.showModal();
-      }
-    }, 200);
+    if (onLogoutClick) {
+      setTimeout(() => {
+        onLogoutClick();
+      }, 200);
+    }
   };
 
   return (

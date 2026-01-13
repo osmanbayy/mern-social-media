@@ -12,6 +12,7 @@ import MobileSlideMenu from "./MobileSlideMenu";
 const Sidebar = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { mutate: logoutMutation } = useMutation({
@@ -79,6 +80,7 @@ const Sidebar = () => {
         setActiveTab={setActiveTab}
         isNotRead={isNotRead}
         isSettingPage={isSettingPage}
+        onLogoutClick={() => setIsLogoutModalOpen(true)}
       />
       <MobileBottomNav
         authUser={authUser}
@@ -89,8 +91,16 @@ const Sidebar = () => {
         authUser={authUser}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
+        onLogoutClick={() => {
+          setIsMobileMenuOpen(false);
+          setTimeout(() => setIsLogoutModalOpen(true), 200);
+        }}
       />
-      <LogoutDialog handleLogout={logoutMutation} />
+      <LogoutDialog 
+        handleLogout={logoutMutation}
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+      />
     </>
   );
 };
