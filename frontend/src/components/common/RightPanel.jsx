@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import RightPanelSkeleton from "../skeletons/RightPanelSkeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -9,12 +9,18 @@ import toast from "react-hot-toast";
 
 const RightPanel = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [loadingUserId, setLoadingUserId] = useState(null);
   
-  const { data: suggestedUsers, isLoading } = useQuery({
+  const { data: suggestedUsersData, isLoading } = useQuery({
     queryKey: ["suggestedUsers"],
-    queryFn: getSuggestedUsers,
+    queryFn: () => getSuggestedUsers(1, 5),
   });
+
+  // Handle both old array format and new paginated format
+  const suggestedUsers = Array.isArray(suggestedUsersData) 
+    ? suggestedUsersData 
+    : suggestedUsersData?.users || [];
 
   const { mutate: follow } = useMutation({
     mutationFn: (userId) => followUser(userId),
@@ -32,7 +38,10 @@ const RightPanel = () => {
     },
   });
 
-  if (suggestedUsers?.length === 0) <div className="md:w-64 w-0"></div>;
+  // Show only first 5 users
+  const displayedUsers = suggestedUsers?.slice(0, 5) || [];
+
+  if (suggestedUsers?.length === 0) return <div className="md:w-64 w-0"></div>;
 
   return (
     <div className="hidden lg:block my-4 mx-2">
@@ -47,11 +56,10 @@ const RightPanel = () => {
               <RightPanelSkeleton />
               <RightPanelSkeleton />
               <RightPanelSkeleton />
-              <RightPanelSkeleton />
             </>
           )}
           {!isLoading &&
-            suggestedUsers?.map((user) => (
+            displayedUsers.map((user) => (
               <Link
                 to={`/profile/${user.username}`}
                 className="flex items-center justify-between gap-4 p-3 rounded-xl hover:bg-base-200/50 transition-all duration-300 group"
@@ -89,6 +97,14 @@ const RightPanel = () => {
                 </div>
               </Link>
             ))}
+          {!isLoading && suggestedUsers && suggestedUsers.length > 5 && (
+            <button
+              onClick={() => navigate("/suggestions")}
+              className="btn btn-ghost btn-sm w-full mt-2 hover:bg-base-200/50 transition-all duration-200"
+            >
+              Daha fazla öneri göster
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -20,6 +20,7 @@ import BookmarkedPosts from "./pages/BookmarkedPosts";
 import HiddenPosts from "./pages/HiddenPosts";
 import PostDetailPage from "./pages/post/PostDetailPage";
 import EditProfilePage from "./pages/profile/EditProfilePage";
+import SuggestionsPage from "./pages/SuggestionsPage";
 
 function App() {
   const isLoggingOut = localStorage.getItem("_logout_in_progress") === "true";
@@ -114,6 +115,7 @@ function App() {
         <Route path="/hidden-posts" element={isLoggedIn && <HiddenPosts />} />
         <Route path="/post/:postId" element={isLoggedIn && isAccountVerified ? <PostDetailPage /> : <Navigate to="/login" />} />
         <Route path="/edit-profile" element={isLoggedIn && isAccountVerified ? <EditProfilePage /> : <Navigate to="/login" />} />
+        <Route path="/suggestions" element={isLoggedIn && isAccountVerified ? <SuggestionsPage /> : <Navigate to="/login" />} />
       </Routes>
       {isLoggedIn && isAccountVerified && !isSettingPage && <RightPanel />}
       <Toaster />

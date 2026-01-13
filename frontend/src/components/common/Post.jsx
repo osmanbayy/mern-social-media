@@ -37,7 +37,7 @@ const Post = ({ post, isHidden = false }) => {
   const isLiked = authUser?._id ? updatedPost.likes.includes(authUser._id) : false;
   const isSaved = authUser?._id ? updatedPost.saves.includes(authUser._id) : false;
 
-  const isMyPost = authUser?._id === updatedPost.user._id;
+  const isMyPost = authUser?._id === updatedPost.user?._id;
 
   const formattedDate = formatPostDate(updatedPost.createdAt);
 
@@ -99,37 +99,60 @@ const Post = ({ post, isHidden = false }) => {
         onClick={handlePostClick}
       >
         <div className="avatar flex-shrink-0">
-          <Link
-            to={`/profile/${postOwner.username}`}
-            className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-base-300 hover:ring-primary transition-all duration-300"
-            onClick={handleProfileClick}
-          >
-            <img 
-              src={postOwner.profileImage || defaultProfilePicture}
-              className="w-full h-full object-cover"
-            />
-          </Link>
+          {postOwner ? (
+            <Link
+              to={`/profile/${postOwner.username}`}
+              className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-base-300 hover:ring-primary transition-all duration-300"
+              onClick={handleProfileClick}
+            >
+              <img 
+                src={postOwner.profileImage || defaultProfilePicture}
+                alt={postOwner.fullname || "Kullanıcı"}
+                className="w-full h-full object-cover"
+              />
+            </Link>
+          ) : (
+            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-base-300">
+              <img 
+                src={defaultProfilePicture}
+                alt="Silinmiş Kullanıcı"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
         </div>
         <div className="flex flex-col flex-1 min-w-0">
           <div className="flex gap-2 items-center mb-1">
-            <Link
-              to={`/profile/${postOwner.username}`}
-              className="font-semibold text-sm md:text-base truncate hover:text-primary transition-colors"
-              onClick={handleProfileClick}
-            >
-              {postOwner.fullname}
-            </Link>
-            <span className="text-base-content/60 flex gap-1 text-xs md:text-sm">
-              <Link 
-                to={`/profile/${postOwner.username}`}
-                className="hover:text-primary transition-colors"
-                onClick={handleProfileClick}
-              >
-                @{postOwner.username}
-              </Link>
-              <span>·</span>
-              <span className="text-base-content/50">{formattedDate}</span>
-            </span>
+            {postOwner ? (
+              <>
+                <Link
+                  to={`/profile/${postOwner.username}`}
+                  className="font-semibold text-sm md:text-base truncate hover:text-primary transition-colors"
+                  onClick={handleProfileClick}
+                >
+                  {postOwner.fullname || "Kullanıcı"}
+                </Link>
+                <span className="text-base-content/60 flex gap-1 text-xs md:text-sm">
+                  <Link 
+                    to={`/profile/${postOwner.username}`}
+                    className="hover:text-primary transition-colors"
+                    onClick={handleProfileClick}
+                  >
+                    @{postOwner.username}
+                  </Link>
+                  <span>·</span>
+                  <span className="text-base-content/50">{formattedDate}</span>
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-sm md:text-base truncate">Silinmiş Kullanıcı</span>
+                <span className="text-base-content/60 flex gap-1 text-xs md:text-sm">
+                  <span>·</span>
+                  <span className="text-base-content/50">{formattedDate}</span>
+                </span>
+              </>
+            )}
             <div
               className="flex flex-1 justify-end w-12"
               onClick={handleOptions}

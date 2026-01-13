@@ -81,7 +81,7 @@ const PostDetailPage = () => {
   const postOwner = post?.user;
   const isLiked = post.likes.includes(authUser?._id);
   const isSaved = post.saves.includes(authUser?._id);
-  const isMyPost = authUser?._id === post.user._id;
+  const isMyPost = authUser?._id === post.user?._id;
   const formattedDate = formatPostDate(post.createdAt);
   const theme = localStorage.getItem("theme");
 
@@ -134,40 +134,64 @@ const PostDetailPage = () => {
       {/* Post Content */}
       <div className="border-b border-base-300/50">
         <div className="flex gap-4 items-start p-5">
-          <Link
-            to={`/profile/${postOwner.username}`}
-            className="avatar flex-shrink-0"
-            onClick={handleProfileClick}
-          >
-            <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-base-300 hover:ring-primary transition-all duration-300">
-              <img
-                src={postOwner.profileImage || defaultProfilePicture}
-                alt={postOwner.fullname}
-                className="w-full h-full object-cover"
-              />
+          {postOwner ? (
+            <Link
+              to={`/profile/${postOwner.username}`}
+              className="avatar flex-shrink-0"
+              onClick={handleProfileClick}
+            >
+              <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-base-300 hover:ring-primary transition-all duration-300">
+                <img
+                  src={postOwner.profileImage || defaultProfilePicture}
+                  alt={postOwner.fullname || "Kullanıcı"}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </Link>
+          ) : (
+            <div className="avatar flex-shrink-0">
+              <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-base-300">
+                <img
+                  src={defaultProfilePicture}
+                  alt="Silinmiş Kullanıcı"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
-          </Link>
+          )}
           <div className="flex flex-col flex-1 min-w-0">
             <div className="flex items-start gap-2 mb-1 flex-wrap">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Link
-                  to={`/profile/${postOwner.username}`}
-                  className="font-bold hover:underline truncate"
-                  onClick={handleProfileClick}
-                >
-                  {postOwner.fullname}
-                </Link>
-                <span className="text-base-content/60 text-sm whitespace-nowrap flex-shrink-0">
-                  <Link
-                    to={`/profile/${postOwner.username}`}
-                    className="hover:underline"
-                    onClick={handleProfileClick}
-                  >
-                    @{postOwner.username}
-                  </Link>
-                  <span className="mx-1">·</span>
-                  <span>{formattedDate}</span>
-                </span>
+                {postOwner ? (
+                  <>
+                    <Link
+                      to={`/profile/${postOwner.username}`}
+                      className="font-bold hover:underline truncate"
+                      onClick={handleProfileClick}
+                    >
+                      {postOwner.fullname || "Kullanıcı"}
+                    </Link>
+                    <span className="text-base-content/60 text-sm whitespace-nowrap flex-shrink-0">
+                      <Link
+                        to={`/profile/${postOwner.username}`}
+                        className="hover:underline"
+                        onClick={handleProfileClick}
+                      >
+                        @{postOwner.username}
+                      </Link>
+                      <span className="mx-1">·</span>
+                      <span>{formattedDate}</span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-bold truncate">Silinmiş Kullanıcı</span>
+                    <span className="text-base-content/60 text-sm whitespace-nowrap flex-shrink-0">
+                      <span className="mx-1">·</span>
+                      <span>{formattedDate}</span>
+                    </span>
+                  </>
+                )}
               </div>
               <div
                 className="flex flex-shrink-0"
@@ -275,41 +299,46 @@ const PostDetailPage = () => {
           </div>
         ) : (
           <div className="divide-y divide-base-300/50">
-            {post.comments?.map((commentItem) => (
-              <div
-                key={commentItem._id}
-                className="flex gap-3 p-4 hover:bg-base-200/30 transition-all duration-200 rounded-xl my-2 fade-in"
-              >
-                <Link
-                  to={`/profile/${commentItem.user.username}`}
-                  className="avatar flex-shrink-0"
+            {post.comments?.map((commentItem) => {
+              // Skip comments with null user
+              if (!commentItem.user) return null;
+              
+              return (
+                <div
+                  key={commentItem._id}
+                  className="flex gap-3 p-4 hover:bg-base-200/30 transition-all duration-200 rounded-xl my-2 fade-in"
                 >
-                  <div className="w-10 h-10 rounded-full ring-2 ring-base-300 hover:ring-primary transition-all duration-300">
-                    <img
-                      src={commentItem.user.profileImage || defaultProfilePicture}
-                      alt={commentItem.user.fullname}
-                      className="w-full h-full rounded-full object-cover"
-                    />
+                  <Link
+                    to={`/profile/${commentItem.user.username}`}
+                    className="avatar flex-shrink-0"
+                  >
+                    <div className="w-10 h-10 rounded-full ring-2 ring-base-300 hover:ring-primary transition-all duration-300">
+                      <img
+                        src={commentItem.user.profileImage || defaultProfilePicture}
+                        alt={commentItem.user.fullname || "Kullanıcı"}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    </div>
+                  </Link>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Link
+                        to={`/profile/${commentItem.user.username}`}
+                        className="font-semibold text-sm hover:text-primary transition-colors"
+                      >
+                        {commentItem.user.fullname || "Kullanıcı"}
+                      </Link>
+                      <span className="text-base-content/50 text-xs">
+                        @{commentItem.user.username}
+                      </span>
+                    </div>
+                    <p className="text-base-content text-sm leading-relaxed whitespace-pre-wrap break-words">
+                      {commentItem.text}
+                    </p>
                   </div>
-                </Link>
-                <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Link
-                      to={`/profile/${commentItem.user.username}`}
-                      className="font-semibold text-sm hover:text-primary transition-colors"
-                    >
-                      {commentItem.user.fullname}
-                    </Link>
-                    <span className="text-base-content/50 text-xs">
-                      @{commentItem.user.username}
-                    </span>
-                  </div>
-                  <p className="text-base-content text-sm leading-relaxed whitespace-pre-wrap break-words">
-                    {commentItem.text}
-                  </p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

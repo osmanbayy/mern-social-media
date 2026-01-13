@@ -63,23 +63,55 @@ export const follow_unfollow_user = async (req, res) => {
 export const get_suggested_users = async (req, res) => {
   try {
     const userId = req.user._id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+
     const usersFollowedByMe = await User.findById(userId).select("following");
+    const followingIds = usersFollowedByMe.following.map(id => id.toString());
+    
+    // Get random sample of users (larger sample to account for filtering)
+    const sampleSize = Math.min(50, await User.countDocuments({
+      _id: { $ne: userId },
+    }));
+
+    if (sampleSize === 0) {
+      return res.status(200).json({
+        users: [],
+        hasMore: false,
+        page,
+        limit,
+      });
+    }
+
+    // Get random users
     const users = await User.aggregate([
       {
         $match: {
           _id: { $ne: userId },
         },
       },
-      { $sample: { size: 10 } },
+      { $sample: { size: sampleSize } },
     ]);
 
+    // Filter out users already being followed
     const filteredUsers = users.filter(
-      (user) => !usersFollowedByMe.following.includes(user._id)
+      (user) => !followingIds.includes(user._id.toString())
     );
-    const suggestedUsers = filteredUsers.slice(0, 10);
+
+    // Apply pagination
+    const skip = (page - 1) * limit;
+    const suggestedUsers = filteredUsers.slice(skip, skip + limit);
 
     suggestedUsers.forEach((user) => (user.password = null));
-    res.status(200).json(suggestedUsers);
+    
+    const hasMore = skip + suggestedUsers.length < filteredUsers.length;
+    
+    res.status(200).json({
+      users: suggestedUsers,
+      hasMore,
+      page,
+      limit,
+    });
   } catch (error) {
     console.log("Error in get suggested users controller", error.message);
     res.status(500).json({ message: error.message });

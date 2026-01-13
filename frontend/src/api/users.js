@@ -101,9 +101,15 @@ export const getFollowing = async (username) => {
 };
 
 // Get suggested users
-export const getSuggestedUsers = async () => {
-  const response = await fetch(`${API_BASE}/suggested`, {
+export const getSuggestedUsers = async (page = 1, limit = 5) => {
+  const response = await fetch(`${API_BASE}/suggested?page=${page}&limit=${limit}`, {
     credentials: "include",
   });
-  return handleResponse(response);
+  const data = await handleResponse(response);
+  // For backward compatibility, if response is array, return it
+  // Otherwise return the paginated response
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return data;
 };
