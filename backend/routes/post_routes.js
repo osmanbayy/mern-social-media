@@ -15,7 +15,8 @@ import {
   get_saved_posts,
   hide_post,
   unhide_post,
-  get_hidden_posts
+  get_hidden_posts,
+  pin_unpin_post
 } from "../controllers/post_controller.js";
 
 const router = express.Router();
@@ -34,6 +35,7 @@ router.post("/save/:id", protect_route, save_unsave_post);
 router.post("/hide/:id", protect_route, hide_post);
 router.post("/like/:id", protect_route, like_unlike_post);
 router.post("/comment/:id", protect_route, comment_on_post);
+router.post("/pin/:id", protect_route, pin_unpin_post);
 router.delete("/hide/:id", protect_route, unhide_post);
 
 // Parameterized routes last (/:id)

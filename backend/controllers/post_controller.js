@@ -301,7 +301,7 @@ export const get_following_posts = async (req, res) => {
 
     const feedPosts = await Post.find({ 
       user: { $in: following },
-      _id: { $nin: hiddenPostIds } // Gizlenen gönderileri hariç tut
+      _id: { $nin: hiddenPostIds }
     })
       .sort({
         createdAt: -1,
@@ -371,7 +371,7 @@ export const get_user_posts = async (req, res) => {
     }
 
     const posts = await Post.find({ user: user._id })
-      .sort({ createdAt: -1 })
+      .sort({ isPinned: -1, createdAt: -1 }) // Pinned posts first, then by date
       .populate({
         path: "user",
         select: "-password",
@@ -522,6 +522,44 @@ export const get_hidden_posts = async (req, res) => {
     res.status(200).json(hiddenPosts);
   } catch (error) {
     console.log("Error in get hidden posts controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+export const pin_unpin_post = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const post = await Post.findById(id);
+
+    if (!post) {
+      return res.status(404).json({ message: "Gönderi bulunamadı." });
+    }
+
+    // Check if user owns the post
+    if (post.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Bu gönderiyi sabitleme yetkiniz yok." });
+    }
+
+    // If unpinning, just set isPinned to false
+    if (post.isPinned) {
+      post.isPinned = false;
+      await post.save();
+      return res.status(200).json({ message: "Gönderi sabitlemeden kaldırıldı.", post });
+    }
+
+    // If pinning, first unpin all other pinned posts by this user
+    await Post.updateMany(
+      { user: req.user._id, isPinned: true },
+      { isPinned: false }
+    );
+
+    // Then pin this post
+    post.isPinned = true;
+    await post.save();
+
+    res.status(200).json({ message: "Gönderi başa sabitlendi.", post });
+  } catch (error) {
+    console.log("Error in pin/unpin post controller", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };

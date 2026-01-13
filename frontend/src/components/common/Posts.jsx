@@ -67,20 +67,38 @@ const Posts = ({ feedType, username, userId }) => {
       const posts = Array.isArray(postsData) ? postsData : postsData?.posts || [];
       const hasMoreData = Array.isArray(postsData) ? false : (postsData?.hasMore || false);
       
+      // Sort posts: pinned first, then by date (only for profile posts)
+      const sortedPosts = feedType === "posts" 
+        ? [...posts].sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          })
+        : posts;
+      
       if (page === 1) {
-        setAllPosts(posts);
+        setAllPosts(sortedPosts);
       } else {
         // For subsequent pages, append smoothly without scroll jump
         setAllPosts((prev) => {
           const existingIds = new Set(prev.map(p => p._id));
-          const newPosts = posts.filter(p => !existingIds.has(p._id));
-          return [...prev, ...newPosts];
+          const newPosts = sortedPosts.filter(p => !existingIds.has(p._id));
+          // Sort again to maintain pinned posts at top
+          const combined = [...prev, ...newPosts];
+          if (feedType === "posts") {
+            return combined.sort((a, b) => {
+              if (a.isPinned && !b.isPinned) return -1;
+              if (!a.isPinned && b.isPinned) return 1;
+              return new Date(b.createdAt) - new Date(a.createdAt);
+            });
+          }
+          return combined;
         });
       }
       
       setHasMore(hasMoreData);
     }
-  }, [postsData, page, isLoading]);
+  }, [postsData, page, isLoading, feedType]);
 
   // Subscribe to cache updates to sync allPosts state
   useEffect(() => {

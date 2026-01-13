@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { LuPin } from "react-icons/lu";
 import LoadingSpinner from "../common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { formatPostDate } from "../../utils/date";
@@ -20,16 +21,18 @@ const Post = ({ post, isHidden = false }) => {
   // Get updated post from cache
   const updatedPost = usePostCache(post);
 
-  // Post actions (like, save, delete, hide, unhide)
+  // Post actions (like, save, delete, hide, unhide, pin)
   const {
     likePost,
     savePost,
     deletePost,
     hidePost,
     unhidePost,
+    pinPost,
     isDeleting,
     isHiding,
     isUnhiding,
+    isPinning,
   } = usePostActions(updatedPost._id, updatedPost);
 
 
@@ -102,7 +105,7 @@ const Post = ({ post, isHidden = false }) => {
           {postOwner ? (
             <Link
               to={`/profile/${postOwner.username}`}
-              className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-base-300 hover:ring-primary transition-all duration-300"
+              className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-base-300"
               onClick={handleProfileClick}
             >
               <img 
@@ -122,6 +125,13 @@ const Post = ({ post, isHidden = false }) => {
           )}
         </div>
         <div className="flex flex-col flex-1 min-w-0">
+          {/* Pinned Badge */}
+          {updatedPost?.isPinned && (
+            <div className="flex items-center gap-1 mb-1 text-xs text-base-content/60">
+              <LuPin className="w-3 h-3" />
+              <span>Başa sabitlendi</span>
+            </div>
+          )}
           <div className="flex gap-2 items-center mb-1">
             {postOwner ? (
               <>
@@ -165,10 +175,12 @@ const Post = ({ post, isHidden = false }) => {
                 isDeleting={isDeleting}
                 isHiding={isHiding}
                 isUnhiding={isUnhiding}
+                isPinning={isPinning}
                 onDelete={handleDeletePost}
                 onEdit={handleEditPost}
                 onHide={hidePost}
                 onUnhide={unhidePost}
+                onPin={pinPost}
                 theme={theme}
               />
             </div>

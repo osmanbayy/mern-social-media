@@ -6,6 +6,7 @@ import {
   savePost as savePostAPI,
   hidePost as hidePostAPI,
   unhidePost as unhidePostAPI,
+  pinPost as pinPostAPI,
 } from "../api/posts";
 
 /**
@@ -174,15 +175,33 @@ const usePostActions = (postId, updatedPost) => {
     },
   });
 
+  // Pin/Unpin post mutation
+  const { mutate: pinPost, isPending: isPinning } = useMutation({
+    mutationFn: () => pinPostAPI(postId),
+    onSuccess: (data) => {
+      const message = data.post?.isPinned 
+        ? "Gönderi başa sabitlendi." 
+        : "Gönderi sabitlemeden kaldırıldı.";
+      toast.success(message);
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   return {
     likePost,
     savePost,
     deletePost,
     hidePost,
     unhidePost,
+    pinPost,
     isDeleting,
     isHiding,
     isUnhiding,
+    isPinning,
   };
 };
 

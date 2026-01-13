@@ -5,6 +5,7 @@ import {
   likePost as likePostAPI,
   savePost as savePostAPI,
   commentPost as commentPostAPI,
+  pinPost as pinPostAPI,
 } from "../api/posts";
 
 /**
@@ -133,13 +134,32 @@ const usePostDetailActions = (postId) => {
     },
   });
 
+  // Pin/Unpin post mutation
+  const { mutate: pinPost, isPending: isPinning } = useMutation({
+    mutationFn: () => pinPostAPI(postId),
+    onSuccess: (data) => {
+      const message = data.post?.isPinned 
+        ? "Gönderi başa sabitlendi." 
+        : "Gönderi sabitlemeden kaldırıldı.";
+      toast.success(message);
+      queryClient.invalidateQueries({ queryKey: ["post", postId] });
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   return {
     likePost,
     savePost,
     deletePost,
     commentPost,
+    pinPost,
     isDeleting,
     isCommenting,
+    isPinning,
   };
 };
 

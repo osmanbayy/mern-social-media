@@ -20,10 +20,12 @@ const PostOptions = ({
   isHidden, 
   isDeleting, 
   isHiding, 
-  isUnhiding, 
+  isUnhiding,
+  isPinning,
   onEdit, 
   onHide, 
   onUnhide,
+  onPin,
   theme 
 }) => {
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
@@ -147,10 +149,25 @@ const PostOptions = ({
           )}
           
           {isMyPost && (
-            <li className="">
-              <a href="">
-                <LuPin /> <span>Profilde Başa Sabitle</span>
-              </a>
+            <li 
+              className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onPin) {
+                  onPin();
+                }
+              }}
+            >
+              {isPinning ? (
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                  <LoadingSpinner size="xs" /> <span className="text-xs">Yükleniyor...</span>
+                </div>
+              ) : (
+                <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+                  <LuPin /> <span>{post?.isPinned ? "Sabitlemeyi Kaldır" : "Profilde Başa Sabitle"}</span>
+                </a>
+              )}
             </li>
           )}
           

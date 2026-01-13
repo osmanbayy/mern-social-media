@@ -118,6 +118,15 @@ export const getHiddenPosts = async (userId) => {
   return handleResponse(response);
 };
 
+// Pin/Unpin post
+export const pinPost = async (postId) => {
+  const response = await fetch(`${API_BASE}/pin/${postId}`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
+
 // Create post
 export const createPost = async (postData) => {
   const response = await fetch(`${API_BASE}/create`, {

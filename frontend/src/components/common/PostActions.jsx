@@ -25,11 +25,11 @@ const PostActions = ({
               className="flex gap-1.5 items-center cursor-pointer group"
               onClick={onComment}
             >
-              <div className="p-1.5 rounded-full group-hover:bg-blue-500/10 transition-all duration-200">
-                <FaRegComment className="w-5 h-5 text-base-content/60 group-hover:text-blue-500 transition-all duration-200 group-hover:scale-110" />
+              <div className="p-1.5 rounded-full transition-all duration-200">
+                <FaRegComment className="w-5 h-5 text-base-content/60 transition-all duration-200" />
               </div>
               {showCounts && (
-                <span className="text-sm text-base-content/60 group-hover:text-blue-500 transition-colors font-medium">
+                <span className="text-sm text-base-content/60 transition-colors font-medium">
                   {post.comments.length}
                 </span>
               )}
@@ -41,11 +41,11 @@ const PostActions = ({
               className="flex gap-1.5 items-center group cursor-pointer"
               onClick={onRepost}
             >
-              <div className="p-1.5 rounded-full group-hover:bg-green-500/10 transition-all duration-200">
-                <BiRepost className="w-6 h-6 text-base-content/60 group-hover:text-green-500 transition-all duration-200 group-hover:scale-110" />
+              <div className="p-1.5 rounded-full transition-all duration-200">
+                <BiRepost className="w-6 h-6 text-base-content/60 transition-all duration-200" />
               </div>
               {showCounts && (
-                <span className="text-sm text-base-content/60 group-hover:text-green-500 transition-colors font-medium">
+                <span className="text-sm text-base-content/60 transition-colors font-medium">
                   0
                 </span>
               )}
@@ -56,19 +56,19 @@ const PostActions = ({
             className="flex gap-1.5 items-center group cursor-pointer"
             onClick={onLike}
           >
-            <div className="p-1.5 rounded-full group-hover:bg-pink-500/10 transition-all duration-200">
+            <div className="p-1.5 rounded-full transition-all duration-200">
               <FaHeart
                 className={`w-5 h-5 transition-all duration-200 ${
                   isLiked
                     ? "fill-red-500 text-red-500 scale-110"
-                    : "text-base-content/60 group-hover:text-pink-500 group-hover:scale-110"
+                    : "text-base-content/60"
                 }`}
               />
             </div>
             {showCounts && (
               <span
                 className={`text-sm transition-colors font-medium ${
-                  isLiked ? "text-red-500" : "text-base-content/60 group-hover:text-pink-500"
+                  isLiked ? "text-red-500" : "text-base-content/60"
                 }`}
               >
                 {post.likes.length}
@@ -80,12 +80,12 @@ const PostActions = ({
           className="flex items-center cursor-pointer group"
           onClick={onSave}
         >
-          <div className="p-1.5 rounded-full group-hover:bg-blue-500/10 transition-all duration-200">
+          <div className="p-1.5 rounded-full transition-all duration-200">
             <IoMdBookmark
               className={`w-5 h-5 transition-all duration-200 ${
                 isSaved
                   ? "fill-blue-500 text-blue-500 scale-110"
-                  : "text-base-content/60 group-hover:text-blue-500 group-hover:scale-110"
+                  : "text-base-content/60"
               }`}
             />
           </div>
@@ -103,11 +103,11 @@ const PostActions = ({
             className="flex items-center gap-2 group cursor-pointer"
             onClick={onComment}
           >
-            <div className="p-2.5 rounded-full group-hover:bg-blue-500/10 transition-all duration-200 group-active:scale-95">
-              <FaRegComment className="w-5 h-5 text-base-content/60 group-hover:text-blue-500 transition-all duration-200 group-hover:scale-110" />
+            <div className="p-2.5 rounded-full transition-all duration-200 group-active:scale-95">
+              <FaRegComment className="w-5 h-5 text-base-content/60 transition-all duration-200" />
             </div>
             {showCounts && (
-              <span className="text-sm text-base-content/60 group-hover:text-blue-500 transition-colors font-medium">
+              <span className="text-sm text-base-content/60 transition-colors font-medium">
                 {post.comments.length}
               </span>
             )}
@@ -120,11 +120,11 @@ const PostActions = ({
             className="flex items-center gap-2 group cursor-pointer"
             onClick={onRepost}
           >
-            <div className="p-2.5 rounded-full group-hover:bg-green-500/10 transition-all duration-200 group-active:scale-95">
-              <BiRepost className="w-5 h-5 text-base-content/60 group-hover:text-green-500 transition-all duration-200 group-hover:scale-110" />
+            <div className="p-2.5 rounded-full transition-all duration-200 group-active:scale-95">
+              <BiRepost className="w-5 h-5 text-base-content/60 transition-all duration-200" />
             </div>
             {showCounts && (
-              <span className="text-sm text-base-content/60 group-hover:text-green-500 transition-colors font-medium">
+              <span className="text-sm text-base-content/60 transition-colors font-medium">
                 0
               </span>
             )}
@@ -136,12 +136,12 @@ const PostActions = ({
           className="flex items-center gap-2 group cursor-pointer"
           onClick={onLike}
         >
-          <div className="p-2.5 rounded-full group-hover:bg-pink-500/10 transition-all duration-200 group-active:scale-95">
+          <div className="p-2.5 rounded-full transition-all duration-200 group-active:scale-95">
             <FaHeart
               className={`w-5 h-5 transition-all duration-200 ${
                 isLiked
                   ? "fill-red-500 text-red-500 scale-110"
-                  : "text-base-content/60 group-hover:text-pink-500 group-hover:scale-110"
+                  : "text-base-content/60"
               }`}
             />
           </div>
@@ -150,7 +150,7 @@ const PostActions = ({
               className={`text-sm transition-colors font-medium ${
                 isLiked
                   ? "text-red-500"
-                  : "text-base-content/60 group-hover:text-pink-500"
+                  : "text-base-content/60"
               }`}
             >
               {post.likes.length}
@@ -163,12 +163,12 @@ const PostActions = ({
           className="flex items-center gap-2 group cursor-pointer"
           onClick={onSave}
         >
-          <div className="p-2.5 rounded-full group-hover:bg-blue-500/10 transition-all duration-200 group-active:scale-95">
+          <div className="p-2.5 rounded-full transition-all duration-200 group-active:scale-95">
             <IoMdBookmark
               className={`w-5 h-5 transition-all duration-200 ${
                 isSaved
                   ? "fill-blue-500 text-blue-500 scale-110"
-                  : "text-base-content/60 group-hover:text-blue-500 group-hover:scale-110"
+                  : "text-base-content/60"
               }`}
             />
           </div>

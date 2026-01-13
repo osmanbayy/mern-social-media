@@ -2,6 +2,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { LuPin } from "react-icons/lu";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { formatPostDate } from "../../utils/date";
@@ -34,14 +35,16 @@ const PostDetailPage = () => {
     refetchOnWindowFocus: false,
   });
 
-  // Post actions (like, save, delete, comment)
+  // Post actions (like, save, delete, comment, pin)
   const {
     likePost,
     savePost,
     deletePost,
     commentPost,
+    pinPost,
     isDeleting,
     isCommenting,
+    isPinning,
   } = usePostDetailActions(postId);
 
   // Handle delete with navigation
@@ -160,6 +163,13 @@ const PostDetailPage = () => {
             </div>
           )}
           <div className="flex flex-col flex-1 min-w-0">
+            {/* Pinned Badge */}
+            {post?.isPinned && (
+              <div className="flex items-center gap-1 mb-1 text-xs text-base-content/60">
+                <LuPin className="w-3 h-3" />
+                <span>Başa sabitlendi</span>
+              </div>
+            )}
             <div className="flex items-start gap-2 mb-1 flex-wrap">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {postOwner ? (
@@ -205,9 +215,11 @@ const PostDetailPage = () => {
                   isDeleting={isDeleting}
                   isHiding={false}
                   isUnhiding={false}
+                  isPinning={isPinning}
                   onEdit={handleEditPost}
                   onHide={() => {}}
                   onUnhide={() => {}}
+                  onPin={pinPost}
                   theme={theme}
                 />
               </div>
