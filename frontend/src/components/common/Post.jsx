@@ -16,6 +16,7 @@ import MentionText from "./MentionText";
 
 const Post = ({ post, isHidden = false }) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const navigate = useNavigate();
   const { data: authUser, isLoading } = useQuery({ queryKey: ["authUser"] });
 
@@ -85,7 +86,18 @@ const Post = ({ post, isHidden = false }) => {
 
   const handleImageClick = (e) => {
     e.stopPropagation();
-    document.getElementById("image_modal" + updatedPost._id).showModal();
+    e.preventDefault();
+    setShowImageModal(true);
+  };
+
+  const handleImageTouch = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowImageModal(true);
+  };
+
+  const closeImageModal = () => {
+    setShowImageModal(false);
   };
 
   const handlePostClick = (e) => {
@@ -99,8 +111,7 @@ const Post = ({ post, isHidden = false }) => {
     <>
       {/* Post Body */}
       <div
-        className="flex gap-3 items-start p-5 border-b border-base-300/50 hover:bg-base-200/30 transition-all duration-300 cursor-pointer group fade-in"
-        onClick={handlePostClick}
+        className="flex gap-3 items-start p-5 border-b border-base-300/50 hover:bg-base-200/30 transition-all duration-300 group fade-in"
       >
         <div className="avatar flex-shrink-0">
           {postOwner ? (
@@ -188,16 +199,24 @@ const Post = ({ post, isHidden = false }) => {
           </div>
           {/* Post Content */}
           <div className="flex flex-col gap-3 overflow-hidden mt-2">
-            <p className="text-sm md:text-base leading-relaxed">
+            <p 
+              className="text-sm md:text-base leading-relaxed cursor-pointer"
+              onClick={handlePostClick}
+            >
               <MentionText text={updatedPost.text} />
             </p>
             {updatedPost.img && (
-              <div className="rounded-2xl overflow-hidden border border-base-300/50 hover:border-base-300 transition-all duration-300 group/image">
+              <div 
+                className="post-image-container rounded-2xl overflow-hidden border border-base-300/50 hover:border-base-300 transition-all duration-300 group/image"
+                onClick={handleImageClick}
+                onTouchEnd={handleImageTouch}
+                style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+              >
                 <img
                   src={updatedPost.img}
                   className="w-full max-h-[300px] object-cover cursor-pointer hover:scale-[1.02] transition-transform duration-500"
                   alt=""
-                  onClick={handleImageClick}
+                  draggable="false"
                 />
               </div>
             )}
@@ -220,6 +239,32 @@ const Post = ({ post, isHidden = false }) => {
       </div>
 
       {/* Image Modal */}
+      {showImageModal && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={closeImageModal}
+          style={{ touchAction: 'manipulation' }}
+        >
+          <div 
+            className="relative max-w-screen-sm w-full p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeImageModal}
+              className="absolute top-2 right-2 z-10 btn btn-sm btn-circle btn-ghost bg-black/50 text-white hover:bg-black/70"
+            >
+              ✕
+            </button>
+            <img 
+              src={updatedPost.img} 
+              className="w-full h-auto object-contain rounded-lg" 
+              alt="Gönderi Resmi"
+              style={{ maxHeight: '90vh' }}
+              draggable="false"
+            />
+          </div>
+        </div>
+      )}
       <PostImageModal post={updatedPost} />
 
       {/* Delete Post Modal */}

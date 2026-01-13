@@ -23,6 +23,7 @@ const PostDetailPage = () => {
   const navigate = useNavigate();
   const [comment, setComment] = useState("");
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const commentTextareaRef = useRef(null);
 
   // Mention functionality for comments
@@ -132,7 +133,18 @@ const PostDetailPage = () => {
 
   const handleImageClick = (e) => {
     e.stopPropagation();
-    document.getElementById("image_modal" + post._id).showModal();
+    e.preventDefault();
+    setShowImageModal(true);
+  };
+
+  const handleImageTouch = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowImageModal(true);
+  };
+
+  const closeImageModal = () => {
+    setShowImageModal(false);
   };
 
   return (
@@ -242,12 +254,20 @@ const PostDetailPage = () => {
               <MentionText text={post.text} />
             </p>
             {post.img && (
-              <div className="rounded-2xl overflow-hidden border border-base-300/50 mb-4 hover:border-base-300 transition-all duration-300 group/image">
+              <div 
+                className="rounded-2xl overflow-hidden border border-base-300/50 mb-4 hover:border-base-300 transition-all duration-300 group/image"
+                onClick={handleImageClick}
+                onTouchStart={handleImageTouch}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                style={{ touchAction: 'manipulation' }}
+              >
                 <img
                   src={post.img}
-                  className="w-full max-h-[600px] object-contain cursor-pointer hover:scale-[1.01] transition-transform duration-500"
+                  className="w-full max-h-[600px] object-contain cursor-pointer hover:scale-[1.01] transition-transform duration-500 pointer-events-none"
                   alt="Gönderi Resmi"
-                  onClick={handleImageClick}
                 />
               </div>
             )}
@@ -377,7 +397,33 @@ const PostDetailPage = () => {
         )}
       </div>
 
-      {/* Modals */}
+      {/* Image Modal */}
+      {showImageModal && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={closeImageModal}
+          style={{ touchAction: 'manipulation' }}
+        >
+          <div 
+            className="relative max-w-screen-sm w-full p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeImageModal}
+              className="absolute top-2 right-2 z-10 btn btn-sm btn-circle btn-ghost bg-black/50 text-white hover:bg-black/70"
+            >
+              ✕
+            </button>
+            <img 
+              src={post.img} 
+              className="w-full h-auto object-contain rounded-lg" 
+              alt="Gönderi Resmi"
+              style={{ maxHeight: '90vh' }}
+              draggable="false"
+            />
+          </div>
+        </div>
+      )}
       <PostImageModal post={post} />
       <DeletePostDialog
         modalId={`delete_modal_${post._id}`}

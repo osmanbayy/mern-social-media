@@ -49,7 +49,7 @@ const RightPanel = () => {
   if (suggestedUsers?.length === 0) return <div className="md:w-64 w-0"></div>;
 
   return (
-    <div className="hidden lg:flex flex-shrink-0 w-72">
+    <div className="hidden lg:flex flex-shrink-0 w-80">
       <div className="sticky top-0 h-screen flex flex-col p-5 pt-4 overflow-y-auto">
         <div className="p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 shadow w-full">
         <p className="font-bold text-lg mb-5 text-base-content">Kimi takip etmeli?</p>
@@ -81,7 +81,7 @@ const RightPanel = () => {
                     </div>
                   </div>
                   <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
-                    <span className="text-sm font-semibold tracking-tight truncate group-hover:text-primary transition-colors block">
+                    <span className="text-sm tracking-tight truncate group-hover:text-primary transition-colors block">
                       {user.fullname}
                     </span>
                     <span className="text-xs text-base-content/60 truncate block">
