@@ -90,12 +90,6 @@ const Post = ({ post, isHidden = false }) => {
     setShowImageModal(true);
   };
 
-  const handleImageTouch = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setShowImageModal(true);
-  };
-
   const closeImageModal = () => {
     setShowImageModal(false);
   };
@@ -209,8 +203,6 @@ const Post = ({ post, isHidden = false }) => {
               <div 
                 className="post-image-container rounded-2xl overflow-hidden border border-base-300/50 hover:border-base-300 transition-all duration-300 group/image"
                 onClick={handleImageClick}
-                onTouchEnd={handleImageTouch}
-                style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
               >
                 <img
                   src={updatedPost.img}
@@ -243,7 +235,6 @@ const Post = ({ post, isHidden = false }) => {
         <div 
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
           onClick={closeImageModal}
-          style={{ touchAction: 'manipulation' }}
         >
           <div 
             className="relative max-w-screen-sm w-full p-4"

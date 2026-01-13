@@ -93,10 +93,10 @@ const PostDetailPage = () => {
   // Reply to comment mutation
   const replyToCommentMutation = useMutation({
     mutationFn: ({ postId, commentId, replyText }) => replyToComment(postId, commentId, replyText),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.setQueryData(["post", postId], data);
       setReplyingTo(null);
-      setReplyTexts(prev => ({ ...prev, [commentId]: "" }));
+      setReplyTexts(prev => ({ ...prev, [variables.commentId]: "" }));
       toast.success("Yanıt gönderildi.");
     },
     onError: (error) => {
@@ -252,12 +252,6 @@ const PostDetailPage = () => {
     setShowImageModal(true);
   };
 
-  const handleImageTouch = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setShowImageModal(true);
-  };
-
   const closeImageModal = () => {
     setShowImageModal(false);
   };
@@ -372,12 +366,6 @@ const PostDetailPage = () => {
               <div 
                 className="rounded-2xl overflow-hidden border border-base-300/50 mb-4 hover:border-base-300 transition-all duration-300 group/image"
                 onClick={handleImageClick}
-                onTouchStart={handleImageTouch}
-                onTouchEnd={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-                style={{ touchAction: 'manipulation' }}
               >
                 <img
                   src={post.img}

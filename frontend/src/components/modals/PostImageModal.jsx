@@ -52,7 +52,6 @@ const PostImageModal = ({ post }) => {
     <div 
       className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
       onClick={handleClose}
-      style={{ touchAction: 'manipulation' }}
     >
       <div 
         className="relative max-w-screen-sm w-full p-4"
