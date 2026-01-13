@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import HomePage from "./pages/home/HomePage";
 import SignupPage from "./pages/auth/signup/SignupPage";
 import LoginPage from "./pages/auth/login/LoginPage";
@@ -21,9 +22,15 @@ import HiddenPosts from "./pages/HiddenPosts";
 import PostDetailPage from "./pages/post/PostDetailPage";
 import EditProfilePage from "./pages/profile/EditProfilePage";
 import SuggestionsPage from "./pages/SuggestionsPage";
+import OSSvg from "./components/svgs/OS";
 
 function App() {
   const isLoggingOut = localStorage.getItem("_logout_in_progress") === "true";
+  const [showSplash, setShowSplash] = useState(() => {
+    // Check if this is the first load
+    const hasVisited = sessionStorage.getItem("_has_visited");
+    return !hasVisited;
+  });
 
   const { data: authUser, isLoading, isError } = useQuery({
     queryKey: ["authUser"],
@@ -37,6 +44,36 @@ function App() {
   const location = useLocation();
   const isSettingPage = location.pathname === "/settings";
 
+  // Handle splash screen
+  useEffect(() => {
+    if (showSplash && !isLoading) {
+      // Mark as visited
+      sessionStorage.setItem("_has_visited", "true");
+      
+      // Show splash for minimum 1.5 seconds, then navigate
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+        // Navigation will be handled by Routes below
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash, isLoading]);
+
+  const isLoggedIn = !isError && authUser !== null && authUser !== undefined && Object.keys(authUser || {}).length > 0;
+  const isAccountVerified = authUser?.isAccountVerified;
+
+  // Show splash screen on first load
+  if (showSplash) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
+        <div className="animate-pulse">
+          <OSSvg forceDark className="w-40 h-40 md:w-48 md:h-48" />
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="h-screen flex justify-center items-center">
@@ -44,9 +81,6 @@ function App() {
       </div>
     );
   }
-
-  const isLoggedIn = !isError && authUser !== null && authUser !== undefined && Object.keys(authUser || {}).length > 0;
-  const isAccountVerified = authUser?.isAccountVerified;
 
   return (
     <div className="w-full min-h-screen">
