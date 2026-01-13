@@ -49,8 +49,8 @@ const RightPanel = () => {
   if (suggestedUsers?.length === 0) return <div className="md:w-64 w-0"></div>;
 
   return (
-    <div className="hidden lg:block my-4 mx-2">
-      <div className="p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 sticky top-4 shadow-lg">
+    <div className="hidden lg:block flex-shrink-0 w-64 my-4 mx-2">
+      <div className="sticky top-4 p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 shadow-lg w-full">
         <p className="font-bold text-lg mb-5 text-base-content">Kimi takip etmeli?</p>
         <div className="flex flex-col gap-4">
           {/* item */}
@@ -67,10 +67,10 @@ const RightPanel = () => {
             displayedUsers.map((user) => (
               <Link
                 to={`/profile/${user.username}`}
-                className="flex items-center justify-between gap-4 p-3 rounded-xl hover:bg-base-200/50 transition-all duration-300 group"
+                className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-base-200/50 transition-all duration-300 group w-full"
                 key={user._id}
               >
-                <div className="flex gap-3 items-center flex-1 min-w-0">
+                <div className="flex gap-3 items-center flex-1 min-w-0 overflow-hidden">
                   <div className="avatar flex-shrink-0">
                     <div className="w-10 h-10 rounded-full ring-2 ring-base-300 group-hover:ring-primary transition-all duration-300">
                       <img
@@ -79,18 +79,18 @@ const RightPanel = () => {
                       />
                     </div>
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-semibold tracking-tight truncate group-hover:text-primary transition-colors">
+                  <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
+                    <span className="text-sm font-semibold tracking-tight truncate group-hover:text-primary transition-colors block">
                       {user.fullname}
                     </span>
-                    <span className="text-xs text-base-content/60 truncate">
+                    <span className="text-xs text-base-content/60 truncate block">
                       @{user.username}
                     </span>
                   </div>
                 </div>
                 <div className="flex-shrink-0">
                   <button
-                    className="btn btn-primary btn-sm rounded-full text-white hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
+                    className="btn btn-primary btn-sm rounded-full text-white hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
                     onClick={(e) => {
                       e.preventDefault();
                       follow(user._id);

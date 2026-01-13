@@ -21,11 +21,11 @@ const DesktopSidebar = ({ authUser, activeTab, setActiveTab, isNotRead, isSettin
 
   return (
     <div
-      className={`hidden md:flex flex-[2_2_0] ${
+      className={`hidden md:flex flex-[2_2_0] flex-shrink-0 ${
         isSettingPage ? "min-w-18 md:min-w-52" : "max-w-18 md:max-w-52"
       }`}
     >
-      <div className="sticky top-0 left-0 h-screen flex flex-col border-r border-base-300/50 bg-base-100/80 backdrop-blur-sm w-18 md:w-full">
+      <div className="sticky top-0 h-screen flex flex-col border-r border-base-300/50 bg-base-100/80 backdrop-blur-sm w-18 md:w-full">
         <Link to="/" className="flex justify-center md:justify-start mb-12">
           <OSSvg
             onClick={() => queryClient.invalidateQueries({ queryKey: ["posts"] })}

@@ -31,8 +31,15 @@ const handleResponse = async (response) => {
 
 // Get all posts
 export const getAllPosts = async (page = 1, limit = 10) => {
-  const response = await fetch(`${API_BASE}/all?page=${page}&limit=${limit}`, {
+  const timestamp = new Date().getTime();
+  const response = await fetch(`${API_BASE}/all?page=${page}&limit=${limit}&t=${timestamp}`, {
     credentials: "include",
+    cache: "no-store", // Prevent browser cache
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    },
   });
   const data = await handleResponse(response);
   // For backward compatibility, if response is array, return it

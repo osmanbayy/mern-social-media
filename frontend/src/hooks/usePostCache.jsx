@@ -12,11 +12,21 @@ const usePostCache = (post) => {
   // Subscribe to cache updates by checking queries on each render
   const postsQueries = queryClient.getQueriesData({ queryKey: ["posts"] });
 
-  // Get updated post from cache - check all posts queries
+  // Get updated post from cache - check all posts queries (handles both array and paginated formats)
   const updatedPost = useMemo(() => {
     // Check all posts queries to find the updated post
     for (const [, postsData] of postsQueries) {
-      if (postsData && Array.isArray(postsData)) {
+      if (!postsData) continue;
+      
+      // Handle paginated format: { posts: [], hasMore: true }
+      if (typeof postsData === 'object' && 'posts' in postsData && Array.isArray(postsData.posts)) {
+        const cachedPost = postsData.posts.find((p) => p._id === post._id);
+        if (cachedPost) {
+          return cachedPost;
+        }
+      }
+      // Handle array format: []
+      else if (Array.isArray(postsData)) {
         const cachedPost = postsData.find((p) => p._id === post._id);
         if (cachedPost) {
           return cachedPost;

@@ -121,6 +121,34 @@ body {
   border-color: rgba(99, 102, 241, 0.5);
 }
 
+/* Dropdown fade-in animation */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-content {
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+/* Modern dropdown menu item hover effects */
+.dropdown-content.menu li > * {
+  transition: all 0.15s ease-out;
+  border-radius: 0.5rem;
+  margin: 0.125rem 0;
+}
+
+.dropdown-content.menu li:hover > * {
+  background-color: hsl(var(--b2) / 0.5);
+  transform: translateX(2px);
+}
+
 /* Hide scrollbar but keep functionality */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE and Edge */

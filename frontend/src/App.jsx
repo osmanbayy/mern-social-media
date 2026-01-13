@@ -24,7 +24,7 @@ import SuggestionsPage from "./pages/SuggestionsPage";
 
 function App() {
   const isLoggingOut = localStorage.getItem("_logout_in_progress") === "true";
-  
+
   const { data: authUser, isLoading, isError } = useQuery({
     queryKey: ["authUser"],
     queryFn: getCurrentUser,
@@ -47,75 +47,75 @@ function App() {
 
   const isLoggedIn = !isError && authUser !== null && authUser !== undefined && Object.keys(authUser || {}).length > 0;
   const isAccountVerified = authUser?.isAccountVerified;
-  
+
   return (
     <div className="flex max-w-6xl mx-auto overflow-x-hidden">
       {isLoggedIn && isAccountVerified && <Sidebar />}
       <Routes>
-        <Route
-          path="/"
-          element={
-            isLoggedIn ? (
-              isAccountVerified ? (
-                <HomePage />
+          <Route
+            path="/"
+            element={
+              isLoggedIn ? (
+                isAccountVerified ? (
+                  <HomePage />
+                ) : (
+                  <Navigate to="/verify-account" />
+                )
               ) : (
-                <Navigate to="/verify-account" />
+                <Navigate to="/login" />
               )
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-        <Route
-          path="/signup"
-          element={!isLoggedIn ? <SignupPage /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/login"
-          element={!isLoggedIn ? <LoginPage /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/notifications"
-          element={isLoggedIn ? <NotificationPage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/profile/:username"
-          element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/profile/:username/followers"
-          element={isLoggedIn ? <ProfileFollowersPage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/profile/:username/following"
-          element={isLoggedIn ? <ProfileFollowersPage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/create-post"
-          element={isLoggedIn ? <PostCreate /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/verify-account"
-          element={
-            isLoggedIn && !isAccountVerified ? (
-              <VerifyAccount />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-        <Route
-          path="/reset-password"
-          element={!isLoggedIn ? <ResetPassword /> : <Navigate to={"/"} />}
-        />
-        <Route path="/settings"
-          element={isLoggedIn && <Settings /> }
-        />
-        <Route path="/saved-posts" element={isLoggedIn && <BookmarkedPosts />} />
-        <Route path="/hidden-posts" element={isLoggedIn && <HiddenPosts />} />
-        <Route path="/post/:postId" element={isLoggedIn && isAccountVerified ? <PostDetailPage /> : <Navigate to="/login" />} />
-        <Route path="/edit-profile" element={isLoggedIn && isAccountVerified ? <EditProfilePage /> : <Navigate to="/login" />} />
-        <Route path="/suggestions" element={isLoggedIn && isAccountVerified ? <SuggestionsPage /> : <Navigate to="/login" />} />
+            }
+          />
+          <Route
+            path="/signup"
+            element={!isLoggedIn ? <SignupPage /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/login"
+            element={!isLoggedIn ? <LoginPage /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/notifications"
+            element={isLoggedIn ? <NotificationPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/profile/:username"
+            element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/profile/:username/followers"
+            element={isLoggedIn ? <ProfileFollowersPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/profile/:username/following"
+            element={isLoggedIn ? <ProfileFollowersPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/create-post"
+            element={isLoggedIn ? <PostCreate /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/verify-account"
+            element={
+              isLoggedIn && !isAccountVerified ? (
+                <VerifyAccount />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={!isLoggedIn ? <ResetPassword /> : <Navigate to={"/"} />}
+          />
+          <Route path="/settings"
+            element={isLoggedIn && <Settings />}
+          />
+          <Route path="/saved-posts" element={isLoggedIn && <BookmarkedPosts />} />
+          <Route path="/hidden-posts" element={isLoggedIn && <HiddenPosts />} />
+          <Route path="/post/:postId" element={isLoggedIn && isAccountVerified ? <PostDetailPage /> : <Navigate to="/login" />} />
+          <Route path="/edit-profile" element={isLoggedIn && isAccountVerified ? <EditProfilePage /> : <Navigate to="/login" />} />
+          <Route path="/suggestions" element={isLoggedIn && isAccountVerified ? <SuggestionsPage /> : <Navigate to="/login" />} />
       </Routes>
       {isLoggedIn && isAccountVerified && !isSettingPage && <RightPanel />}
       <Toaster />

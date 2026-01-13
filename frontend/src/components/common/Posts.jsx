@@ -1,16 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import Post from "./Post";
 import PostSkeleton from "../skeletons/PostSkeleton";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { getAllPosts, getFollowingPosts, getUserPosts, getLikedPosts, getSavedPosts, getHiddenPosts } from "../../api/posts";
 import MobileSuggestedUsers from "./MobileSuggestedUsers";
 
 const Posts = ({ feedType, username, userId }) => {
+  const location = useLocation();
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [allPosts, setAllPosts] = useState([]);
   const [hasMore, setHasMore] = useState(true);
   const [suggestionPosition, setSuggestionPosition] = useState(null);
   const limit = 10;
+  const previousLocationRef = useRef(location.pathname);
 
   const getPostQueryFn = (feedType, pageNum) => {
     switch (feedType) {
@@ -42,7 +46,10 @@ const Posts = ({ feedType, username, userId }) => {
     queryFn: getPostQueryFn(feedType, page),
     enabled: feedType === "forYou" ? hasMore : true,
     placeholderData: keepPreviousData, // Keep previous data while fetching new data
-    staleTime: 30000, // Consider data fresh for 30 seconds
+    staleTime: 0, // Always consider data stale, refetch on mount
+    refetchOnMount: true, // Refetch when component mounts
+    refetchOnWindowFocus: false, // Don't refetch on window focus (to avoid unnecessary requests)
+    gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes (formerly cacheTime)
   });
 
   // Set random suggestion position on first load (only for forYou feed, within first 10 posts)
@@ -75,6 +82,33 @@ const Posts = ({ feedType, username, userId }) => {
     }
   }, [postsData, page, isLoading]);
 
+  // Subscribe to cache updates to sync allPosts state
+  useEffect(() => {
+    if (feedType === "forYou" && allPosts.length > 0) {
+      const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+        if (event?.type === "updated" && event?.query?.queryKey?.[0] === "posts") {
+          // Get latest data from cache for page 1
+          const cachedData = queryClient.getQueryData(["posts", feedType, username, userId, 1]);
+          if (cachedData) {
+            const cachedPosts = Array.isArray(cachedData) ? cachedData : cachedData?.posts || [];
+            // Update allPosts with cached data, preserving order and appending new posts
+            setAllPosts((prev) => {
+              const updatedPosts = prev.map((prevPost) => {
+                const cachedPost = cachedPosts.find((p) => p._id === prevPost._id);
+                return cachedPost || prevPost;
+              });
+              // Add any new posts that aren't in allPosts yet
+              const existingIds = new Set(prev.map(p => p._id));
+              const newPosts = cachedPosts.filter(p => !existingIds.has(p._id));
+              return [...updatedPosts, ...newPosts];
+            });
+          }
+        }
+      });
+      return unsubscribe;
+    }
+  }, [feedType, allPosts.length, queryClient, username, userId]);
+
   // Reset when feedType changes
   useEffect(() => {
     setPage(1);
@@ -83,6 +117,20 @@ const Posts = ({ feedType, username, userId }) => {
     setSuggestionPosition(null);
     refetch();
   }, [feedType, refetch, username]);
+
+  // Refetch when returning to home page from another page
+  useEffect(() => {
+    const isReturningToHome = previousLocationRef.current !== "/" && location.pathname === "/";
+    const isReturningToThisPage = previousLocationRef.current !== location.pathname && previousLocationRef.current !== "/";
+    
+    if ((isReturningToHome || isReturningToThisPage) && page === 1 && feedType === "forYou") {
+      // Invalidate cache and refetch when returning to page
+      queryClient.invalidateQueries({ queryKey: ["posts", feedType] });
+      refetch();
+    }
+    
+    previousLocationRef.current = location.pathname;
+  }, [location.pathname, refetch, page, feedType, queryClient]);
 
   // Throttle scroll handler using useRef
   const scrollTimeoutRef = useRef(null);

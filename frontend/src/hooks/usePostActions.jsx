@@ -15,11 +15,24 @@ const usePostActions = (postId, updatedPost) => {
   const queryClient = useQueryClient();
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 
-  // Helper function to update all posts queries
+  // Helper function to update all posts queries (handles both array and paginated formats)
   const updateAllPostsQueries = (updater) => {
     const allPostsQueries = queryClient.getQueriesData({ queryKey: ["posts"] });
     allPostsQueries.forEach(([queryKey, oldData]) => {
-      if (oldData && Array.isArray(oldData)) {
+      if (!oldData) return;
+      
+      // Handle paginated format: { posts: [], hasMore: true, page: 1, limit: 10 }
+      if (oldData && typeof oldData === 'object' && 'posts' in oldData && Array.isArray(oldData.posts)) {
+        queryClient.setQueryData(queryKey, (currentData) => {
+          const updatedPosts = updater(currentData.posts);
+          return {
+            ...currentData,
+            posts: updatedPosts
+          };
+        });
+      }
+      // Handle array format: []
+      else if (Array.isArray(oldData)) {
         queryClient.setQueryData(queryKey, updater);
       }
     });

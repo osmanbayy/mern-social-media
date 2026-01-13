@@ -35,9 +35,17 @@ const PostOptions = ({
         />
         <ul
           tabIndex={0}
-          className={`dropdown-content rounded-md border-[0.2px] border-gray-600 menu bg-base-100 z-1 font-semibold min-w-60 shadow-lg p-2 ${
-            theme === "dark" ? "shadow-black/20" : "shadow-white"
+          className={`dropdown-content rounded-xl border border-base-300/50 menu bg-base-100/95 backdrop-blur-xl z-[100] font-semibold min-w-60 p-2 shadow-2xl transition-all duration-200 ease-out ${
+            theme === "dark" 
+              ? "shadow-black/40 ring-1 ring-white/10" 
+              : "shadow-black/20 ring-1 ring-black/5"
           }`}
+          style={{
+            boxShadow: theme === "dark"
+              ? "0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1)"
+              : "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+            animation: "dropdownFadeIn 0.2s ease-out"
+          }}
         >
           {isHidden && (
             <li 
