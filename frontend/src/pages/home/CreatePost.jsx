@@ -258,7 +258,7 @@ const CreatePost = () => {
                     <div className="md:hidden max-h-[400px] overflow-y-auto">
                       <EmojiPicker
                         onEmojiClick={handleEmojiClick}
-                        theme={theme === "dark" ? "dark" : "light"}
+                        theme={theme === "dark" ? "dark" : "nord"}
                         width="100%"
                         height={400}
                         previewConfig={{ showPreview: false }}
@@ -269,7 +269,7 @@ const CreatePost = () => {
                     <div className="hidden md:block">
                       <EmojiPicker
                         onEmojiClick={handleEmojiClick}
-                        theme={theme === "dark" ? "dark" : "light"}
+                        theme={theme === "dark" ? "dark" : "nord"}
                         width={352}
                         height={435}
                         previewConfig={{ showPreview: true }}

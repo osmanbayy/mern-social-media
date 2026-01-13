@@ -104,7 +104,7 @@ const Settings = () => {
   return (
     <div className="flex min-h-screen w-full">
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-80 border-r border-base-300/50 bg-base-100">
+      <div className="hidden md:flex w-96 border-r border-base-300/50 bg-base-100">
         <div className="w-full flex flex-col">
           {/* Header */}
           <div className="sticky top-0 z-10 p-6 border-b border-base-300/50 bg-base-100/95 backdrop-blur-md">

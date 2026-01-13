@@ -74,27 +74,9 @@ export const signup = async (req, res) => {
         ),
       };
 
-      console.log("Attempting to send verification email to:", email);
-      console.log("From:", mailOptions.from);
-      console.log("SMTP_USER:", process.env.SMTP_USER ? "Set" : "NOT SET");
-      console.log("SMTP_PASS:", process.env.SMTP_PASS ? "Set" : "NOT SET");
-
       const info = await transporter.sendMail(mailOptions);
-      console.log("Verification OTP email sent successfully!");
-      console.log("Message ID:", info.messageId);
-      console.log("Response:", info.response);
     } catch (emailError) {
-      console.error("========== EMAIL SEND ERROR ==========");
       console.error("Error sending verification email:", emailError);
-      console.error("Error message:", emailError.message);
-      console.error("Error code:", emailError.code);
-      console.error("Error command:", emailError.command);
-      console.error("Error response:", emailError.response);
-      console.error("Error responseCode:", emailError.responseCode);
-      console.error("Stack:", emailError.stack);
-      console.error("=====================================");
-      // Don't fail the signup if email fails, but log the error
-      // The user can request a new OTP later
     }
 
     res.status(201).json({
@@ -121,7 +103,7 @@ export const login = async (req, res) => {
     }
 
     const user = await User.findOne({ username });
-    
+
     if (!user) {
       return res
         .status(400)
@@ -153,7 +135,7 @@ export const login = async (req, res) => {
   } catch (error) {
     console.error("Error in login controller:", error);
     console.error("Error stack:", error.stack);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Sunucu hatası!",
       error: process.env.NODE_ENV === "development" ? error.message : undefined
     });
@@ -183,6 +165,7 @@ export const get_me = async (req, res) => {
     res.status(500).json({ error: "Sunucu hatası!" });
   }
 };
+
 export const sendVerifyOtp = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -238,32 +221,15 @@ export const sendVerifyOtp = async (req, res) => {
         ),
       };
 
-      console.log("Attempting to send verification email to:", user.email);
-      console.log("From:", mailOption.from);
-      console.log("SMTP_USER:", process.env.SMTP_USER ? "Set" : "NOT SET");
-      console.log("SMTP_PASS:", process.env.SMTP_PASS ? "Set" : "NOT SET");
-
       const info = await transporter.sendMail(mailOption);
-      console.log("Verification OTP email sent successfully!");
-      console.log("Message ID:", info.messageId);
-      console.log("Response:", info.response);
-      
+
       res.json({
         success: true,
         message: "Doğrulama kodu gönderildi.",
       });
     } catch (emailError) {
-      console.error("========== EMAIL SEND ERROR ==========");
-      console.error("Error sending verification email:", emailError);
-      console.error("Error message:", emailError.message);
-      console.error("Error code:", emailError.code);
-      console.error("Error command:", emailError.command);
-      console.error("Error response:", emailError.response);
-      console.error("Error responseCode:", emailError.responseCode);
-      console.error("Stack:", emailError.stack);
-      console.error("=====================================");
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         message: "E-posta gönderilirken bir hata oluştu. Lütfen tekrar deneyin.",
         error: process.env.NODE_ENV === "development" ? emailError.message : undefined
       });
@@ -279,31 +245,31 @@ export const verifyEmail = async (req, res) => {
     const { userId, otp } = req.body;
 
     if (!userId || !otp) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Kullanıcı ID ve OTP gereklidir." 
+      return res.status(400).json({
+        success: false,
+        message: "Kullanıcı ID ve OTP gereklidir."
       });
     }
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Geçersiz kullanıcı ID." 
+      return res.status(400).json({
+        success: false,
+        message: "Geçersiz kullanıcı ID."
       });
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Kullanıcı bulunamadı." 
+      return res.status(404).json({
+        success: false,
+        message: "Kullanıcı bulunamadı."
       });
     }
 
     if (user.isAccountVerified) {
-      return res.json({ 
-        success: false, 
-        message: "Bu hesap zaten doğrulanmış." 
+      return res.json({
+        success: false,
+        message: "Bu hesap zaten doğrulanmış."
       });
     }
 
@@ -314,18 +280,18 @@ export const verifyEmail = async (req, res) => {
         stored: user.verifyOtp,
         userId: userId
       });
-      return res.status(400).json({ 
-        success: false, 
-        message: "Geçersiz doğrulama kodu." 
+      return res.status(400).json({
+        success: false,
+        message: "Geçersiz doğrulama kodu."
       });
     }
 
     // OTP süresi kontrolü
     if (!user.verifyOtpExpiresAt || user.verifyOtpExpiresAt === 0) {
       console.log("OTP expiration not set for user:", userId);
-      return res.status(400).json({ 
-        success: false, 
-        message: "Doğrulama kodu süresi dolmuş. Lütfen yeni bir kod isteyin." 
+      return res.status(400).json({
+        success: false,
+        message: "Doğrulama kodu süresi dolmuş. Lütfen yeni bir kod isteyin."
       });
     }
 
@@ -335,30 +301,29 @@ export const verifyEmail = async (req, res) => {
         now: new Date(),
         userId: userId
       });
-      return res.status(400).json({ 
-        success: false, 
-        message: "Doğrulama kodunun süresi dolmuş. Lütfen yeni bir kod isteyin." 
+      return res.status(400).json({
+        success: false,
+        message: "Doğrulama kodunun süresi dolmuş. Lütfen yeni bir kod isteyin."
       });
     }
 
-    // Hesabı doğrula
+    // verify account
     user.isAccountVerified = true;
     user.verifyOtp = "";
     user.verifyOtpExpiresAt = 0;
 
     await user.save();
-    
+
     console.log("Email verified successfully for user:", userId);
-    
-    return res.json({ 
-      success: true, 
-      message: "Mail başarıyla doğrulandı." 
+
+    return res.json({
+      success: true,
+      message: "Mail başarıyla doğrulandı."
     });
   } catch (error) {
     console.error("Error in verifyEmail:", error);
-    console.error("Error stack:", error.stack);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Sunucu hatası oluştu.",
       error: process.env.NODE_ENV === "development" ? error.message : undefined
     });
@@ -397,25 +362,15 @@ export const sendPasswordResetOtp = async (req, res) => {
     };
 
     try {
-      console.log("Attempting to send password reset email to:", user.email);
-      const info = await transporter.sendMail(mailOption);
-      console.log("Password reset email sent successfully!");
-      console.log("Message ID:", info.messageId);
-      
       return res.json({
         success: true,
         message: "Şifre sıfırlama için tek kullanımlık 6 haneli kod gönderildi.",
       });
     } catch (emailError) {
-      console.error("========== PASSWORD RESET EMAIL ERROR ==========");
       console.error("Error sending password reset email:", emailError);
-      console.error("Error message:", emailError.message);
-      console.error("Error code:", emailError.code);
-      console.error("Error response:", emailError.response);
-      console.error("================================================");
-      return res.json({ 
-        success: false, 
-        message: "E-posta gönderilirken bir hata oluştu. Lütfen tekrar deneyin." 
+      return res.json({
+        success: false,
+        message: "E-posta gönderilirken bir hata oluştu. Lütfen tekrar deneyin."
       });
     }
   } catch (error) {
@@ -427,21 +382,13 @@ export const sendPasswordResetOtp = async (req, res) => {
 export const testEmail = async (req, res) => {
   try {
     const { email } = req.body;
-    
+
     if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Email is required" 
+      return res.status(400).json({
+        success: false,
+        message: "Email is required"
       });
     }
-
-    console.log("========== EMAIL TEST ==========");
-    console.log("Testing email configuration...");
-    console.log("SMTP_USER:", process.env.SMTP_USER ? "Set" : "NOT SET");
-    console.log("SMTP_PASS:", process.env.SMTP_PASS ? "Set" : "NOT SET");
-    console.log("SMTP_HOST:", process.env.SMTP_HOST || "Using Gmail service");
-    console.log("SENDER_EMAIL:", process.env.SENDER_EMAIL || "NOT SET");
-    console.log("================================");
 
     const testMailOptions = {
       from: process.env.SENDER_EMAIL || process.env.SMTP_USER,
@@ -456,9 +403,6 @@ export const testEmail = async (req, res) => {
     };
 
     const info = await transporter.sendMail(testMailOptions);
-    console.log("Test email sent successfully!");
-    console.log("Message ID:", info.messageId);
-    console.log("Response:", info.response);
 
     res.json({
       success: true,
@@ -466,16 +410,6 @@ export const testEmail = async (req, res) => {
       messageId: info.messageId,
     });
   } catch (error) {
-    console.error("========== EMAIL TEST ERROR ==========");
-    console.error("Error:", error);
-    console.error("Error message:", error.message);
-    console.error("Error code:", error.code);
-    console.error("Error command:", error.command);
-    console.error("Error response:", error.response);
-    console.error("Error responseCode:", error.responseCode);
-    console.error("Stack:", error.stack);
-    console.error("=====================================");
-    
     res.status(500).json({
       success: false,
       message: "Failed to send test email",
