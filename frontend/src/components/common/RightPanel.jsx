@@ -49,8 +49,8 @@ const RightPanel = () => {
   if (suggestedUsers?.length === 0) return <div className="md:w-64 w-0"></div>;
 
   return (
-    <div className="hidden lg:block flex-shrink-0 w-64 my-4 mx-2">
-      <div className="sticky top-4 p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 shadow-lg w-full">
+    <div className="hidden lg:block flex-shrink-0 w-72 my-4 mx-2">
+      <div className="sticky top-4 p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 shadow w-full">
         <p className="font-bold text-lg mb-5 text-base-content">Kimi takip etmeli?</p>
         <div className="flex flex-col gap-4">
           {/* item */}
@@ -105,7 +105,7 @@ const RightPanel = () => {
           {!isLoading && displayedUsers.length > 0 && (
             <button
               onClick={() => navigate("/suggestions")}
-              className="btn btn-ghost btn-sm w-full mt-2 hover:bg-base-200/50 transition-all duration-200 text-center"
+              className="btn btn-ghost btn-sm w-full mt-2 hover:bg-base-200/50 transition-all duration-200 text-center rounded-xl"
             >
               Daha fazla öneri göster
             </button>

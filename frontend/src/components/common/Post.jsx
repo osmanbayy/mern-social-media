@@ -192,7 +192,7 @@ const Post = ({ post, isHidden = false }) => {
               <div className="rounded-2xl overflow-hidden border border-base-300/50 hover:border-base-300 transition-all duration-300 group/image">
                 <img
                   src={updatedPost.img}
-                  className="w-full max-h-[500px] object-cover cursor-pointer hover:scale-[1.02] transition-transform duration-500"
+                  className="w-full max-h-[300px] object-cover cursor-pointer hover:scale-[1.02] transition-transform duration-500"
                   alt=""
                   onClick={handleImageClick}
                 />
