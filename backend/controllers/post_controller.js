@@ -461,6 +461,70 @@ export const get_user_posts = async (req, res) => {
   }
 };
 
+// Search posts
+export const search_posts = async (req, res) => {
+  try {
+    const { query, page = 1, limit = 5 } = req.query;
+    const userId = req.user._id;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(200).json({
+        posts: [],
+        hasMore: false,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+    }
+
+    const searchQuery = query.trim();
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get user's hidden posts
+    const user = await User.findById(userId);
+    const hiddenPostIds = user.hiddenPosts.map(id => id.toString());
+
+    // Search posts by text content (case insensitive)
+    const posts = await Post.find({
+      _id: { $nin: hiddenPostIds },
+      $or: [
+        { text: { $regex: searchQuery, $options: "i" } }
+      ]
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      });
+
+    // Get total count for hasMore
+    const totalCount = await Post.countDocuments({
+      _id: { $nin: hiddenPostIds },
+      $or: [
+        { text: { $regex: searchQuery, $options: "i" } }
+      ]
+    });
+
+    const hasMore = skip + posts.length < totalCount;
+
+    res.status(200).json({
+      posts,
+      hasMore,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: totalCount
+    });
+  } catch (error) {
+    console.log("Error in search posts controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
 export const save_unsave_post = async (req, res) => {
   try {
     const userId = req.user._id;

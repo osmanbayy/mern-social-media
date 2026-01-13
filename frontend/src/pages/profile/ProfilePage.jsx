@@ -119,7 +119,7 @@ const ProfilePage = () => {
                   {user?.fullname}
                 </span>
                 <span className="text-xs text-base-content/60">
-                  {user?.posts?.length || 0} gönderi
+                  {user?.postCount || 0} gönderi
                 </span>
               </div>
             </div>

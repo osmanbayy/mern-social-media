@@ -254,3 +254,19 @@ export const editComment = async (postId, commentId, commentText) => {
   });
   return handleResponse(response);
 };
+
+// Search posts
+export const searchPosts = async (query, page = 1, limit = 5) => {
+  if (!query || query.trim().length === 0) {
+    return {
+      posts: [],
+      hasMore: false,
+      page: parseInt(page),
+      limit: parseInt(limit),
+    };
+  }
+  const response = await fetch(`${API_BASE}/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`, {
+    credentials: "include",
+  });
+  return handleResponse(response);
+};

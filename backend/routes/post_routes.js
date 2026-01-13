@@ -20,7 +20,8 @@ import {
   like_unlike_comment,
   reply_to_comment,
   delete_comment,
-  edit_comment
+  edit_comment,
+  search_posts
 } from "../controllers/post_controller.js";
 
 const router = express.Router();
@@ -28,6 +29,7 @@ const router = express.Router();
 // Specific routes first (before parameterized routes)
 router.get("/all", protect_route, get_all_posts);
 router.get("/following", protect_route, get_following_posts);
+router.get("/search", protect_route, search_posts);
 router.post("/create", protect_route, create_post);
 
 // Routes with specific paths before :id

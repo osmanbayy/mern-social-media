@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { LuBell, LuUser, LuSquarePlus, LuHouse, LuMenu } from "react-icons/lu";
+import { LuBell, LuUser, LuSearch, LuHouse, LuMenu } from "react-icons/lu";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 
 const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
   const location = useLocation();
   const isHomeActive = location.pathname === "/";
-  const isCreatePostActive = location.pathname === "/create-post";
+  const isSearchActive = location.pathname.startsWith("/search");
   const isNotificationsActive = location.pathname === "/notifications";
   const isProfileActive = location.pathname === `/profile/${authUser?.username}`;
 
@@ -45,7 +45,7 @@ const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
     <div className="md:hidden z-50 fixed bottom-0 left-0 w-full bg-base-100/95 backdrop-blur-2xl border-t border-base-300/30 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
       <div className="flex justify-around items-center px-2 py-2.5 safe-area-bottom">
         <NavItem to="/" isActive={isHomeActive} icon={LuHouse} />
-        <NavItem to="/create-post" isActive={isCreatePostActive} icon={LuSquarePlus} />
+        <NavItem to="/search" isActive={isSearchActive} icon={LuSearch} />
         <NavItem
           to="/notifications"
           isActive={isNotificationsActive}

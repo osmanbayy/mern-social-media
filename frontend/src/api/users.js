@@ -124,3 +124,19 @@ export const searchUsers = async (query) => {
   });
   return handleResponse(response);
 };
+
+// Search users with pagination
+export const searchUsersPaginated = async (query, page = 1, limit = 5) => {
+  if (!query || query.trim().length === 0) {
+    return {
+      users: [],
+      hasMore: false,
+      page: parseInt(page),
+      limit: parseInt(limit),
+    };
+  }
+  const response = await fetch(`${API_BASE}/search/paginated?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`, {
+    credentials: "include",
+  });
+  return handleResponse(response);
+};

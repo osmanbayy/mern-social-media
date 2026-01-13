@@ -22,6 +22,7 @@ import HiddenPosts from "./pages/HiddenPosts";
 import PostDetailPage from "./pages/post/PostDetailPage";
 import EditProfilePage from "./pages/profile/EditProfilePage";
 import SuggestionsPage from "./pages/SuggestionsPage";
+import SearchResultsPage from "./pages/search/SearchResultsPage";
 import OSSvg from "./components/svgs/OS";
 
 function App() {
@@ -123,6 +124,7 @@ function App() {
                 <Route path="/post/:postId" element={<PostDetailPage />} />
                 <Route path="/edit-profile" element={<EditProfilePage />} />
                 <Route path="/suggestions" element={<SuggestionsPage />} />
+                <Route path="/search" element={<SearchResultsPage />} />
                 <Route
                   path="/verify-account"
                   element={
@@ -277,6 +279,16 @@ function App() {
             element={
               isLoggedIn && isAccountVerified ? (
                 <SuggestionsPage />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/search"
+            element={
+              isLoggedIn && isAccountVerified ? (
+                <SearchResultsPage />
               ) : (
                 <Navigate to="/login" />
               )

@@ -1,5 +1,6 @@
 import Notification from "../models/notification_model.js";
 import User from "../models/user_model.js";
+import Post from "../models/post_model.js";
 import bcrypt from "bcryptjs";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -11,7 +12,16 @@ export const get_user_profile = async (req, res) => {
     if (!user)
       return res.status(404).json({ message: "Kullanıcı bulunamadı." });
 
-    res.status(200).json(user);
+    // Get post count for this user
+    const postCount = await Post.countDocuments({ user: user._id });
+
+    // Add post count to user object
+    const userWithPostCount = {
+      ...user.toObject(),
+      postCount: postCount
+    };
+
+    res.status(200).json(userWithPostCount);
   } catch (error) {
     res.status(500).json({ message: error.message });
     console.log("Error in get user profile", error.message);
@@ -221,7 +231,7 @@ export const get_following = async (req, res) => {
   }
 };
 
-// Search users for mentions
+// Search users for mentions (old version, kept for backward compatibility)
 export const search_users = async (req, res) => {
   try {
     const { query } = req.query;
@@ -247,6 +257,60 @@ export const search_users = async (req, res) => {
     res.status(200).json(users);
   } catch (error) {
     console.log("Error in search users controller", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+// Search users with pagination
+export const search_users_paginated = async (req, res) => {
+  try {
+    const { query, page = 1, limit = 5 } = req.query;
+    const userId = req.user._id;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(200).json({
+        users: [],
+        hasMore: false,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+    }
+
+    const searchQuery = query.trim();
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    // Search by username or fullname (case insensitive)
+    const users = await User.find({
+      _id: { $ne: userId }, // Exclude current user
+      $or: [
+        { username: { $regex: searchQuery, $options: "i" } },
+        { fullname: { $regex: searchQuery, $options: "i" } }
+      ]
+    })
+    .select("-password")
+    .skip(skip)
+    .limit(parseInt(limit));
+
+    // Get total count for hasMore
+    const totalCount = await User.countDocuments({
+      _id: { $ne: userId },
+      $or: [
+        { username: { $regex: searchQuery, $options: "i" } },
+        { fullname: { $regex: searchQuery, $options: "i" } }
+      ]
+    });
+
+    const hasMore = skip + users.length < totalCount;
+
+    res.status(200).json({
+      users,
+      hasMore,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: totalCount
+    });
+  } catch (error) {
+    console.log("Error in search users paginated controller", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };

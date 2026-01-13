@@ -6,11 +6,13 @@ import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import LoadingSpinner from "./LoadingSpinner";
 import { followUser, getSuggestedUsers } from "../../api/users";
 import toast from "react-hot-toast";
+import { LuSearch } from "react-icons/lu";
 
 const RightPanel = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [loadingUserId, setLoadingUserId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const { data: suggestedUsersData, isLoading } = useQuery({
     queryKey: ["suggestedUsers"],
@@ -48,9 +50,31 @@ const RightPanel = () => {
 
   if (suggestedUsers?.length === 0) return <div className="md:w-64 w-0"></div>;
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+    }
+  };
+
   return (
     <div className="hidden lg:flex flex-shrink-0 w-80">
-      <div className="sticky top-0 h-screen flex flex-col p-5 pt-4 overflow-y-auto">
+      <div className="sticky top-0 h-screen flex flex-col p-5 pt-4 overflow-y-auto gap-4">
+        {/* Search Input */}
+        <div className="w-full">
+          <form onSubmit={handleSearch} className="relative">
+            <input
+              type="text"
+              placeholder="Ara..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-full bg-base-200/50 border border-base-300/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm"
+            />
+            <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40" />
+          </form>
+        </div>
+
         <div className="p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 shadow w-full">
         <p className="font-bold text-lg mb-5 text-base-content">Kimi takip etmeli?</p>
         <div className="flex flex-col gap-4">
