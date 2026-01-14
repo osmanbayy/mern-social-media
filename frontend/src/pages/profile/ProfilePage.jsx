@@ -22,11 +22,14 @@ import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import defaultCoverPicture from "../../assets/default-cover.jpg";
 import useUpdateProfile from "../../hooks/useUpdateProfile";
 import useProfileImage from "../../hooks/useProfileImage";
+import { FEED_TYPES } from "../../constants/feedTypes";
 
 const ProfilePage = () => {
-  const [feedType, setFeedType] = useState("posts");
+  const [feedType, setFeedType] = useState(FEED_TYPES.POSTS);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
+  const [showProfileImageModal, setShowProfileImageModal] = useState(false);
+  const [showCoverImageModal, setShowCoverImageModal] = useState(false);
 
   const { username } = useParams();
   const navigate = useNavigate();
@@ -65,16 +68,12 @@ const ProfilePage = () => {
 
   const handleProfileImageClick = (e) => {
     e.stopPropagation();
-    if (user?._id) {
-      document.getElementById(`profile_image_modal${user._id}`).showModal();
-    }
+    setShowProfileImageModal(true);
   };
 
   const handleCoverImageClick = (e) => {
     e.stopPropagation();
-    if (user?._id) {
-      document.getElementById(`cover_image_modal${user._id}`).showModal();
-    }
+    setShowCoverImageModal(true);
   };
 
   const handleFollowersClick = (e) => {
@@ -112,6 +111,20 @@ const ProfilePage = () => {
     } finally {
       setIsBlocking(false);
     }
+  };
+
+  const handleBlockClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowBlockDialog(true);
+  };
+
+  const getTabClassName = (tabType) => {
+    const baseClasses = "flex-1 py-3 text-sm font-medium hover:bg-base-200 transition-colors";
+    const activeClasses = "border-b-2 border-primary text-primary";
+    const inactiveClasses = "text-base-content/70";
+    
+    return `${baseClasses} ${feedType === tabType ? activeClasses : inactiveClasses}`;
   };
 
   useEffect(() => {
@@ -247,11 +260,7 @@ const ProfilePage = () => {
                     >
                       <li 
                         className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setShowBlockDialog(true);
-                        }}
+                        onClick={handleBlockClick}
                       >
                         <a className="rounded-none flex whitespace-nowrap cursor-pointer">
                           <GoBlocked /> <span>Engelle</span>
@@ -362,22 +371,14 @@ const ProfilePage = () => {
             {/* Sekmeler */}
             <div className="mt-4 border-b border-base-300 flex">
               <button
-                className={`flex-1 py-3 text-sm font-medium hover:bg-base-200 transition-colors ${
-                  feedType === "posts"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-base-content/70"
-                }`}
-                onClick={() => setFeedType("posts")}
+                className={getTabClassName(FEED_TYPES.POSTS)}
+                onClick={() => setFeedType(FEED_TYPES.POSTS)}
               >
                 Gönderiler
               </button>
               <button
-                className={`flex-1 py-3 text-sm font-medium hover:bg-base-200 transition-colors ${
-                  feedType === "likes"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-base-content/70"
-                }`}
-                onClick={() => setFeedType("likes")}
+                className={getTabClassName(FEED_TYPES.LIKES)}
+                onClick={() => setFeedType(FEED_TYPES.LIKES)}
               >
                 Beğeniler
               </button>
@@ -392,20 +393,28 @@ const ProfilePage = () => {
       </div>
 
       {/* Profile Image Modal */}
-      <ProfileImageModal
-        user={user}
-        isMyProfile={isMyProfile}
-        profileImgRef={profileImgRef}
-        profileImage={profileImage}
-      />
+      {user && (
+        <ProfileImageModal
+          user={user}
+          isMyProfile={isMyProfile}
+          profileImgRef={profileImgRef}
+          profileImage={profileImage}
+          isOpen={showProfileImageModal}
+          onClose={() => setShowProfileImageModal(false)}
+        />
+      )}
 
       {/* Cover Image Modal */}
-      <CoverImageModal
-        user={user}
-        isMyProfile={isMyProfile}
-        coverImgRef={coverImgRef}
-        coverImg={coverImg}
-      />
+      {user && (
+        <CoverImageModal
+          user={user}
+          isMyProfile={isMyProfile}
+          coverImgRef={coverImgRef}
+          coverImg={coverImg}
+          isOpen={showCoverImageModal}
+          onClose={() => setShowCoverImageModal(false)}
+        />
+      )}
 
       {/* Block User Dialog */}
       {!isMyProfile && (

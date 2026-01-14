@@ -1,25 +1,24 @@
 import { CiImageOn } from "react-icons/ci";
-import { BsEmojiSmileFill } from "react-icons/bs";
-import { useRef, useState, useEffect } from "react";
-import { IoCloseSharp } from "react-icons/io5";
+import { useRef, useState } from "react";
 import { LiaTelegram } from "react-icons/lia";
-import EmojiPicker from "emoji-picker-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import useMention from "../../hooks/useMention";
+import { useTheme } from "../../hooks/useTheme";
 import MentionDropdown from "./MentionDropdown";
+import ImagePreview from "./ImagePreview";
+import EmojiPickerButton from "./EmojiPickerButton";
+import { createPost } from "../../api/posts";
 
 const PostCreate = () => {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
-
   const [showPicker, setShowPicker] = useState(false);
   const imgRef = useRef(null);
   const textareaRef = useRef(null);
-  const emojiButtonRef = useRef(null);
-  const emojiPickerRef = useRef(null);
+  const theme = useTheme();
 
   // Mention functionality
   const {
@@ -31,106 +30,13 @@ const PostCreate = () => {
     closeMentionDropdown,
   } = useMention(text, setText, textareaRef);
 
-  const getTheme = () => {
-    const dataTheme = document.documentElement.getAttribute("data-theme");
-    return dataTheme || localStorage.getItem("theme") || "dark";
-  };
-
-  const [theme, setTheme] = useState(getTheme());
-
-  useEffect(() => {
-    const updateTheme = () => {
-      setTheme(getTheme());
-    };
-
-    updateTheme();
-
-    const observer = new MutationObserver(() => {
-      setTheme(getTheme());
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-
-    const handleStorageChange = () => {
-      setTheme(getTheme());
-    };
-    window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
-
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const handleEmojiClick = (emojiObject) => {
     setText((prevText) => prevText + emojiObject.emoji);
   };
-
-  // Close emoji picker when clicking outside
-  useEffect(() => {
-    if (!showPicker) return;
-
-    const handleClickOutside = (e) => {
-      if (
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(e.target) &&
-        emojiButtonRef.current &&
-        !emojiButtonRef.current.contains(e.target)
-      ) {
-        setShowPicker(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [showPicker]);
-
-  // Calculate emoji picker position
-  useEffect(() => {
-    if (!showPicker || !emojiButtonRef.current || !emojiPickerRef.current) return;
-
-    const button = emojiButtonRef.current;
-    const picker = emojiPickerRef.current;
-    const buttonRect = button.getBoundingClientRect();
-    const pickerRect = picker.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    let left = 0;
-    let top = buttonRect.height + 8; // mt-2 equivalent
-    let transform = '';
-
-    // Check if picker would overflow on the right
-    if (buttonRect.left + pickerRect.width > viewportWidth) {
-      left = viewportWidth - buttonRect.right;
-      transform = 'translateX(-100%)';
-    }
-
-    // Check if picker would overflow on the bottom (mobile)
-    if (buttonRect.bottom + pickerRect.height > viewportHeight) {
-      top = -(pickerRect.height + 8);
-      transform = transform ? `${transform} translateY(-100%)` : 'translateY(-100%)';
-    }
-
-    picker.style.left = `${left}px`;
-    picker.style.top = `${top}px`;
-    if (transform) {
-      picker.style.transform = transform;
-    }
-  }, [showPicker]);
-
-  const navigate = useNavigate();
 
   const { mutate: createPostMutation, isPending, isError, error } = useMutation({
     mutationFn: ({ text, img }) => createPost({ text, img }),
@@ -138,7 +44,7 @@ const PostCreate = () => {
       setText("");
       setImg(null);
       toast.success("Gönderi paylaşıldı.");
-      queryClient.invalidateQueries("posts");
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
       navigate("/");
     }
   });
@@ -150,12 +56,19 @@ const PostCreate = () => {
 
   const handleImgChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImg(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImg(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setImg(null);
+    if (imgRef.current) {
+      imgRef.current.value = null;
     }
   };
 
@@ -192,25 +105,7 @@ const PostCreate = () => {
             />
           )}
         </div>
-        {img && (
-          <div className="relative w-full max-w-md mx-auto rounded-2xl overflow-hidden border border-base-300/50 group">
-            <button
-              type="button"
-              className="absolute top-2 right-2 z-10 text-white bg-black/70 hover:bg-black/90 rounded-full w-8 h-8 flex items-center justify-center transition-all duration-200 hover:scale-110"
-              onClick={() => {
-                setImg(null);
-                imgRef.current.value = null;
-              }}
-            >
-              <IoCloseSharp className="w-5 h-5" />
-            </button>
-            <img
-              src={img}
-              className="w-full h-auto max-h-96 object-cover"
-              alt="Preview"
-            />
-          </div>
-        )}
+        <ImagePreview imageUrl={img} onRemove={handleRemoveImage} />
 
         <div className="flex justify-between items-center border-t border-base-300/50 pt-3">
           <div className="flex gap-3 items-center">
@@ -220,59 +115,12 @@ const PostCreate = () => {
                 onClick={() => imgRef.current.click()}
               />
             </div>
-            <div className="relative">
-              <div 
-                ref={emojiButtonRef}
-                className="p-2 rounded-full hover:bg-primary/10 transition-all duration-200 cursor-pointer group"
-              >
-                <BsEmojiSmileFill
-                  onClick={() => setShowPicker(!showPicker)}
-                  className={`w-5 h-5 transition-all duration-200 group-hover:scale-110 ${
-                    theme === "dark" ? "fill-yellow-400" : "fill-blue-500"
-                  }`}
-                />
-              </div>
-              {showPicker && (
-                <>
-                  {/* Backdrop for mobile */}
-                  <div 
-                    className="fixed inset-0 z-[50] md:hidden bg-black/20"
-                    onClick={() => setShowPicker(false)}
-                  />
-                  <div 
-                    ref={emojiPickerRef}
-                    className="absolute z-[60] shadow-2xl rounded-2xl overflow-hidden bg-base-100 border border-base-300/50 animate-dropdownFadeIn"
-                    style={{
-                      maxWidth: 'calc(100vw - 2rem)',
-                      maxHeight: 'calc(100vh - 200px)',
-                    }}
-                  >
-                    <div className="md:hidden max-h-[400px] overflow-y-auto">
-                      <EmojiPicker
-                        onEmojiClick={handleEmojiClick}
-                        theme={theme === "dark" ? "dark" : "nord"}
-                        width="100%"
-                        height={400}
-                        previewConfig={{ showPreview: false }}
-                        searchDisabled={false}
-                        skinTonesDisabled={true}
-                      />
-                    </div>
-                    <div className="hidden md:block">
-                      <EmojiPicker
-                        onEmojiClick={handleEmojiClick}
-                        theme={theme === "dark" ? "dark" : "nord"}
-                        width={352}
-                        height={435}
-                        previewConfig={{ showPreview: true }}
-                        searchDisabled={false}
-                        skinTonesDisabled={true}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <EmojiPickerButton
+              theme={theme}
+              onEmojiClick={handleEmojiClick}
+              showPicker={showPicker}
+              setShowPicker={setShowPicker}
+            />
           </div>
           <input
             type="file"

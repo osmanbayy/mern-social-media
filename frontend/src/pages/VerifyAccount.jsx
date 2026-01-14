@@ -1,21 +1,42 @@
-/* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import toast from "react-hot-toast";
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { LuMail, LuRefreshCw } from "react-icons/lu";
+import { AiOutlineLoading } from "react-icons/ai";
 import { verifyAccount, sendVerifyOtp } from "../api/auth.js";
+import {
+  OTP_LENGTH,
+  STORAGE_KEYS,
+  ROUTES,
+  ERROR_MESSAGES,
+} from "../constants/verification.js";
+import {
+  clearOtpInputs,
+  getOtpFromInputs,
+  isNumeric,
+  removeNonNumeric,
+  isValidOtpLength,
+} from "../utils/otpHelpers.js";
 
 const VerifyAccount = () => {
-  const [otpSent, setOtpSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const inputRefs = useRef([]);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: authUser } = useQuery({
+    queryKey: ["authUser"],
+  });
+
+  const userId = authUser?._id;
+  const sentBefore = localStorage.getItem(STORAGE_KEYS.OTP_SENT);
 
   const handleInput = (e, index) => {
-    if (!/^\d*$/.test(e.target.value)) {
-      e.target.value = e.target.value.replace(/\D/g, ""); // clear the non-numeric characters
+    if (!isNumeric(e.target.value)) {
+      e.target.value = removeNonNumeric(e.target.value);
       return;
     }
     if (e.target.value.length > 0 && index < inputRefs.current.length - 1) {
@@ -39,72 +60,65 @@ const VerifyAccount = () => {
     });
   };
 
-  const { data: authUser } = useQuery({
-    queryKey: ["authUser"],
-  });
-
-  const userId = authUser?._id;
-  const sentBefore = localStorage.getItem("otpSent");
+  const validateUserId = () => {
+    if (!userId) {
+      toast.error(ERROR_MESSAGES.USER_NOT_FOUND);
+      return false;
+    }
+    return true;
+  };
 
   const sendVerificationOtp = async () => {
-    try {
-      if (!userId) {
-        toast.error("Kullanıcı bilgisi bulunamadı.");
-        return;
-      }
+    if (!validateUserId()) return;
 
+    try {
       setIsResending(true);
       const data = await sendVerifyOtp(userId);
       if (data.success) {
         toast.success(data.message);
-        setOtpSent(true);
       } else {
-        toast.error(data.message || "Doğrulama kodu gönderilemedi.");
+        toast.error(data.message || ERROR_MESSAGES.OTP_SEND_FAILED);
       }
     } catch (error) {
-      toast.error(error.message || "Bir hata oluştu.");
+      toast.error(error.message || ERROR_MESSAGES.GENERIC_ERROR);
     } finally {
       setIsResending(false);
     }
   };
 
+  const handleVerificationError = () => {
+    clearOtpInputs(inputRefs);
+  };
+
   const onSubmitHandler = async (e) => {
+    e.preventDefault();
+
+    if (!validateUserId()) return;
+
+    const otp = getOtpFromInputs(inputRefs);
+    if (!isValidOtpLength(otp)) {
+      toast.error(ERROR_MESSAGES.INVALID_OTP_LENGTH);
+      return;
+    }
+
     try {
-      e.preventDefault();
-      const otpArray = inputRefs.current.map((e) => e.value);
-      const otp = otpArray.join("");
-
-      if (!userId) {
-        toast.error("Kullanıcı bilgisi bulunamadı.");
-        return;
-      }
-
-      if (otp.length !== 6) {
-        toast.error("Lütfen 6 haneli doğrulama kodunu girin.");
-        return;
-      }
-
       setIsSubmitting(true);
       const data = await verifyAccount(userId, otp);
       if (data.success) {
-        authUser.isAccountVerified = true;
+        // Update authUser in query cache instead of direct mutation
+        queryClient.setQueryData(["authUser"], (oldData) => ({
+          ...oldData,
+          isAccountVerified: true,
+        }));
         toast.success(data.message);
-        navigate("/");
+        navigate(ROUTES.HOME);
       } else {
-        toast.error(data.message || "Doğrulama başarısız.");
-        // Clear inputs on error
-        inputRefs.current.forEach((input) => {
-          if (input) input.value = "";
-        });
-        inputRefs.current[0]?.focus();
+        toast.error(data.message || ERROR_MESSAGES.VERIFICATION_FAILED);
+        handleVerificationError();
       }
     } catch (error) {
-      toast.error(error.message || "Bir hata oluştu.");
-      // Clear inputs on error
-      inputRefs.current.forEach((input) => {
-        if (input) input.value = "";
-      });
-      inputRefs.current[0]?.focus();
+      toast.error(error.message || ERROR_MESSAGES.GENERIC_ERROR);
+      handleVerificationError();
     } finally {
       setIsSubmitting(false);
     }
@@ -113,7 +127,7 @@ const VerifyAccount = () => {
   useEffect(() => {
     if (authUser && !sentBefore) {
       sendVerificationOtp();
-      localStorage.setItem("otpSent", "true");
+      localStorage.setItem(STORAGE_KEYS.OTP_SENT, "true");
     }
   }, [authUser]);
 
@@ -133,25 +147,13 @@ const VerifyAccount = () => {
         {/* Welcome Section */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-6 shadow-lg shadow-blue-500/25">
-            <svg
-              className="w-10 h-10 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
+            <LuMail className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
             Merhaba, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">{authUser.fullname}</span>!
           </h1>
           <p className="text-slate-300 text-sm leading-relaxed">
-            E-posta adresinize <span className="text-blue-400 font-medium">{authUser.email}</span> 6 haneli bir doğrulama kodu gönderdik.
+            E-posta adresinize <span className="text-blue-400 font-medium">{authUser.email}</span> {OTP_LENGTH} haneli bir doğrulama kodu gönderdik.
             <br />
             OnSekiz&apos;e devam edebilmek için hesabınızı doğrulamanız gerekiyor.
           </p>
@@ -164,14 +166,14 @@ const VerifyAccount = () => {
               Hesabınızı Doğrulayın
             </h2>
             <p className="text-slate-400 text-sm">
-              E-postanıza gönderilen 6 haneli kodu giriniz
+              E-postanıza gönderilen {OTP_LENGTH} haneli kodu giriniz
             </p>
           </div>
 
           <form onSubmit={onSubmitHandler} className="space-y-6">
             {/* OTP Inputs */}
             <div onPaste={handlePaste} className="flex justify-center gap-3 sm:gap-4 mb-8">
-              {Array(6)
+              {Array(OTP_LENGTH)
                 .fill(0)
                 .map((_, index) => (
                   <input
@@ -198,26 +200,7 @@ const VerifyAccount = () => {
             >
               {isSubmitting ? (
                 <>
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                  <AiOutlineLoading className="animate-spin h-5 w-5 text-white" />
                   <span>Doğrulanıyor...</span>
                 </>
               ) : (
@@ -238,43 +221,12 @@ const VerifyAccount = () => {
             >
               {isResending ? (
                 <>
-                  <svg
-                    className="animate-spin h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                  <AiOutlineLoading className="animate-spin h-4 w-4" />
                   <span>Gönderiliyor...</span>
                 </>
               ) : (
                 <>
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
+                  <LuRefreshCw className="w-4 h-4" />
                   <span>Yeniden Gönder</span>
                 </>
               )}

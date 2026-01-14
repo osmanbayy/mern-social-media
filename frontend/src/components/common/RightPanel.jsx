@@ -7,6 +7,8 @@ import LoadingSpinner from "./LoadingSpinner";
 import { followUser, getSuggestedUsers } from "../../api/users";
 import toast from "react-hot-toast";
 import { LuSearch } from "react-icons/lu";
+import { RIGHT_PANEL_CONSTANTS, RIGHT_PANEL_ROUTES } from "../../constants/rightPanel";
+import { extractSuggestedUsers, getHasMoreUsers, getDisplayedUsers } from "../../utils/suggestedUsers";
 
 const RightPanel = () => {
   const queryClient = useQueryClient();
@@ -16,47 +18,70 @@ const RightPanel = () => {
   
   const { data: suggestedUsersData, isLoading } = useQuery({
     queryKey: ["suggestedUsers"],
-    queryFn: () => getSuggestedUsers(1, 5),
+    queryFn: () => getSuggestedUsers(RIGHT_PANEL_CONSTANTS.INITIAL_PAGE, RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT),
   });
 
-  // Handle both old array format and new paginated format
-  const suggestedUsers = Array.isArray(suggestedUsersData) 
-    ? suggestedUsersData 
-    : suggestedUsersData?.users || [];
-  
-  // Check if there are more users available
-  const hasMore = Array.isArray(suggestedUsersData) 
-    ? suggestedUsersData.length > 5
-    : suggestedUsersData?.hasMore || false;
+  const suggestedUsers = extractSuggestedUsers(suggestedUsersData);
+  const hasMore = getHasMoreUsers(suggestedUsersData, RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT);
+  const displayedUsers = getDisplayedUsers(suggestedUsers, RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT);
 
   const { mutate: follow } = useMutation({
     mutationFn: (userId) => followUser(userId),
     onMutate: (userId) => {
       setLoadingUserId(userId);
+      // Optimistically remove user from list
+      queryClient.setQueryData(["suggestedUsers"], (oldData) => {
+        if (!oldData) return oldData;
+        
+        if (Array.isArray(oldData)) {
+          return oldData.filter(user => user._id !== userId);
+        }
+        
+        if (oldData.users) {
+          return {
+            ...oldData,
+            users: oldData.users.filter(user => user._id !== userId),
+            hasMore: oldData.hasMore || false,
+          };
+        }
+        
+        return oldData;
+      });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] });
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    onSuccess: async () => {
+      // Invalidate queries to refresh data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] }),
+        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
+      ]);
       setLoadingUserId(null);
     },
-    onError: (error) => {
+    onError: (error, userId) => {
       toast.error(error.message);
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] });
       setLoadingUserId(null);
     },
   });
 
-  // Show only first 5 users
-  const displayedUsers = suggestedUsers?.slice(0, 5) || [];
-
-  if (suggestedUsers?.length === 0) return <div className="md:w-64 w-0"></div>;
-
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery("");
-    }
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) return;
+
+    navigate(`${RIGHT_PANEL_ROUTES.SEARCH}?q=${encodeURIComponent(trimmedQuery)}`);
+    setSearchQuery("");
   };
+
+  const handleFollowClick = (e, userId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    follow(userId);
+  };
+
+  if (suggestedUsers.length === 0) {
+    return <div className="md:w-64 w-0"></div>;
+  }
 
   return (
     <div className="hidden lg:flex flex-shrink-0 w-80">
@@ -76,22 +101,18 @@ const RightPanel = () => {
         </div>
 
         <div className="p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 shadow w-full">
-        <p className="font-bold text-lg mb-5 text-base-content">Kimi takip etmeli?</p>
-        <div className="flex flex-col gap-4">
-          {/* item */}
-          {isLoading && (
-            <>
-              <RightPanelSkeleton />
-              <RightPanelSkeleton />
-              <RightPanelSkeleton />
-              <RightPanelSkeleton />
-              <RightPanelSkeleton />
-            </>
-          )}
-          {!isLoading &&
-            displayedUsers.map((user) => (
+          <p className="font-bold text-lg mb-5 text-base-content">Kimi takip etmeli?</p>
+          <div className="flex flex-col gap-4">
+            {isLoading && (
+              <>
+                {Array.from({ length: RIGHT_PANEL_CONSTANTS.SKELETON_COUNT }).map((_, index) => (
+                  <RightPanelSkeleton key={index} />
+                ))}
+              </>
+            )}
+            {!isLoading && displayedUsers.map((user) => (
               <Link
-                to={`/profile/${user.username}`}
+                to={`${RIGHT_PANEL_ROUTES.PROFILE}/${user.username}`}
                 className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-base-200/50 transition-all duration-300 group w-full"
                 key={user._id}
               >
@@ -101,6 +122,7 @@ const RightPanel = () => {
                       <img
                         src={user.profileImage || defaultProfilePicture}
                         className="w-full h-full rounded-full object-cover"
+                        alt={user.fullname}
                       />
                     </div>
                   </div>
@@ -116,10 +138,7 @@ const RightPanel = () => {
                 <div className="flex-shrink-0">
                   <button
                     className="btn btn-primary btn-sm rounded-full text-white hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      follow(user._id);
-                    }}
+                    onClick={(e) => handleFollowClick(e, user._id)}
                     disabled={loadingUserId === user._id}
                   >
                     {loadingUserId === user._id ? <LoadingSpinner size="sm" /> : "Takip et"}
@@ -127,16 +146,16 @@ const RightPanel = () => {
                 </div>
               </Link>
             ))}
-          {!isLoading && displayedUsers.length > 0 && (
-            <button
-              onClick={() => navigate("/suggestions")}
-              className="btn btn-ghost btn-sm w-full mt-2 hover:bg-base-200/50 transition-all duration-200 text-center rounded-xl"
-            >
-              Daha fazla öneri göster
-            </button>
-          )}
+            {!isLoading && displayedUsers.length > 0 && (
+              <button
+                onClick={() => navigate(RIGHT_PANEL_ROUTES.SUGGESTIONS)}
+                className="btn btn-ghost btn-sm w-full mt-2 hover:bg-base-200/50 transition-all duration-200 text-center rounded-xl"
+              >
+                Daha fazla öneri göster
+              </button>
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );

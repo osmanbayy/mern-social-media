@@ -1,56 +1,10 @@
 import { MdEdit } from "react-icons/md";
-import { useState, useEffect } from "react";
 import defaultCoverPicture from "../../assets/default-cover.jpg";
 
-const CoverImageModal = ({ user, isMyProfile, coverImgRef, coverImg }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  
-  const modalId = user ? `cover_image_modal${user._id}` : null;
-
-  useEffect(() => {
-    if (!modalId) return;
-    
-    // Create a dummy element for showModal API compatibility
-    let modalElement = document.getElementById(modalId);
-    if (!modalElement) {
-      modalElement = document.createElement('div');
-      modalElement.id = modalId;
-      modalElement.style.display = 'none';
-      document.body.appendChild(modalElement);
-    }
-
-    // Override showModal
-    modalElement.showModal = function() {
-      setIsOpen(true);
-    };
-
-    // Override close
-    modalElement.close = function() {
-      setIsOpen(false);
-    };
-
-    // Listen for custom events
-    const handleOpen = () => setIsOpen(true);
-    const handleClose = () => setIsOpen(false);
-    
-    modalElement.addEventListener('open', handleOpen);
-    modalElement.addEventListener('close', handleClose);
-
-    return () => {
-      modalElement.removeEventListener('open', handleOpen);
-      modalElement.removeEventListener('close', handleClose);
-    };
-  }, [modalId]);
-
+const CoverImageModal = ({ user, isMyProfile, coverImgRef, coverImg, isOpen = false, onClose }) => {
   const handleEditClick = async () => {
     coverImgRef.current?.click();
-    handleClose();
-  };
-
-  const handleClose = () => {
-    setIsOpen(false);
-    const modal = document.getElementById(modalId);
-    if (modal && modal.close) modal.close();
+    onClose();
   };
 
   if (!user || !isOpen) return null;
@@ -60,7 +14,7 @@ const CoverImageModal = ({ user, isMyProfile, coverImgRef, coverImg }) => {
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={handleClose}
+        onClick={onClose}
       />
       
       {/* Modal Content */}

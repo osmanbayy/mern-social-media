@@ -8,6 +8,7 @@ import { formatPostDate } from "../../utils/date";
 import DeletePostDialog from "../modals/DeletePostDialog";
 import EditPostDialog from "../modals/EditPostDialog";
 import PostImageModal from "../modals/PostImageModal";
+import PostImageViewer from "../modals/PostImageViewer";
 import PostOptions from "../PostOptions";
 import PostActions from "./PostActions";
 import usePostCache from "../../hooks/usePostCache";
@@ -243,32 +244,13 @@ const Post = ({ post, isHidden = false }) => {
         </div>
       </div>
 
-      {/* Image Modal */}
-      {showImageModal && (
-        <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={closeImageModal}
-        >
-          <div 
-            className="relative max-w-screen-sm w-full p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={closeImageModal}
-              className="absolute top-2 right-2 z-10 btn btn-sm btn-circle btn-ghost bg-black/50 text-white hover:bg-black/70"
-            >
-              ✕
-            </button>
-            <img 
-              src={updatedPost.img} 
-              className="w-full h-auto object-contain rounded-lg" 
-              alt="Gönderi Resmi"
-              style={{ maxHeight: '90vh' }}
-              draggable="false"
-            />
-          </div>
-        </div>
-      )}
+      {/* Image Viewer */}
+      <PostImageViewer 
+        imageUrl={updatedPost.img}
+        isOpen={showImageModal}
+        onClose={closeImageModal}
+      />
+      
       <PostImageModal post={updatedPost} />
 
       {/* Delete Post Modal */}

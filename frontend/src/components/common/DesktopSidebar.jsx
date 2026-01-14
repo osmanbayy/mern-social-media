@@ -1,23 +1,17 @@
 import { Link } from "react-router-dom";
-import { LuBell, LuUser, LuBookmark, LuSettings, LuHouse, LuLogOut, LuEyeOff } from "react-icons/lu";
+import { LuLogOut } from "react-icons/lu";
 import { GoDotFill } from "react-icons/go";
 import OSSvg from "../svgs/OS";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useQueryClient } from "@tanstack/react-query";
+import { getNavItems } from "../../constants/navItems";
 
 const DesktopSidebar = ({ authUser, activeTab, setActiveTab, isNotRead, isSettingPage, onLogoutClick }) => {
   const theme = localStorage.getItem("theme");
   const isDark = (theme || "").toLowerCase() === "dark";
   const queryClient = useQueryClient();
 
-  const navItems = [
-    { id: "home", path: "/", icon: LuHouse, label: "Anasayfa" },
-    { id: "notifications", path: "/notifications", icon: LuBell, label: "Bildirimler", hasBadge: isNotRead },
-    { id: "savedPosts", path: "/saved-posts", icon: LuBookmark, label: "Kaydedilenler" },
-    { id: "hiddenPosts", path: "/hidden-posts", icon: LuEyeOff, label: "Gizlenenler" },
-    { id: "profile", path: `/profile/${authUser?.username}`, icon: LuUser, label: "Profil" },
-    { id: "settings", path: "/settings", icon: LuSettings, label: "Ayarlar" },
-  ];
+  const navItems = getNavItems(authUser, isNotRead);
 
   return (
     <div

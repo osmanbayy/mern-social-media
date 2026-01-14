@@ -1,0 +1,19 @@
+export const POST_FEED_TYPES = {
+  FOR_YOU: "forYou",
+  FOLLOWING: "following",
+  POSTS: "posts",
+  LIKES: "likes",
+  SAVES: "saves",
+  HIDDEN: "hidden",
+};
+
+export const POST_CONSTANTS = {
+  DEFAULT_LIMIT: 10,
+  SCROLL_THRESHOLD: 300,
+  SCROLL_THROTTLE_MS: 150,
+  CACHE_TIME_MS: 5 * 60 * 1000,
+  SUGGESTION_MIN_POSTS: 3,
+  SUGGESTION_MIN_POSITION: 3,
+  SUGGESTION_MAX_POSITION: 7,
+  SUGGESTION_MAX_INDEX: 10,
+};

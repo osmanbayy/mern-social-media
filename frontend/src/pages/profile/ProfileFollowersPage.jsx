@@ -5,12 +5,10 @@ import { FaArrowLeft } from "react-icons/fa6";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { getUserProfile, getFollowers, getFollowing } from "../../api/users";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
+import UserRowSkeleton from "../../components/skeletons/UserRowSkeleton";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import useFollow from "../../hooks/useFollow";
 
-// Tek bir kullanıcı satırı – takipçi veya takip edilen için kullanılabilir
-// showMutualLabel: karşılıklı takipte "Birbirinizi takip ediyorsunuz"
-// showNotFollowingBackLabel: karşılıklı değilse "Seni takip etmiyor"
 const UserRow = ({
   item,
   authUser,
@@ -126,9 +124,6 @@ const ProfileFollowersPage = () => {
     enabled: !!username,
   });
 
-  const isLoading =
-    isUserLoading || isUserRefetching || (!followers && !followings);
-
   const isSelf = authUser?._id === user?._id;
 
   const handleTabChange = (tab) => {
@@ -144,8 +139,10 @@ const ProfileFollowersPage = () => {
   ) => {
     if (isLoadingList) {
       return (
-        <div className="flex justify-center py-8">
-          <LoadingSpinner size="md" />
+        <div className="flex flex-col">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <UserRowSkeleton key={index} />
+          ))}
         </div>
       );
     }
@@ -236,11 +233,7 @@ const ProfileFollowersPage = () => {
 
       {/* Content */}
       <div className="px-0">
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <LoadingSpinner size="md" />
-          </div>
-        ) : activeTab === "followers" ? (
+        {activeTab === "followers" ? (
           renderList(followers, "Henüz takipçi yok.", isFollowersLoading, {
             showMutualLabel: isSelf,
             showNotFollowingBackLabel: false,

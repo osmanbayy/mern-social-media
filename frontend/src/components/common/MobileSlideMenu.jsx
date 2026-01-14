@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { LuSettings, LuBookmark, LuEyeOff, LuLogOut } from "react-icons/lu";
+import { LuLogOut, LuX, LuChevronRight } from "react-icons/lu";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
+import { MOBILE_MENU_ITEMS } from "../../constants/mobileMenuItems";
 
 const MobileSlideMenu = ({ authUser, isOpen, onClose, onLogoutClick }) => {
   const getColorClasses = (color) => {
@@ -24,35 +25,7 @@ const MobileSlideMenu = ({ authUser, isOpen, onClose, onLogoutClick }) => {
     return colors[color] || colors.primary;
   };
 
-  const menuItems = [
-    {
-      id: "settings",
-      path: "/settings",
-      icon: LuSettings,
-      label: "Ayarlar",
-      description: "Hesap ve uygulama ayarları",
-      color: "primary",
-      delay: "delay-100",
-    },
-    {
-      id: "saved",
-      path: "/saved-posts",
-      icon: LuBookmark,
-      label: "Kaydedilenler",
-      description: "Kaydettiğiniz gönderiler",
-      color: "amber-500",
-      delay: "delay-150",
-    },
-    {
-      id: "hidden",
-      path: "/hidden-posts",
-      icon: LuEyeOff,
-      label: "Gizlenenler",
-      description: "Gizlediğiniz gönderiler",
-      color: "purple-500",
-      delay: "delay-200",
-    },
-  ];
+  const menuItems = MOBILE_MENU_ITEMS;
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -101,14 +74,7 @@ const MobileSlideMenu = ({ authUser, isOpen, onClose, onLogoutClick }) => {
             onClick={onClose}
             className="p-2 rounded-full hover:bg-base-200 transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <LuX className="w-6 h-6" />
           </button>
         </div>
 
@@ -136,19 +102,7 @@ const MobileSlideMenu = ({ authUser, isOpen, onClose, onLogoutClick }) => {
                   <p className="font-semibold text-base">{item.label}</p>
                   <p className="text-xs text-base-content/50">{item.description}</p>
                 </div>
-                <svg
-                  className="w-5 h-5 text-base-content/30 group-hover:text-base-content/60 transition-colors"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
+                <LuChevronRight className="w-5 h-5 text-base-content/30 group-hover:text-base-content/60 transition-colors" />
               </Link>
             );
           })}
@@ -169,19 +123,7 @@ const MobileSlideMenu = ({ authUser, isOpen, onClose, onLogoutClick }) => {
               <p className="font-semibold text-base">Çıkış Yap</p>
               <p className="text-xs text-base-content/50">Hesabınızdan çıkış yapın</p>
             </div>
-            <svg
-              className="w-5 h-5 text-base-content/30 group-hover:text-red-500/60 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <LuChevronRight className="w-5 h-5 text-base-content/30 group-hover:text-red-500/60 transition-colors" />
           </button>
         </div>
       </div>
