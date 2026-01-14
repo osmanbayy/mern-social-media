@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { HiOutlineMail } from "react-icons/hi";
 import { FiUser, FiLogIn } from "react-icons/fi";
 import { GoLock } from "react-icons/go";
@@ -9,7 +9,7 @@ import { FaUserPlus } from "react-icons/fa6";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { signup } from "../../../api/auth";
-import { LuEye, LuEyeClosed } from "react-icons/lu";
+import { LuEye, LuEyeClosed, LuCheck, LuX } from "react-icons/lu";
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -35,27 +35,61 @@ const SignUpPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault(); // page won't reload
-    
+
     // Validate password match
     if (formData.password !== formData.confirmPassword) {
       setPasswordError("Şifreler eşleşmiyor");
       return;
     }
-    
+
     if (formData.password.length < 6) {
       setPasswordError("Şifre en az 6 karakter olmalıdır");
       return;
     }
-    
+
     // Remove confirmPassword from data sent to backend
     const { confirmPassword, ...signupData } = formData;
     mutate(signupData);
   };
 
+  // Password strength checker
+  const passwordStrength = useMemo(() => {
+    const password = formData.password;
+    if (!password) return { strength: 0, level: "", checks: {} };
+
+    const checks = {
+      length: password.length >= 8,
+      lowercase: /[a-z]/.test(password),
+      uppercase: /[A-Z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+    };
+
+    const strengthCount = Object.values(checks).filter(Boolean).length;
+    let level = "";
+    let strength = 0;
+
+    if (strengthCount <= 2) {
+      level = "Zayıf";
+      strength = 1;
+    } else if (strengthCount === 3) {
+      level = "Orta";
+      strength = 2;
+    } else if (strengthCount === 4) {
+      level = "Güçlü";
+      strength = 3;
+    } else {
+      level = "Çok Güçlü";
+      strength = 4;
+    }
+
+    return { strength, level, checks };
+  }, [formData.password]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
+
     // Clear password error when user starts typing
     if (name === "password" || name === "confirmPassword") {
       if (passwordError) {
@@ -114,29 +148,141 @@ const SignUpPage = () => {
             />
           </label>
 
-          <label className="input input-bordered rounded flex items-center gap-2 w-full">
-            <GoLock />
-            <input
-              type={showPassword ? "text" : "password"}
-              className="grow"
-              placeholder="Şifre"
-              name="password"
-              onChange={handleInputChange}
-              value={formData.password}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="btn btn-ghost btn-sm p-1"
-            >
-              {showPassword ? (
-                <LuEye />
-              ) : (
-                <LuEyeClosed />
-              )}
-            </button>
-          </label>
-          
+          <div className="w-full">
+            <label className="input input-bordered rounded flex items-center gap-2 w-full">
+              <GoLock />
+              <input
+                type={showPassword ? "text" : "password"}
+                className="grow"
+                placeholder="Şifre"
+                name="password"
+                onChange={handleInputChange}
+                value={formData.password}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="btn btn-ghost btn-sm p-1"
+              >
+                {showPassword ? (
+                  <LuEye />
+                ) : (
+                  <LuEyeClosed />
+                )}
+              </button>
+            </label>
+
+            {/* Password Strength Indicator */}
+            {formData.password && (
+              <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                {/* Strength Bar */}
+                <div className="w-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-base-content/70">
+                      Şifre Güçlülüğü
+                    </span>
+                    <span
+                      className={`text-xs font-semibold transition-colors duration-200 ${passwordStrength.strength === 1
+                          ? "text-red-500"
+                          : passwordStrength.strength === 2
+                            ? "text-yellow-500"
+                            : passwordStrength.strength === 3
+                              ? "text-blue-500"
+                              : "text-green-500"
+                        }`}
+                    >
+                      {passwordStrength.level}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-base-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ease-out ${passwordStrength.strength === 1
+                          ? "bg-red-500"
+                          : passwordStrength.strength === 2
+                            ? "bg-yellow-500"
+                            : passwordStrength.strength === 3
+                              ? "bg-blue-500"
+                              : "bg-green-500"
+                        }`}
+                      style={{
+                        width: `${(passwordStrength.strength / 4) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Password Requirements */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div
+                    className={`flex items-center gap-2 transition-all duration-200 ${passwordStrength.checks.length
+                        ? "text-green-500"
+                        : "text-base-content/50"
+                      }`}
+                  >
+                    {passwordStrength.checks.length ? (
+                      <LuCheck className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <LuX className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span>En az 8 karakter</span>
+                  </div>
+                  <div
+                    className={`flex items-center gap-2 transition-all duration-200 ${passwordStrength.checks.lowercase
+                        ? "text-green-500"
+                        : "text-base-content/50"
+                      }`}
+                  >
+                    {passwordStrength.checks.lowercase ? (
+                      <LuCheck className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <LuX className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span>Küçük harf</span>
+                  </div>
+                  <div
+                    className={`flex items-center gap-2 transition-all duration-200 ${passwordStrength.checks.uppercase
+                        ? "text-green-500"
+                        : "text-base-content/50"
+                      }`}
+                  >
+                    {passwordStrength.checks.uppercase ? (
+                      <LuCheck className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <LuX className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span>Büyük harf</span>
+                  </div>
+                  <div
+                    className={`flex items-center gap-2 transition-all duration-200 ${passwordStrength.checks.number
+                        ? "text-green-500"
+                        : "text-base-content/50"
+                      }`}
+                  >
+                    {passwordStrength.checks.number ? (
+                      <LuCheck className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <LuX className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span>Rakam</span>
+                  </div>
+                  <div
+                    className={`flex items-center gap-2 transition-all duration-200 sm:col-span-2 ${passwordStrength.checks.special
+                        ? "text-green-500"
+                        : "text-base-content/50"
+                      }`}
+                  >
+                    {passwordStrength.checks.special ? (
+                      <LuCheck className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <LuX className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span>Özel karakter (!@#$%^&*)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <label className="input input-bordered rounded flex items-center gap-2 w-full">
             <GoLock />
             <input
@@ -159,7 +305,7 @@ const SignUpPage = () => {
               )}
             </button>
           </label>
-          
+
           {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
           <button className="btn btn-accent rounded-full btn-outline w-full">
             <FaUserPlus /> {isPending ? "Yükleniyor..." : "Hesap Oluştur"}

@@ -130,7 +130,7 @@ const VerifyAccount = () => {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center px-4 sm:px-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-y-auto">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center px-4 sm:px-6 bg-base-100 overflow-y-auto">
       {/* Decorative background elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>

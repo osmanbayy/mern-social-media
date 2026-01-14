@@ -1,5 +1,5 @@
 import express from "express";
-import { get_me, login, logout, signup, sendVerifyOtp, verifyEmail, sendPasswordResetOtp, resetPassword, testEmail } from "../controllers/auth_controller.js";
+import { get_me, login, logout, signup, sendVerifyOtp, verifyEmail, sendPasswordResetOtp, verifyResetOtp, resetPassword, testEmail } from "../controllers/auth_controller.js";
 import { protect_route } from "../middlewares/protect_route.js";
 
 const router = express.Router();
@@ -12,6 +12,7 @@ router.post("/logout", logout);
 router.post("/send-verify-otp", protect_route, sendVerifyOtp);
 router.post("/verify-account", protect_route, verifyEmail);
 router.post("/send-reset-otp", sendPasswordResetOtp);
+router.post("/verify-reset-otp", verifyResetOtp);
 router.post("/reset-password", resetPassword);
 
 // Test endpoint (only for debugging)

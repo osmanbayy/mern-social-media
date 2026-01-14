@@ -125,6 +125,18 @@ export const requestPasswordReset = async (email) => {
   return handleResponse(response);
 };
 
+export const verifyResetOtp = async (email, otp) => {
+  const response = await fetch(`${API_BASE}/verify-reset-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ email, otp }),
+  });
+  return handleResponse(response);
+};
+
 export const resetPassword = async (email, otp, newPassword) => {
   const response = await fetch(`${API_BASE}/reset-password`, {
     method: "POST",

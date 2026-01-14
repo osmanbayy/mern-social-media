@@ -352,6 +352,7 @@ export const sendPasswordResetOtp = async (req, res) => {
     };
 
     try {
+      await transporter.sendMail(mailOption);
       return res.json({
         success: true,
         message: "Şifre sıfırlama için tek kullanımlık 6 haneli kod gönderildi.",
@@ -409,6 +410,48 @@ export const testEmail = async (req, res) => {
         response: error.response,
       },
     });
+  }
+};
+
+export const verifyResetOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.json({
+      success: false,
+      message: "E-posta ve OTP gereklidir.",
+    });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "Bu mail ile eşleşen bir hesap bulamadık.",
+      });
+    }
+
+    if (user.resetOtp === "" || user.resetOtp !== otp) {
+      return res.json({
+        success: false,
+        message: "Hatalı doğrulama kodu!",
+      });
+    }
+
+    if (user.resetOtpExpiredAt < Date.now()) {
+      return res.json({
+        success: false,
+        message: "Tek kullanımlık şifrenizin süresi dolmuş.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Doğrulama kodu geçerli.",
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
   }
 };
 
