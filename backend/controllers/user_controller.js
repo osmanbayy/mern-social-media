@@ -3,14 +3,31 @@ import User from "../models/user_model.js";
 import Post from "../models/post_model.js";
 import bcrypt from "bcryptjs";
 import { v2 as cloudinary } from "cloudinary";
+import mongoose from "mongoose";
 
 export const get_user_profile = async (req, res) => {
   const { username } = req.params;
+  const currentUserId = req.user._id;
 
   try {
+    const currentUser = await User.findById(currentUserId);
+    if (!currentUser) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
     const user = await User.findOne({ username }).select("-password");
     if (!user)
       return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+
+    // Check if current user is blocked by this user
+    // If the profile owner has blocked the current user, they can't see the profile
+    const isBlockedByUser = user.blockedUsers.some(
+      (id) => id.toString() === currentUserId.toString()
+    );
+    
+    if (isBlockedByUser) {
+      return res.status(403).json({ message: "Bu profili görüntüleme yetkiniz yok." });
+    }
 
     // Get post count for this user
     const postCount = await Post.countDocuments({ user: user._id });
@@ -76,13 +93,30 @@ export const get_suggested_users = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
 
-    const usersFollowedByMe = await User.findById(userId).select("following");
-    const followingIds = usersFollowedByMe.following.map(id => id.toString());
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    const followingIds = currentUser.following.map(id => id.toString());
+    
+    // Get blocked user IDs (users who blocked current user)
+    const blockedByUsers = await User.find({
+      blockedUsers: userId
+    }).select("_id");
+
+    const blockedByUserIds = blockedByUsers.map(u => u._id.toString());
+    
+    // Also exclude users that current user has blocked
+    const blockedUserIds = currentUser.blockedUsers.map(id => id.toString());
     
     // Get random sample of users (larger sample to account for filtering)
     // Get more users to ensure we have enough after filtering
     const totalUsers = await User.countDocuments({
-      _id: { $ne: userId },
+      _id: { 
+        $ne: userId,
+        $nin: [...blockedUserIds, ...blockedByUserIds]
+      },
     });
     const sampleSize = Math.min(100, totalUsers);
 
@@ -95,11 +129,14 @@ export const get_suggested_users = async (req, res) => {
       });
     }
 
-    // Get random users
+    // Get random users (excluding blocked users)
     const users = await User.aggregate([
       {
         $match: {
-          _id: { $ne: userId },
+          _id: { 
+            $ne: userId,
+            $nin: [...blockedUserIds.map(id => new mongoose.Types.ObjectId(id)), ...blockedByUserIds.map(id => new mongoose.Types.ObjectId(id))]
+          },
         },
       },
       { $sample: { size: sampleSize } },
@@ -241,11 +278,30 @@ export const search_users = async (req, res) => {
       return res.status(200).json([]);
     }
 
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    // Get blocked user IDs (users who blocked current user)
+    const blockedByUsers = await User.find({
+      blockedUsers: userId
+    }).select("_id");
+
+    const blockedByUserIds = blockedByUsers.map(u => u._id.toString());
+    
+    // Also exclude users that current user has blocked
+    const blockedUserIds = currentUser.blockedUsers.map(id => id.toString());
+
     const searchQuery = query.trim().toLowerCase();
     
     // Search by username or fullname (case insensitive)
+    // Exclude: current user, users blocked by current user, users who blocked current user
     const users = await User.find({
-      _id: { $ne: userId }, // Exclude current user
+      _id: { 
+        $ne: userId,
+        $nin: [...blockedUserIds, ...blockedByUserIds]
+      },
       $or: [
         { username: { $regex: searchQuery, $options: "i" } },
         { fullname: { $regex: searchQuery, $options: "i" } }
@@ -276,12 +332,31 @@ export const search_users_paginated = async (req, res) => {
       });
     }
 
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    // Get blocked user IDs (users who blocked current user)
+    const blockedByUsers = await User.find({
+      blockedUsers: userId
+    }).select("_id");
+
+    const blockedByUserIds = blockedByUsers.map(u => u._id.toString());
+    
+    // Also exclude users that current user has blocked
+    const blockedUserIds = currentUser.blockedUsers.map(id => id.toString());
+
     const searchQuery = query.trim();
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
     // Search by username or fullname (case insensitive)
+    // Exclude: current user, users blocked by current user, users who blocked current user
     const users = await User.find({
-      _id: { $ne: userId }, // Exclude current user
+      _id: { 
+        $ne: userId,
+        $nin: [...blockedUserIds, ...blockedByUserIds]
+      },
       $or: [
         { username: { $regex: searchQuery, $options: "i" } },
         { fullname: { $regex: searchQuery, $options: "i" } }
@@ -293,7 +368,10 @@ export const search_users_paginated = async (req, res) => {
 
     // Get total count for hasMore
     const totalCount = await User.countDocuments({
-      _id: { $ne: userId },
+      _id: { 
+        $ne: userId,
+        $nin: [...blockedUserIds, ...blockedByUserIds]
+      },
       $or: [
         { username: { $regex: searchQuery, $options: "i" } },
         { fullname: { $regex: searchQuery, $options: "i" } }
@@ -312,5 +390,102 @@ export const search_users_paginated = async (req, res) => {
   } catch (error) {
     console.log("Error in search users paginated controller", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+// Block user
+export const block_user = async (req, res) => {
+  try {
+    const { id } = req.params; // User to block
+    const currentUserId = req.user._id;
+
+    if (id === currentUserId.toString()) {
+      return res.status(400).json({ message: "Kendinizi engelleyemezsiniz." });
+    }
+
+    const userToBlock = await User.findById(id);
+    const currentUser = await User.findById(currentUserId);
+
+    if (!userToBlock || !currentUser) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    // Check if already blocked
+    const isAlreadyBlocked = currentUser.blockedUsers.some(
+      (blockedId) => blockedId.toString() === id
+    );
+
+    if (isAlreadyBlocked) {
+      return res.status(400).json({ message: "Bu kullanıcı zaten engellenmiş." });
+    }
+
+    // Block the user
+    currentUser.blockedUsers.push(id);
+    
+    // Remove from following/followers if exists
+    await User.findByIdAndUpdate(currentUserId, { $pull: { following: id } });
+    await User.findByIdAndUpdate(id, { $pull: { followers: currentUserId } });
+    
+    await currentUser.save();
+
+    res.status(200).json({ message: "Kullanıcı engellendi." });
+  } catch (error) {
+    console.log("Error in block user controller", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Unblock user
+export const unblock_user = async (req, res) => {
+  try {
+    const { id } = req.params; // User to unblock
+    const currentUserId = req.user._id;
+
+    const currentUser = await User.findById(currentUserId);
+
+    if (!currentUser) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    // Check if user is blocked
+    const isBlocked = currentUser.blockedUsers.some(
+      (blockedId) => blockedId.toString() === id
+    );
+
+    if (!isBlocked) {
+      return res.status(400).json({ message: "Bu kullanıcı engellenmemiş." });
+    }
+
+    // Unblock the user
+    currentUser.blockedUsers = currentUser.blockedUsers.filter(
+      (blockedId) => blockedId.toString() !== id
+    );
+    await currentUser.save();
+
+    res.status(200).json({ message: "Kullanıcının engeli kaldırıldı." });
+  } catch (error) {
+    console.log("Error in unblock user controller", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get blocked users
+export const get_blocked_users = async (req, res) => {
+  try {
+    const currentUserId = req.user._id;
+
+    const currentUser = await User.findById(currentUserId).populate({
+      path: "blockedUsers",
+      select: "-password",
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    res.status(200).json(currentUser.blockedUsers || []);
+  } catch (error) {
+    console.log("Error in get blocked users controller", error.message);
+    res.status(500).json({ message: error.message });
   }
 };

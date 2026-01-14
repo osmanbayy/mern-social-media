@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
 import ProfileImageModal from "../../components/modals/ProfileImageModal";
 import CoverImageModal from "../../components/modals/CoverImageModal";
+import BlockUserDialog from "../../components/modals/BlockUserDialog";
 import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
-import { getUserProfile } from "../../api/users";
+import { HiDotsHorizontal } from "react-icons/hi";
+import { GoBlocked, GoMute } from "react-icons/go";
+import { LuShare2 } from "react-icons/lu";
+import { CiFlag1 } from "react-icons/ci";
+import { getUserProfile, blockUser } from "../../api/users";
 import { formatMemberSinceDate } from "../../utils/date";
 import useFollow from "../../hooks/useFollow";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
@@ -20,9 +25,12 @@ import useProfileImage from "../../hooks/useProfileImage";
 
 const ProfilePage = () => {
   const [feedType, setFeedType] = useState("posts");
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
 
   const { username } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: authUser } = useQuery({
     queryKey: ["authUser"],
@@ -87,6 +95,23 @@ const ProfilePage = () => {
     await updateProfile({ coverImg, profileImage });
     resetImages();
     refetchUser();
+  };
+
+  const handleBlockUser = async () => {
+    if (!user?._id) return;
+    
+    setIsBlocking(true);
+    try {
+      await blockUser(user._id);
+      queryClient.invalidateQueries({ queryKey: ["user", username] });
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      setShowBlockDialog(false);
+    } catch (error) {
+      console.error("Error blocking user:", error);
+    } finally {
+      setIsBlocking(false);
+    }
   };
 
   useEffect(() => {
@@ -194,7 +219,7 @@ const ProfilePage = () => {
             <div className="h-16" />
 
             {/* Profil aksiyonları (Takip / Profili düzenle / Güncelle) */}
-            <div className="flex justify-end px-4 mb-3 gap-2">
+            <div className="flex justify-end items-center px-4 mb-3 gap-2">
               {isMyProfile ? (
                 <button
                   className="btn btn-outline rounded-full btn-sm"
@@ -203,17 +228,65 @@ const ProfilePage = () => {
                   Bilgilerini Düzenle
                 </button>
               ) : (
-                <button
-                  className={`btn btn-sm rounded-full px-4 ${
-                    amIFollowing ? "btn-outline" : "btn-primary text-white"
-                  }`}
-                  onClick={() => follow(user?._id)}
-                  disabled={isPending}
-                >
-                  {isPending && <LoadingSpinner size="sm" />}
-                  {!isPending && amIFollowing && "Takibi Bırak"}
-                  {!isPending && !amIFollowing && "Takip Et"}
-                </button>
+                <>
+                  {/* 3 nokta dropdown */}
+                  <div className="dropdown dropdown-left">
+                    <button
+                      type="button"
+                      className="btn btn-sm rounded-full btn-outline p-2 h-8 w-8 min-h-8 flex items-center justify-center outline-none"
+                    >
+                      <HiDotsHorizontal
+                        tabIndex={0}
+                        role="button"
+                        className="size-5 cursor-pointer border-none outline-none"
+                      />
+                    </button>
+                    <ul
+                      tabIndex={0}
+                      className="dropdown-content rounded-xl border border-base-300/50 menu bg-base-100/95 backdrop-blur-xl z-[100] font-semibold min-w-60 p-2 shadow-2xl transition-all duration-200 ease-out"
+                    >
+                      <li 
+                        className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowBlockDialog(true);
+                        }}
+                      >
+                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+                          <GoBlocked /> <span>Engelle</span>
+                        </a>
+                      </li>
+                      <li className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg">
+                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+                          <GoMute /> <span>Sessize Al</span>
+                        </a>
+                      </li>
+                      <li className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg">
+                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+                          <LuShare2 /> <span>Profili Paylaş</span>
+                        </a>
+                      </li>
+                      <li className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg">
+                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+                          <CiFlag1 /> <span>Bildir</span>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <button
+                    className={`btn btn-sm rounded-full px-4 ${
+                      amIFollowing ? "btn-outline" : "btn-primary text-white"
+                    }`}
+                    onClick={() => follow(user?._id)}
+                    disabled={isPending}
+                  >
+                    {isPending && <LoadingSpinner size="sm" />}
+                    {!isPending && amIFollowing && "Takibi Bırak"}
+                    {!isPending && !amIFollowing && "Takip Et"}
+                  </button>
+                </>
               )}
 
               {(coverImg || profileImage) && (
@@ -333,6 +406,17 @@ const ProfilePage = () => {
         coverImgRef={coverImgRef}
         coverImg={coverImg}
       />
+
+      {/* Block User Dialog */}
+      {!isMyProfile && (
+        <BlockUserDialog
+          isOpen={showBlockDialog}
+          onClose={() => setShowBlockDialog(false)}
+          onConfirm={handleBlockUser}
+          userName={user?.username}
+          isBlocking={isBlocking}
+        />
+      )}
     </>
   );
 };

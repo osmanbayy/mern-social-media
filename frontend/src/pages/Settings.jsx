@@ -8,11 +8,13 @@ import {
   LuPalette,
   LuChevronRight,
   LuMenu,
-  LuX
+  LuX,
+  LuBan
 } from "react-icons/lu";
 import { HiQuestionMarkCircle } from "react-icons/hi2";
 import AccountInformation from "../components/settingsComponents/AccountInformation";
 import DisplayAndTheme from "../components/settingsComponents/DisplayAndTheme";
+import BlockedAccounts from "../components/settingsComponents/BlockedAccounts";
 import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
@@ -35,6 +37,11 @@ const Settings = () => {
       id: "Gizlilik ve Güvenlik", 
       label: "Gizlilik ve Güvenlik", 
       icon: LuShield 
+    },
+    { 
+      id: "Engellenen Hesaplar", 
+      label: "Engellenen Hesaplar", 
+      icon: LuBan 
     },
     { 
       id: "Erişilebilirlik", 
@@ -73,6 +80,8 @@ const Settings = () => {
             </div>
           </div>
         );
+      case "Engellenen Hesaplar":
+        return <BlockedAccounts />;
       case "Erişilebilirlik":
         return (
           <div className="flex flex-col gap-4">

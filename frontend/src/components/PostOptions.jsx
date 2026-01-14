@@ -12,6 +12,9 @@ import { CiFlag1 } from "react-icons/ci";
 import LoadingSpinner from "./common/LoadingSpinner";
 import useFollow from "../hooks/useFollow";
 import ShareModal from "./modals/ShareModal";
+import BlockUserDialog from "./modals/BlockUserDialog";
+import { blockUser } from "../api/users";
+import { useQueryClient } from "@tanstack/react-query";
 
 const PostOptions = ({ 
   post, 
@@ -32,7 +35,10 @@ const PostOptions = ({
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
   const { follow, unfollow, isPending } = useFollow(postOwner._id);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
   const dropdownTriggerRef = useRef(null);
+  const queryClient = useQueryClient();
   
   // Check if current user is following the post owner
   const amIFollowing = authUser?.following?.some(
@@ -63,6 +69,35 @@ const PostOptions = ({
     setTimeout(() => {
       setShowShareModal(true);
     }, 100);
+  };
+
+  const handleBlockClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Close dropdown immediately
+    if (dropdownTriggerRef.current) {
+      dropdownTriggerRef.current.blur();
+    }
+    
+    // Small delay to ensure dropdown closes before modal opens
+    setTimeout(() => {
+      setShowBlockDialog(true);
+    }, 100);
+  };
+
+  const handleBlockConfirm = async () => {
+    setIsBlocking(true);
+    try {
+      await blockUser(postOwner._id);
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      setShowBlockDialog(false);
+    } catch (error) {
+      console.error("Error blocking user:", error);
+    } finally {
+      setIsBlocking(false);
+    }
   };
 
   return (
@@ -253,10 +288,13 @@ const PostOptions = ({
           )}
           
           {!isMyPost && (
-            <li>
-              <a href="" className="rounded-none whitespace-nowrap">
+            <li 
+              className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
+              onClick={handleBlockClick}
+            >
+              <a className="rounded-none flex whitespace-nowrap cursor-pointer">
                 <GoBlocked /> Engelle{" "}
-                <span className="text-gray-500">
+                <span className="text-base-content/60">
                   @{postOwner.username}
                 </span>
               </a>
@@ -280,6 +318,17 @@ const PostOptions = ({
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
       />
+
+      {/* Block User Dialog */}
+      {!isMyPost && (
+        <BlockUserDialog
+          isOpen={showBlockDialog}
+          onClose={() => setShowBlockDialog(false)}
+          onConfirm={handleBlockConfirm}
+          userName={postOwner.username}
+          isBlocking={isBlocking}
+        />
+      )}
     </div>
   );
 };

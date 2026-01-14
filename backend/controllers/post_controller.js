@@ -2,6 +2,7 @@ import Post from "../models/post_model.js";
 import User from "../models/user_model.js";
 import Notification from "../models/notification_model.js";
 import { v2 as cloudinary } from "cloudinary";
+import mongoose from "mongoose";
 
 // Helper function to parse mentions from text
 const parseMentions = async (text, excludeUserId) => {
@@ -293,14 +294,26 @@ export const get_all_posts = async (req, res) => {
     // Kullanıcının gizlediği gönderileri al
     const user = await User.findById(userId);
     const hiddenPostIds = user.hiddenPosts.map(id => id.toString());
+    
+    // Get blocked user IDs (users who blocked current user)
+    const blockedByUsers = await User.find({
+      blockedUsers: userId
+    }).select("_id");
+
+    const blockedByUserIds = blockedByUsers.map(u => u._id.toString());
+    
+    // Also exclude users that current user has blocked
+    const blockedUserIds = user.blockedUsers.map(id => id.toString());
 
     // Get total count
     const totalPosts = await Post.countDocuments({
-      _id: { $nin: hiddenPostIds }
+      _id: { $nin: hiddenPostIds },
+      user: { $nin: [...blockedUserIds.map(id => new mongoose.Types.ObjectId(id)), ...blockedByUserIds.map(id => new mongoose.Types.ObjectId(id))] }
     });
 
     const posts = await Post.find({
-      _id: { $nin: hiddenPostIds } // Gizlenen gönderileri hariç tut
+      _id: { $nin: hiddenPostIds }, // Gizlenen gönderileri hariç tut
+      user: { $nin: [...blockedUserIds.map(id => new mongoose.Types.ObjectId(id)), ...blockedByUserIds.map(id => new mongoose.Types.ObjectId(id))] } // Engellenen kullanıcıların postlarını hariç tut
     })
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -367,9 +380,24 @@ export const get_following_posts = async (req, res) => {
 
     // Kullanıcının gizlediği gönderileri al
     const hiddenPostIds = user.hiddenPosts.map(id => id.toString());
+    
+    // Get blocked user IDs (users who blocked current user)
+    const blockedByUsers = await User.find({
+      blockedUsers: userId
+    }).select("_id");
+
+    const blockedByUserIds = blockedByUsers.map(u => u._id.toString());
+    
+    // Also exclude users that current user has blocked
+    const blockedUserIds = user.blockedUsers.map(id => id.toString());
+    
+    // Filter following to exclude blocked users
+    const followingFiltered = following.filter(
+      (id) => !blockedUserIds.includes(id.toString()) && !blockedByUserIds.includes(id.toString())
+    );
 
     const feedPosts = await Post.find({
-      user: { $in: following },
+      user: { $in: followingFiltered },
       _id: { $nin: hiddenPostIds }
     })
       .sort({
@@ -482,10 +510,21 @@ export const search_posts = async (req, res) => {
     // Get user's hidden posts
     const user = await User.findById(userId);
     const hiddenPostIds = user.hiddenPosts.map(id => id.toString());
+    
+    // Get blocked user IDs (users who blocked current user)
+    const blockedByUsers = await User.find({
+      blockedUsers: userId
+    }).select("_id");
+
+    const blockedByUserIds = blockedByUsers.map(u => u._id.toString());
+    
+    // Also exclude users that current user has blocked
+    const blockedUserIds = user.blockedUsers.map(id => id.toString());
 
     // Search posts by text content (case insensitive)
     const posts = await Post.find({
       _id: { $nin: hiddenPostIds },
+      user: { $nin: [...blockedUserIds.map(id => new mongoose.Types.ObjectId(id)), ...blockedByUserIds.map(id => new mongoose.Types.ObjectId(id))] },
       $or: [
         { text: { $regex: searchQuery, $options: "i" } }
       ]
@@ -505,6 +544,7 @@ export const search_posts = async (req, res) => {
     // Get total count for hasMore
     const totalCount = await Post.countDocuments({
       _id: { $nin: hiddenPostIds },
+      user: { $nin: [...blockedUserIds.map(id => new mongoose.Types.ObjectId(id)), ...blockedByUserIds.map(id => new mongoose.Types.ObjectId(id))] },
       $or: [
         { text: { $regex: searchQuery, $options: "i" } }
       ]

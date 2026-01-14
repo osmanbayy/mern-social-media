@@ -140,3 +140,29 @@ export const searchUsersPaginated = async (query, page = 1, limit = 5) => {
   });
   return handleResponse(response);
 };
+
+// Block user
+export const blockUser = async (userId) => {
+  const response = await fetch(`${API_BASE}/block/${userId}`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
+
+// Unblock user
+export const unblockUser = async (userId) => {
+  const response = await fetch(`${API_BASE}/unblock/${userId}`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
+
+// Get blocked users
+export const getBlockedUsers = async () => {
+  const response = await fetch(`${API_BASE}/blocked`, {
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
