@@ -1,6 +1,5 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import toast from "react-hot-toast";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { LuMail, LuRefreshCw } from "react-icons/lu";
@@ -8,7 +7,6 @@ import { AiOutlineLoading } from "react-icons/ai";
 import { verifyAccount, sendVerifyOtp } from "../api/auth.js";
 import {
   OTP_LENGTH,
-  STORAGE_KEYS,
   ROUTES,
   ERROR_MESSAGES,
 } from "../constants/verification.js";
@@ -32,7 +30,6 @@ const VerifyAccount = () => {
   });
 
   const userId = authUser?._id;
-  const sentBefore = localStorage.getItem(STORAGE_KEYS.OTP_SENT);
 
   const handleInput = (e, index) => {
     if (!isNumeric(e.target.value)) {
@@ -124,21 +121,18 @@ const VerifyAccount = () => {
     }
   };
 
-  useEffect(() => {
-    if (authUser && !sentBefore) {
-      sendVerificationOtp();
-      localStorage.setItem(STORAGE_KEYS.OTP_SENT, "true");
-    }
-  }, [authUser]);
+  // Removed automatic email sending on mount
+  // Backend already sends verification email during signup
+  // User can manually request a new code using the "Yeniden Gönder" button
 
   if (!authUser) {
     return null;
   }
 
   return (
-    <div className="w-full flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center px-4 sm:px-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-y-auto">
       {/* Decorative background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
       </div>

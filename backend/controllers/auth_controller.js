@@ -196,16 +196,6 @@ export const sendVerifyOtp = async (req, res) => {
     user.verifyOtpExpiresAt = Date.now() + 24 * 60 * 60 * 1000;
     await user.save();
 
-    const mailOption = {
-      from: process.env.SENDER_EMAIL,
-      to: user.email,
-      subject: "Hesabınızı Doğrulayın",
-      html: EMAIL_VERIFY_TEMPLATE.replace("{{otp}}", otp).replace(
-        "{{email}}",
-        user.email
-      ),
-    };
-
     try {
       if (!process.env.SENDER_EMAIL) {
         console.error("SENDER_EMAIL environment variable is not set!");

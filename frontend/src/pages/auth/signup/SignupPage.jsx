@@ -17,8 +17,11 @@ const SignUpPage = () => {
     username: "",
     fullname: "",
     password: "",
+    confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
   const queryClient = useQueryClient();
 
   const { mutate, isError, error, isPending } = useMutation({
@@ -32,11 +35,33 @@ const SignUpPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault(); // page won't reload
-    mutate(formData);
+    
+    // Validate password match
+    if (formData.password !== formData.confirmPassword) {
+      setPasswordError("Şifreler eşleşmiyor");
+      return;
+    }
+    
+    if (formData.password.length < 6) {
+      setPasswordError("Şifre en az 6 karakter olmalıdır");
+      return;
+    }
+    
+    // Remove confirmPassword from data sent to backend
+    const { confirmPassword, ...signupData } = formData;
+    mutate(signupData);
   };
 
   const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Clear password error when user starts typing
+    if (name === "password" || name === "confirmPassword") {
+      if (passwordError) {
+        setPasswordError("");
+      }
+    }
   };
 
   return (
@@ -111,6 +136,31 @@ const SignUpPage = () => {
               )}
             </button>
           </label>
+          
+          <label className="input input-bordered rounded flex items-center gap-2 w-full">
+            <GoLock />
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              className="grow"
+              placeholder="Şifreyi Tekrar Girin"
+              name="confirmPassword"
+              onChange={handleInputChange}
+              value={formData.confirmPassword}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="btn btn-ghost btn-sm p-1"
+            >
+              {showConfirmPassword ? (
+                <LuEye />
+              ) : (
+                <LuEyeClosed />
+              )}
+            </button>
+          </label>
+          
+          {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
           <button className="btn btn-accent rounded-full btn-outline w-full">
             <FaUserPlus /> {isPending ? "Yükleniyor..." : "Hesap Oluştur"}
           </button>

@@ -19,11 +19,13 @@ const EditProfilePage = () => {
     bio: "",
     link: "",
     newPassword: "",
+    confirmNewPassword: "",
     currentPassword: "",
   });
 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -35,6 +37,7 @@ const EditProfilePage = () => {
         bio: authUser.bio || "",
         link: authUser.link || "",
         newPassword: "",
+        confirmNewPassword: "",
         currentPassword: "",
       });
     }
@@ -69,7 +72,7 @@ const EditProfilePage = () => {
     }
 
     // Password validation
-    if (formData.newPassword || formData.currentPassword) {
+    if (formData.newPassword || formData.currentPassword || formData.confirmNewPassword) {
       if (!formData.currentPassword) {
         newErrors.currentPassword = "Yeni şifre için mevcut şifrenizi girin";
       }
@@ -77,6 +80,11 @@ const EditProfilePage = () => {
         newErrors.newPassword = "Yeni şifre girin";
       } else if (formData.newPassword.length < 6) {
         newErrors.newPassword = "Şifre en az 6 karakter olmalıdır";
+      }
+      if (formData.newPassword && !formData.confirmNewPassword) {
+        newErrors.confirmNewPassword = "Yeni şifrenizi tekrar girin";
+      } else if (formData.newPassword && formData.confirmNewPassword && formData.newPassword !== formData.confirmNewPassword) {
+        newErrors.confirmNewPassword = "Şifreler eşleşmiyor";
       }
     }
 
@@ -93,7 +101,9 @@ const EditProfilePage = () => {
     }
 
     try {
-      await updateProfile(formData);
+      // Remove confirmNewPassword from data sent to backend
+      const { confirmNewPassword, ...profileData } = formData;
+      await updateProfile(profileData);
       navigate(`/profile/${formData.username}`);
     } catch (error) {
       console.error("Update error:", error);
@@ -291,6 +301,35 @@ const EditProfilePage = () => {
               </div>
               {errors.newPassword && (
                 <p className="text-xs text-error flex items-center gap-1">{errors.newPassword}</p>
+              )}
+            </div>
+
+            {/* Confirm New Password */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-base-content/70">
+                Yeni Şifreyi Tekrar Girin
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmNewPassword ? "text" : "password"}
+                  name="confirmNewPassword"
+                  value={formData.confirmNewPassword}
+                  onChange={handleInputChange}
+                  className={`w-full input input-bordered rounded-xl transition-all duration-200 pr-10 ${
+                    errors.confirmNewPassword ? "input-error border-error" : "focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  }`}
+                  placeholder="Yeni şifrenizi tekrar girin"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/50 hover:text-base-content transition-colors"
+                >
+                  {showConfirmNewPassword ? <LuEyeOff className="w-5 h-5" /> : <LuEye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors.confirmNewPassword && (
+                <p className="text-xs text-error flex items-center gap-1">{errors.confirmNewPassword}</p>
               )}
             </div>
           </div>
