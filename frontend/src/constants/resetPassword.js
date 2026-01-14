@@ -11,6 +11,7 @@ export const ERROR_MESSAGES = {
   EMAIL_REQUIRED: "Lütfen e-posta adresinizi girin.",
   INVALID_OTP_LENGTH: "Lütfen 6 haneli doğrulama kodunu girin.",
   PASSWORD_TOO_SHORT: "Şifre en az 6 karakter olmalıdır.",
+  PASSWORD_MISMATCH: "Şifreler eşleşmiyor",
   EMAIL_SEND_FAILED: "E-posta gönderilemedi.",
   RESET_FAILED: "Şifre sıfırlama başarısız.",
   GENERIC_ERROR: "Bir hata oluştu.",

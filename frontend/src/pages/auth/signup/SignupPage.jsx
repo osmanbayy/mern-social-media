@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { signup } from "../../../api/auth";
 import { LuEye, LuEyeClosed, LuCheck, LuX } from "react-icons/lu";
+import { calculatePasswordStrength } from "../../../utils/passwordStrength";
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -54,36 +55,7 @@ const SignUpPage = () => {
 
   // Password strength checker
   const passwordStrength = useMemo(() => {
-    const password = formData.password;
-    if (!password) return { strength: 0, level: "", checks: {} };
-
-    const checks = {
-      length: password.length >= 8,
-      lowercase: /[a-z]/.test(password),
-      uppercase: /[A-Z]/.test(password),
-      number: /[0-9]/.test(password),
-      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
-    };
-
-    const strengthCount = Object.values(checks).filter(Boolean).length;
-    let level = "";
-    let strength = 0;
-
-    if (strengthCount <= 2) {
-      level = "Zayıf";
-      strength = 1;
-    } else if (strengthCount === 3) {
-      level = "Orta";
-      strength = 2;
-    } else if (strengthCount === 4) {
-      level = "Güçlü";
-      strength = 3;
-    } else {
-      level = "Çok Güçlü";
-      strength = 4;
-    }
-
-    return { strength, level, checks };
+    return calculatePasswordStrength(formData.password);
   }, [formData.password]);
 
   const handleInputChange = (e) => {
@@ -183,12 +155,12 @@ const SignUpPage = () => {
                     </span>
                     <span
                       className={`text-xs font-semibold transition-colors duration-200 ${passwordStrength.strength === 1
-                          ? "text-red-500"
-                          : passwordStrength.strength === 2
-                            ? "text-yellow-500"
-                            : passwordStrength.strength === 3
-                              ? "text-blue-500"
-                              : "text-green-500"
+                        ? "text-red-500"
+                        : passwordStrength.strength === 2
+                          ? "text-yellow-500"
+                          : passwordStrength.strength === 3
+                            ? "text-blue-500"
+                            : "text-green-500"
                         }`}
                     >
                       {passwordStrength.level}
@@ -197,12 +169,12 @@ const SignUpPage = () => {
                   <div className="w-full h-2 bg-base-200 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ease-out ${passwordStrength.strength === 1
-                          ? "bg-red-500"
-                          : passwordStrength.strength === 2
-                            ? "bg-yellow-500"
-                            : passwordStrength.strength === 3
-                              ? "bg-blue-500"
-                              : "bg-green-500"
+                        ? "bg-red-500"
+                        : passwordStrength.strength === 2
+                          ? "bg-yellow-500"
+                          : passwordStrength.strength === 3
+                            ? "bg-blue-500"
+                            : "bg-green-500"
                         }`}
                       style={{
                         width: `${(passwordStrength.strength / 4) * 100}%`,
@@ -215,8 +187,8 @@ const SignUpPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   <div
                     className={`flex items-center gap-2 transition-all duration-200 ${passwordStrength.checks.length
-                        ? "text-green-500"
-                        : "text-base-content/50"
+                      ? "text-green-500"
+                      : "text-base-content/50"
                       }`}
                   >
                     {passwordStrength.checks.length ? (
@@ -228,8 +200,8 @@ const SignUpPage = () => {
                   </div>
                   <div
                     className={`flex items-center gap-2 transition-all duration-200 ${passwordStrength.checks.lowercase
-                        ? "text-green-500"
-                        : "text-base-content/50"
+                      ? "text-green-500"
+                      : "text-base-content/50"
                       }`}
                   >
                     {passwordStrength.checks.lowercase ? (
@@ -241,8 +213,8 @@ const SignUpPage = () => {
                   </div>
                   <div
                     className={`flex items-center gap-2 transition-all duration-200 ${passwordStrength.checks.uppercase
-                        ? "text-green-500"
-                        : "text-base-content/50"
+                      ? "text-green-500"
+                      : "text-base-content/50"
                       }`}
                   >
                     {passwordStrength.checks.uppercase ? (
@@ -254,8 +226,8 @@ const SignUpPage = () => {
                   </div>
                   <div
                     className={`flex items-center gap-2 transition-all duration-200 ${passwordStrength.checks.number
-                        ? "text-green-500"
-                        : "text-base-content/50"
+                      ? "text-green-500"
+                      : "text-base-content/50"
                       }`}
                   >
                     {passwordStrength.checks.number ? (
@@ -267,8 +239,8 @@ const SignUpPage = () => {
                   </div>
                   <div
                     className={`flex items-center gap-2 transition-all duration-200 sm:col-span-2 ${passwordStrength.checks.special
-                        ? "text-green-500"
-                        : "text-base-content/50"
+                      ? "text-green-500"
+                      : "text-base-content/50"
                       }`}
                   >
                     {passwordStrength.checks.special ? (

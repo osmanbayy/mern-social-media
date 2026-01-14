@@ -11,7 +11,10 @@ import { ERROR_MESSAGES, MIN_PASSWORD_LENGTH, OTP_LENGTH } from "../../constants
 
 const NewPasswordForm = ({ email, otp }) => {
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -23,8 +26,14 @@ const NewPasswordForm = ({ email, otp }) => {
       return;
     }
 
+    // Validate password match
+    if (newPassword !== confirmPassword) {
+      setPasswordError(ERROR_MESSAGES.PASSWORD_MISMATCH);
+      return;
+    }
+
     if (!newPassword || newPassword.length < MIN_PASSWORD_LENGTH) {
-      toast.error(ERROR_MESSAGES.PASSWORD_TOO_SHORT);
+      setPasswordError(ERROR_MESSAGES.PASSWORD_TOO_SHORT);
       return;
     }
 
@@ -41,6 +50,20 @@ const NewPasswordForm = ({ email, otp }) => {
       toast.error(error.message || ERROR_MESSAGES.GENERIC_ERROR);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePasswordChange = (e) => {
+    setNewPassword(e.target.value);
+    if (passwordError) {
+      setPasswordError("");
+    }
+  };
+
+  const handleConfirmPasswordChange = (e) => {
+    setConfirmPassword(e.target.value);
+    if (passwordError) {
+      setPasswordError("");
     }
   };
 
@@ -66,8 +89,12 @@ const NewPasswordForm = ({ email, otp }) => {
               <input
                 type={showPassword ? "text" : "password"}
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full pl-12 pr-12 py-3 bg-slate-700/50 border-2 border-slate-600 text-white rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 placeholder:text-slate-500"
+                onChange={handlePasswordChange}
+                className={`w-full pl-12 pr-12 py-3 bg-slate-700/50 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 placeholder:text-slate-500 ${
+                  passwordError
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-slate-600 focus:border-blue-500 focus:ring-blue-500/20"
+                } text-white`}
                 placeholder="Yeni şifrenizi girin"
                 required
                 minLength={MIN_PASSWORD_LENGTH}
@@ -85,6 +112,45 @@ const NewPasswordForm = ({ email, otp }) => {
                 )}
               </button>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-300">
+              Yeni Şifreyi Tekrar Girin
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <GoLock className="h-5 w-5 text-slate-400" />
+              </div>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={handleConfirmPasswordChange}
+                className={`w-full pl-12 pr-12 py-3 bg-slate-700/50 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 placeholder:text-slate-500 ${
+                  passwordError
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-slate-600 focus:border-blue-500 focus:ring-blue-500/20"
+                } text-white`}
+                placeholder="Yeni şifrenizi tekrar girin"
+                required
+                minLength={MIN_PASSWORD_LENGTH}
+                disabled={isSubmitting}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-300 transition-colors"
+              >
+                {showConfirmPassword ? (
+                  <LuEyeClosed className="h-5 w-5" />
+                ) : (
+                  <LuEye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+            {passwordError && (
+              <p className="text-red-500 text-sm">{passwordError}</p>
+            )}
           </div>
 
           <SubmitButton isLoading={isSubmitting} loadingText="Şifre Sıfırlanıyor...">
