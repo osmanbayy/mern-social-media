@@ -24,6 +24,7 @@ import EditProfilePage from "./pages/profile/EditProfilePage";
 import SuggestionsPage from "./pages/SuggestionsPage";
 import SearchResultsPage from "./pages/search/SearchResultsPage";
 import OSSvg from "./components/svgs/OS";
+import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
 
 function App() {
   const isLoggingOut = localStorage.getItem("_logout_in_progress") === "true";
@@ -297,6 +298,7 @@ function App() {
         </Routes>
       </div>
 
+      <PWAInstallPrompt />
       <Toaster />
     </div>
   );
