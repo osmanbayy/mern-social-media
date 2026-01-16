@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { LuEye, LuEyeClosed } from "react-icons/lu";
 import { login } from "../../../api/auth";
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -36,6 +37,8 @@ const LoginPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const [loginErrorAnimate] = useAutoAnimate();
+
   return (
     <div className="max-w-screen-xl mx-auto flex h-screen lg:-mt-20 px-10">
       <div className="flex-1 hidden lg:flex items-center justify-center">
@@ -46,7 +49,7 @@ const LoginPage = () => {
           className="w-full lg:w-2/3 mx-auto md:mx-20 flex gap-4 flex-col items-center"
           onSubmit={handleSubmit}
         >
-          <OSSvg forceDark className="w-32 h-32 md:hidden flex-shrink-0" /> 
+          <OSSvg forceDark className="w-32 h-32 md:hidden flex-shrink-0" />
           <h1 className="login-title text-4xl font-extrabold">OnSekiz</h1>
           <label className="input input-bordered rounded flex items-center gap-2 w-full">
             <FiUser />
@@ -86,7 +89,10 @@ const LoginPage = () => {
           <button className="btn btn-accent rounded-full w-full btn-outline">
             <FiLogIn /> {isPending ? "Yükleniyor..." : "Giriş Yap"}
           </button>
-          {isError && <p className="text-red-500">{error.message}</p>}
+          {/* Error message animation */}
+          <div ref={loginErrorAnimate}>
+            {isError && <p className="text-red-500">{error.message}</p>}
+          </div>
         </form>
         <div className="flex justify-end items-end w-full mt-3 lg:w-2/3">
           <p onClick={() => navigate("/reset-password")} className="text-sm cursor-pointer">Şifreni mi unuttun?</p>
