@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { searchUsersPaginated } from "../../api/users";
 import { searchPosts } from "../../api/posts";
 import Post from "../../components/common/Post";
@@ -75,6 +75,7 @@ const UserResultItem = ({ user }) => {
 const SearchResultsPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const query = searchParams.get("q") || "";
   const [searchInput, setSearchInput] = useState(query);
 
@@ -141,7 +142,23 @@ const SearchResultsPage = () => {
     setAllUsers([]);
     setAllPosts([]);
     setSearchInput(query);
-  }, [query]);
+    
+    // Check if cached data exists for the new query and use it immediately
+    if (query && query.trim().length > 0) {
+      const cachedUsersData = queryClient.getQueryData(["searchUsers", query, 1]);
+      const cachedPostsData = queryClient.getQueryData(["searchPosts", query, 1]);
+      
+      if (cachedUsersData) {
+        setAllUsers(cachedUsersData.users || []);
+        setUserHasMore(cachedUsersData.hasMore || false);
+      }
+      
+      if (cachedPostsData) {
+        setAllPosts(cachedPostsData.posts || []);
+        setPostHasMore(cachedPostsData.hasMore || false);
+      }
+    }
+  }, [query, queryClient]);
 
   const handleSearch = (e) => {
     e.preventDefault();

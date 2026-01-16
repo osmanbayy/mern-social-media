@@ -34,7 +34,8 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
     // Override close
     modalElement.close = function() {
       setIsOpen(false);
-      onClose();
+      // Don't call onClose() here to avoid infinite loop
+      // onClose is called from handleClose button clicks
     };
 
     // Listen for custom events
@@ -117,8 +118,7 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
 
   const handleClose = () => {
     setIsOpen(false);
-    const modal = document.getElementById(modalId);
-    if (modal && modal.close) modal.close();
+    onClose();
   };
 
   if (!isOpen) return null;

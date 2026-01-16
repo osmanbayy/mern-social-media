@@ -73,7 +73,8 @@ const Post = ({ post, isHidden = false }) => {
 
   const handleCloseEditDialog = () => {
     setShowEditDialog(false);
-    document.getElementById(`edit_post_modal_${updatedPost._id}`).close();
+    // Don't call modalElement.close() here to avoid infinite loop
+    // The EditPostDialog component handles its own state
   };
 
   const handleOptions = (e) => {
