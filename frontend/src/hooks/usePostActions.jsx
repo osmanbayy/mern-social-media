@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 import {
   deletePost as deletePostAPI,
@@ -14,7 +15,7 @@ import {
  */
 const usePostActions = (postId, updatedPost) => {
   const queryClient = useQueryClient();
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { authUser } = useAuth();
 
   // Helper function to update all posts queries (handles both array and paginated formats)
   const updateAllPostsQueries = (updater) => {

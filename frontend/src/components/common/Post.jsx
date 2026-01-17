@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../contexts/AuthContext";
 import toast from "react-hot-toast";
 import { LuPin } from "react-icons/lu";
 import { BiRepost } from "react-icons/bi";
@@ -16,13 +17,14 @@ import PostActions from "./PostActions";
 import usePostCache from "../../hooks/usePostCache";
 import usePostActions from "../../hooks/usePostActions";
 import MentionText from "./MentionText";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const Post = ({ post, isHidden = false }) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const navigate = useNavigate();
-  const { data: authUser, isLoading } = useQuery({ queryKey: ["authUser"] });
+  const { authUser, isLoading } = useAuth();
 
   // Get updated post from cache
   const updatedPost = usePostCache(post);
@@ -74,7 +76,7 @@ const Post = ({ post, isHidden = false }) => {
 
   const formattedDate = formatPostDate(updatedPost.createdAt);
 
-  const theme = localStorage.getItem("theme");
+  const { theme } = useTheme();
 
   const handleDeletePost = () => {
     deletePost();

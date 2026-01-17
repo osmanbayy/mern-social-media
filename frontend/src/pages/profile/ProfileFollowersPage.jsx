@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../../contexts/AuthContext";
 import { FaArrowLeft } from "react-icons/fa6";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { getUserProfile, getFollowers, getFollowing } from "../../api/users";

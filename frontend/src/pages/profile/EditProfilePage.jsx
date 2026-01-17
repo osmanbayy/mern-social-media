@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../../contexts/AuthContext";
 import { FaArrowLeft } from "react-icons/fa6";
 import { LuUser, LuMail, LuLink, LuFileText, LuLock, LuEye, LuEyeOff } from "react-icons/lu";
 import useUpdateProfile from "../../hooks/useUpdateProfile";
@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 
 const EditProfilePage = () => {
   const navigate = useNavigate();
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { authUser } = useAuth();
   const { updateProfile, isUpdatingProfile } = useUpdateProfile();
 
   const [formData, setFormData] = useState({

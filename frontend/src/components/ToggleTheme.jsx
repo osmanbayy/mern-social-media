@@ -1,25 +1,9 @@
 // src/components/ToggleTheme.jsx
-import { useEffect, useState } from "react";
 import { LuMoon, LuSun } from "react-icons/lu";
+import { useTheme } from "../contexts/ThemeContext";
 
 const ToggleTheme = () => {
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("theme") || "dark";
-    }
-    return "dark";
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("theme", theme);
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "nord" ? "dark" : "nord"));
-  };
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <button

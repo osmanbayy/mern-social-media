@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../contexts/AuthContext";
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
 import ProfileImageModal from "../../components/modals/ProfileImageModal";
@@ -40,9 +41,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: authUser } = useQuery({
-    queryKey: ["authUser"],
-  });
+  const { authUser } = useAuth();
 
   const {
     data: user,
@@ -52,6 +51,9 @@ const ProfilePage = () => {
   } = useQuery({
     queryKey: ["user", username],
     queryFn: () => getUserProfile(username),
+    staleTime: 30000, // 30 seconds - cache data for 30 seconds to prevent unnecessary refetches
+    refetchOnMount: true, // Only refetch if data is stale
+    refetchOnWindowFocus: false,
   });
 
   const { follow, isPending } = useFollow(user?._id);
@@ -103,7 +105,7 @@ const ProfilePage = () => {
   const handleUpdateProfile = async () => {
     await updateProfile({ coverImg, profileImage });
     resetImages();
-    refetchUser();
+    // refetchUser() is not needed - updateProfile already invalidates queries
   };
 
   const handleBlockUser = async () => {
@@ -136,12 +138,6 @@ const ProfilePage = () => {
     
     return `${baseClasses} ${feedType === tabType ? activeClasses : inactiveClasses}`;
   };
-
-  useEffect(() => {
-    if (username) {
-      refetchUser();
-    }
-  }, [username, refetchUser]);
 
   // Close dropdown when share modal opens
   useEffect(() => {

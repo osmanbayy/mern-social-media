@@ -9,10 +9,11 @@ import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { LuSearch, LuUser, LuFileText } from "react-icons/lu";
 import { Link } from "react-router-dom";
 import useFollow from "../../hooks/useFollow";
+import { useAuth } from "../../contexts/AuthContext";
 
 const UserResultItem = ({ user }) => {
   const { follow, unfollow, isPending } = useFollow(user._id);
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { authUser } = useAuth();
 
   const amIFollowing = authUser?.following?.some(
     (userId) => userId._id === user._id || userId === user._id

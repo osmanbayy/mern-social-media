@@ -1,16 +1,18 @@
 import { CiImageOn } from "react-icons/ci";
 import { useRef, useState } from "react";
 import { LiaTelegram } from "react-icons/lia";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import useMention from "../../hooks/useMention";
-import { useTheme } from "../../hooks/useTheme";
+import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import MentionDropdown from "./MentionDropdown";
 import ImagePreview from "./ImagePreview";
 import EmojiPickerButton from "./EmojiPickerButton";
 import { createPost } from "../../api/posts";
+import { optimizeImage, isImageFile } from "../../utils/imageOptimizer";
 
 const PostCreate = () => {
   const [text, setText] = useState("");
@@ -30,7 +32,7 @@ const PostCreate = () => {
     closeMentionDropdown,
   } = useMention(text, setText, textareaRef);
 
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { authUser } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -54,15 +56,23 @@ const PostCreate = () => {
     createPostMutation({ text, img });
   };
 
-  const handleImgChange = (e) => {
+  const handleImgChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImg(reader.result);
-    };
-    reader.readAsDataURL(file);
+    if (!isImageFile(file)) {
+      toast.error("Lütfen bir resim dosyası seçin.");
+      return;
+    }
+
+    try {
+      // Optimize image if it's over 10MB
+      const optimizedImage = await optimizeImage(file, 9);
+      setImg(optimizedImage);
+    } catch (error) {
+      toast.error(error.message || "Resim yüklenirken bir hata oluştu.");
+      if (imgRef.current) imgRef.current.value = "";
+    }
   };
 
   const handleRemoveImage = () => {

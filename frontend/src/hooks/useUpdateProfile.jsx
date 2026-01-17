@@ -2,12 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { updateUserProfile } from "../api/users";
+import { useAuth } from "../contexts/AuthContext";
 
 const useUpdateProfile = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-
-  const authUser = queryClient.getQueryData({ queryKey: ["authUser"] });
+  const { authUser } = useAuth();
 
   const { mutateAsync: updateProfile, isPending: isUpdatingProfile } = useMutation({
     mutationFn: (formData) => updateUserProfile(formData),

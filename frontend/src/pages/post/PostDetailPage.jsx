@@ -1,5 +1,6 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../contexts/AuthContext";
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { LuPin } from "react-icons/lu";
@@ -20,6 +21,7 @@ import usePostDetailActions from "../../hooks/usePostDetailActions";
 import useMention from "../../hooks/useMention";
 import MentionDropdown from "../../components/common/MentionDropdown";
 import MentionText from "../../components/common/MentionText";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const PostDetailPage = () => {
   const { postId } = useParams();
@@ -47,9 +49,7 @@ const PostDetailPage = () => {
     closeMentionDropdown,
   } = useMention(comment, setComment, commentTextareaRef);
 
-  const { data: authUser, isLoading: isAuthLoading } = useQuery({
-    queryKey: ["authUser"],
-  });
+  const { authUser, isLoading: isAuthLoading } = useAuth();
 
   // Fetch single post
   const { data: post, isLoading: isPostLoading } = useQuery({
@@ -172,7 +172,7 @@ const PostDetailPage = () => {
   const isSaved = post.saves.includes(authUser?._id);
   const isMyPost = authUser?._id === post.user?._id;
   const formattedDate = formatPostDate(post.createdAt);
-  const theme = localStorage.getItem("theme");
+  const { theme } = useTheme();
 
   // Comment handlers
   const handleLikeComment = (commentId, e) => {

@@ -1,4 +1,6 @@
 import { useState, useRef } from "react";
+import { optimizeImage, isImageFile } from "../utils/imageOptimizer";
+import toast from "react-hot-toast";
 
 /**
  * Hook for handling profile and cover image uploads with crop support
@@ -12,17 +14,28 @@ const useProfileImage = () => {
   const coverImgRef = useRef(null);
   const profileImgRef = useRef(null);
 
-  const handleImgChange = (e, state) => {
+  const handleImgChange = async (e, state) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        // Instead of directly setting the image, open crop modal
-        setCropImageSrc(reader.result);
-        setCropType(state);
-        setShowCropModal(true);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (!isImageFile(file)) {
+      toast.error("Lütfen bir resim dosyası seçin.");
+      return;
+    }
+
+    try {
+      // Optimize image if it's over 10MB
+      const optimizedImage = await optimizeImage(file, 9);
+      
+      // Instead of directly setting the image, open crop modal
+      setCropImageSrc(optimizedImage);
+      setCropType(state);
+      setShowCropModal(true);
+    } catch (error) {
+      toast.error(error.message || "Resim yüklenirken bir hata oluştu.");
+      // Reset file input on error
+      if (coverImgRef.current) coverImgRef.current.value = "";
+      if (profileImgRef.current) profileImgRef.current.value = "";
     }
   };
 

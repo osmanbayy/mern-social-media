@@ -4,7 +4,9 @@ import { useRef, useState, useEffect } from "react";
 import { IoCloseSharp } from "react-icons/io5";
 import { LiaTelegram } from "react-icons/lia";
 import EmojiPicker from "emoji-picker-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import { toast } from "react-hot-toast";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useNavigate } from "react-router-dom";
@@ -34,41 +36,8 @@ const CreatePost = () => {
     closeMentionDropdown,
   } = useMention(text, setText, textareaRef);
 
-  const getTheme = () => {
-    const dataTheme = document.documentElement.getAttribute("data-theme");
-    return dataTheme || localStorage.getItem("theme") || "dark";
-  };
-
-  const [theme, setTheme] = useState(getTheme());
-
-  useEffect(() => {
-    const updateTheme = () => {
-      setTheme(getTheme());
-    };
-
-    updateTheme();
-
-    const observer = new MutationObserver(() => {
-      setTheme(getTheme());
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-
-    const handleStorageChange = () => {
-      setTheme(getTheme());
-    };
-    window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
-
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { theme } = useTheme();
+  const { authUser } = useAuth();
   const queryClient = useQueryClient();
 
   const handleEmojiClick = (emojiObject) => {
@@ -153,14 +122,26 @@ const CreatePost = () => {
       createPostMutation({ text, img });
   };
 
-  const handleImgChange = (e) => {
+  const handleImgChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImg(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Lütfen bir resim dosyası seçin.");
+      return;
+    }
+
+    try {
+      // Optimize image if it's over 10MB
+      const { optimizeImage, isImageFile } = await import("../../utils/imageOptimizer");
+      if (!isImageFile(file)) {
+        toast.error("Lütfen bir resim dosyası seçin.");
+        return;
+      }
+      const optimizedImage = await optimizeImage(file, 9);
+      setImg(optimizedImage);
+    } catch (error) {
+      toast.error(error.message || "Resim yüklenirken bir hata oluştu.");
     }
   };
 

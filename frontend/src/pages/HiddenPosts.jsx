@@ -1,11 +1,11 @@
 import Posts from "../components/common/Posts";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa6";
+import { useAuth } from "../contexts/AuthContext";
 
 const HiddenPosts = () => {
   const navigate = useNavigate();
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { authUser } = useAuth();
 
   if (!authUser) {
     return <div>Yükleniyor...</div>;

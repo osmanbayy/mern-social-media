@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 import {
   deletePost as deletePostAPI,
@@ -13,7 +14,7 @@ import {
  */
 const usePostDetailActions = (postId) => {
   const queryClient = useQueryClient();
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { authUser } = useAuth();
 
   // Helper function to update single post and posts list
   const updatePostCache = (updater) => {

@@ -1,11 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../common/LoadingSpinner";
 import { LuUser, LuAtSign, LuMail, LuBadgeCheck } from "react-icons/lu";
+import { useAuth } from "../../contexts/AuthContext";
 
 const AccountInformation = () => {
   const navigate = useNavigate();
-  const { data: authUser, isLoading } = useQuery({ queryKey: ["authUser"] });
+  const { authUser, isLoading } = useAuth();
 
   if (isLoading) {
     return (

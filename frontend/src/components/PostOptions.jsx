@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../contexts/AuthContext";
 import { HiDotsHorizontal } from "react-icons/hi";
 import { BsEmojiFrown } from "react-icons/bs";
 import { SlUserFollow, SlUserUnfollow } from "react-icons/sl";
@@ -32,7 +32,7 @@ const PostOptions = ({
   onPin,
   theme 
 }) => {
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { authUser } = useAuth();
   const { follow, unfollow, isPending } = useFollow(postOwner._id);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);

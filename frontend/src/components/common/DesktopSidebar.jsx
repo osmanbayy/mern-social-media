@@ -5,9 +5,10 @@ import OSSvg from "../svgs/OS";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useQueryClient } from "@tanstack/react-query";
 import { getNavItems } from "../../constants/navItems";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const DesktopSidebar = ({ authUser, activeTab, setActiveTab, isNotRead, isSettingPage, onLogoutClick }) => {
-  const theme = localStorage.getItem("theme");
+  const { theme } = useTheme();
   const isDark = (theme || "").toLowerCase() === "dark";
   const queryClient = useQueryClient();
 

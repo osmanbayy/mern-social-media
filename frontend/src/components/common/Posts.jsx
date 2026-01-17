@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Post from "./Post";
 import PostSkeleton from "../skeletons/PostSkeleton";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
@@ -8,14 +7,12 @@ import MobileSuggestedUsers from "./MobileSuggestedUsers";
 import { POST_FEED_TYPES, POST_CONSTANTS } from "../../constants/postFeedTypes";
 import { sortPostsByPinned, extractPostsFromData, getHasMoreFromData } from "../../utils/postSorting";
 
-const Posts = forwardRef(({ feedType, username, userId }, ref) => {
-  const location = useLocation();
+const Posts = ({ feedType, username, userId }) => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [allPosts, setAllPosts] = useState([]);
   const [hasMore, setHasMore] = useState(true);
   const [suggestionPosition, setSuggestionPosition] = useState(null);
-  const previousLocationRef = useRef(location.pathname);
   const scrollTimeoutRef = useRef(null);
 
   const getPostQueryFn = useCallback((feedType, pageNum) => {
@@ -38,12 +35,12 @@ const Posts = forwardRef(({ feedType, username, userId }, ref) => {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["posts", feedType, username, userId, page, location.pathname],
+    queryKey: ["posts", feedType, username, userId, page],
     queryFn: getPostQueryFn(feedType, page),
     enabled: feedType === POST_FEED_TYPES.FOR_YOU ? hasMore : true,
     placeholderData: keepPreviousData,
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 30000, // 30 seconds - cache data for 30 seconds to prevent unnecessary refetches
+    refetchOnMount: true, // Only refetch if data is stale
     refetchOnWindowFocus: false,
     gcTime: POST_CONSTANTS.CACHE_TIME_MS,
   });
@@ -122,31 +119,10 @@ const Posts = forwardRef(({ feedType, username, userId }, ref) => {
     setSuggestionPosition(null);
   }, []);
 
-  // Expose refetch method to parent component
-  useImperativeHandle(ref, () => ({
-    refetch: async () => {
-      resetPostsState();
-      await refetch();
-    }
-  }), [refetch, resetPostsState]);
-
   // Reset when feedType changes
   useEffect(() => {
     resetPostsState();
-    refetch();
-  }, [feedType, refetch, username, resetPostsState]);
-
-  // Refetch when returning to home page from another page
-  useEffect(() => {
-    const isReturningToHome = previousLocationRef.current !== "/" && location.pathname === "/";
-    
-    if (isReturningToHome && feedType === POST_FEED_TYPES.FOR_YOU) {
-      resetPostsState();
-      refetch();
-    }
-    
-    previousLocationRef.current = location.pathname;
-  }, [location.pathname, refetch, feedType, resetPostsState]);
+  }, [feedType, username, resetPostsState]);
 
   const handleScroll = useCallback(() => {
     if (scrollTimeoutRef.current) return;
@@ -230,8 +206,6 @@ const Posts = forwardRef(({ feedType, username, userId }, ref) => {
       )}
     </>
   );
-});
-
-Posts.displayName = "Posts";
+};
 
 export default Posts;

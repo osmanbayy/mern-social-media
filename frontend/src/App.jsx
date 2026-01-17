@@ -10,9 +10,8 @@ import ProfilePage from "./pages/profile/ProfilePage";
 import ProfileFollowersPage from "./pages/profile/ProfileFollowersPage";
 import NotificationPage from "./pages/notification/NotificationPage";
 import { Toaster } from "react-hot-toast";
-import { useQuery } from "@tanstack/react-query";
 import LoadingSpinner from "./components/common/LoadingSpinner";
-import { getCurrentUser } from "./api/auth";
+import { useAuth } from "./contexts/AuthContext";
 import PostCreate from "./components/common/PostCreate";
 import VerifyAccount from "./pages/VerifyAccount";
 import ResetPassword from "./pages/ResetPassword";
@@ -26,26 +25,14 @@ import SearchResultsPage from "./pages/search/SearchResultsPage";
 import OSSvg from "./components/svgs/OS";
 import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
 
-function App() {
-  const isLoggingOut = localStorage.getItem("_logout_in_progress") === "true";
+function AppContent() {
   const [showSplash, setShowSplash] = useState(() => {
     // Check if this is the first load
     const hasVisited = sessionStorage.getItem("_has_visited");
     return !hasVisited;
   });
 
-  const {
-    data: authUser,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["authUser"],
-    queryFn: getCurrentUser,
-    retry: false,
-    staleTime: 0,
-    cacheTime: 0,
-    enabled: !isLoggingOut,
-  });
+  const { authUser, isLoading, isLoggedIn, isAccountVerified } = useAuth();
 
   const location = useLocation();
   const isSettingPage = location.pathname === "/settings";
@@ -65,13 +52,6 @@ function App() {
       return () => clearTimeout(timer);
     }
   }, [showSplash, isLoading]);
-
-  const isLoggedIn =
-    !isError &&
-    authUser !== null &&
-    authUser !== undefined &&
-    Object.keys(authUser || {}).length > 0;
-  const isAccountVerified = authUser?.isAccountVerified;
 
   // Show splash screen on first load
   if (showSplash) {
@@ -302,6 +282,10 @@ function App() {
       <Toaster />
     </div>
   );
+}
+
+function App() {
+  return <AppContent />;
 }
 
 export default App;

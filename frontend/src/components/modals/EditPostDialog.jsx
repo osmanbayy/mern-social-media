@@ -81,24 +81,22 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Resim boyutu 10MB'dan küçük olmalıdır.");
+    if (!file.type.startsWith("image/")) {
+      toast.error("Lütfen bir resim dosyası seçin.");
       return;
     }
 
     setIsImageUploading(true);
 
     try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64String = event.target.result;
-        setImg(base64String);
-        toast.success("Resim başarıyla yüklendi.");
-        setIsImageUploading(false);
-      };
-      reader.readAsDataURL(file);
+      // Optimize image if it's over 10MB
+      const { optimizeImage } = await import("../../utils/imageOptimizer");
+      const optimizedImage = await optimizeImage(file, 9);
+      setImg(optimizedImage);
+      toast.success("Resim başarıyla yüklendi.");
     } catch (error) {
-      toast.error("Resim yüklenirken bir hata oluştu.");
+      toast.error(error.message || "Resim yüklenirken bir hata oluştu.");
+    } finally {
       setIsImageUploading(false);
     }
   };
