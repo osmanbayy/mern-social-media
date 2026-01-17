@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/generate-icons.js && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "vercel-build": "vite build"
+    "vercel-build": "node scripts/generate-icons.js && vite build",
+    "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@formkit/auto-animate": "^0.9.0",
@@ -35,6 +36,7 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
+    "sharp": "^0.34.5",
     "vite": "^6.1.0",
     "vite-plugin-pwa": "^1.2.0"
   }
