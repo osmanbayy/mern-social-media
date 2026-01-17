@@ -133,11 +133,7 @@ const CreatePost = () => {
 
     try {
       // Optimize image if it's over 10MB
-      const { optimizeImage, isImageFile } = await import("../../utils/imageOptimizer");
-      if (!isImageFile(file)) {
-        toast.error("Lütfen bir resim dosyası seçin.");
-        return;
-      }
+      const { optimizeImage } = await import("../../utils/imageOptimizer");
       const optimizedImage = await optimizeImage(file, 9);
       setImg(optimizedImage);
     } catch (error) {

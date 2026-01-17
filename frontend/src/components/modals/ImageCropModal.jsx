@@ -99,7 +99,10 @@ const ImageCropModal = ({
         reader.readAsDataURL(blob);
       }
     } catch (error) {
-      console.error("Error cropping image:", error);
+      // Error is handled by toast
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error cropping image:", error);
+      }
       setIsProcessing(false);
     }
   };

@@ -1,3 +1,5 @@
+import { IMAGE_OPTIMIZER } from "../constants/imageOptimizer";
+
 /**
  * Optimizes an image file to ensure it's under the specified size limit
  * Uses canvas API to compress the image while maintaining quality
@@ -9,9 +11,9 @@
  */
 export const optimizeImage = async (
   file,
-  maxSizeMB = 9,
-  maxWidth = 1920,
-  maxHeight = 1920
+  maxSizeMB = IMAGE_OPTIMIZER.DEFAULT_MAX_SIZE_MB,
+  maxWidth = IMAGE_OPTIMIZER.DEFAULT_MAX_WIDTH,
+  maxHeight = IMAGE_OPTIMIZER.DEFAULT_MAX_HEIGHT
 ) => {
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
@@ -48,41 +50,49 @@ export const optimizeImage = async (
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Binary search for optimal quality
-      const optimizeQuality = (currentQuality, currentWidth, currentHeight) => {
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = currentWidth;
-        tempCanvas.height = currentHeight;
-        const tempCtx = tempCanvas.getContext("2d");
-        tempCtx.drawImage(img, 0, 0, currentWidth, currentHeight);
-        
-        const dataURL = tempCanvas.toDataURL(file.type || "image/jpeg", currentQuality);
-        const currentSize = getBase64Size(dataURL);
-        
-        if (currentSize <= maxSizeBytes) {
-          resolve(dataURL);
-          return;
-        }
+      // Optimize quality using iterative approach (more efficient than recursive)
+      const optimizeQuality = (startQuality, startWidth, startHeight) => {
+        let currentQuality = startQuality;
+        let currentWidth = startWidth;
+        let currentHeight = startHeight;
+        const imageType = file.type || IMAGE_OPTIMIZER.FALLBACK_IMAGE_TYPE;
 
-        // If quality is too low, try resizing more aggressively
-        if (currentQuality <= 0.1) {
-          if (currentWidth > 800 && currentHeight > 800) {
-            const newWidth = Math.round(currentWidth * 0.8);
-            const newHeight = Math.round(currentHeight * 0.8);
-            optimizeQuality(0.85, newWidth, newHeight);
-          } else {
-            // Return the best we can do
-            resolve(dataURL);
+        while (true) {
+          // Reuse canvas with current dimensions
+          if (canvas.width !== currentWidth || canvas.height !== currentHeight) {
+            canvas.width = currentWidth;
+            canvas.height = currentHeight;
+            ctx.drawImage(img, 0, 0, currentWidth, currentHeight);
           }
-          return;
-        }
+          
+          const dataURL = canvas.toDataURL(imageType, currentQuality);
+          const currentSize = getBase64Size(dataURL);
+          
+          if (currentSize <= maxSizeBytes) {
+            resolve(dataURL);
+            return;
+          }
 
-        // Reduce quality and try again
-        const newQuality = Math.max(0.1, currentQuality - 0.1);
-        optimizeQuality(newQuality, currentWidth, currentHeight);
+          // If quality is too low, try resizing more aggressively
+          if (currentQuality <= IMAGE_OPTIMIZER.MIN_QUALITY) {
+            if (currentWidth > IMAGE_OPTIMIZER.RESIZE_THRESHOLD && currentHeight > IMAGE_OPTIMIZER.RESIZE_THRESHOLD) {
+              currentWidth = Math.round(currentWidth * IMAGE_OPTIMIZER.RESIZE_RATIO);
+              currentHeight = Math.round(currentHeight * IMAGE_OPTIMIZER.RESIZE_RATIO);
+              currentQuality = IMAGE_OPTIMIZER.FALLBACK_QUALITY;
+              continue;
+            } else {
+              // Return the best we can do
+              resolve(dataURL);
+              return;
+            }
+          }
+
+          // Reduce quality and try again
+          currentQuality = Math.max(IMAGE_OPTIMIZER.MIN_QUALITY, currentQuality - IMAGE_OPTIMIZER.QUALITY_STEP);
+        }
       };
 
-      optimizeQuality(0.9, width, height);
+      optimizeQuality(IMAGE_OPTIMIZER.MAX_QUALITY, width, height);
     };
 
     img.onerror = () => {

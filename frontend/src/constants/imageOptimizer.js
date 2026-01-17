@@ -1,0 +1,15 @@
+/**
+ * Constants for image optimization
+ */
+export const IMAGE_OPTIMIZER = {
+  DEFAULT_MAX_SIZE_MB: 9,
+  DEFAULT_MAX_WIDTH: 1920,
+  DEFAULT_MAX_HEIGHT: 1920,
+  MIN_QUALITY: 0.1,
+  MAX_QUALITY: 0.9,
+  QUALITY_STEP: 0.1,
+  RESIZE_RATIO: 0.8,
+  RESIZE_THRESHOLD: 800,
+  FALLBACK_QUALITY: 0.85,
+  FALLBACK_IMAGE_TYPE: "image/jpeg",
+};

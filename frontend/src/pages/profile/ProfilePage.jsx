@@ -119,7 +119,10 @@ const ProfilePage = () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       setShowBlockDialog(false);
     } catch (error) {
-      console.error("Error blocking user:", error);
+      // Error is handled by the API layer and toast
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error blocking user:", error);
+      }
     } finally {
       setIsBlocking(false);
     }

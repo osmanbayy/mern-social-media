@@ -106,7 +106,10 @@ const EditProfilePage = () => {
       await updateProfile(profileData);
       navigate(`/profile/${formData.username}`);
     } catch (error) {
-      console.error("Update error:", error);
+      // Error is handled by the API layer and toast
+      if (process.env.NODE_ENV === "development") {
+        console.error("Update error:", error);
+      }
     }
   };
 

@@ -15,7 +15,6 @@ const BlockedAccounts = () => {
   const {
     data: blockedUsers,
     isLoading,
-    refetch,
   } = useQuery({
     queryKey: ["blockedUsers"],
     queryFn: getBlockedUsers,
@@ -37,9 +36,12 @@ const BlockedAccounts = () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       setShowUnblockDialog(false);
       setSelectedUser(null);
-      refetch();
+      // refetch() is not needed - invalidateQueries already triggers refetch
     } catch (error) {
-      console.error("Error unblocking user:", error);
+      // Error is handled by the API layer and toast
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error unblocking user:", error);
+      }
     } finally {
       setIsUnblocking(false);
     }
