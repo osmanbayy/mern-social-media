@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { LuPin } from "react-icons/lu";
+import { BiRepost } from "react-icons/bi";
 import LoadingSpinner from "../common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { formatPostDate } from "../../utils/date";
@@ -40,11 +42,35 @@ const Post = ({ post, isHidden = false }) => {
   } = usePostActions(updatedPost._id, updatedPost);
 
 
-  const postOwner = updatedPost?.user;
+  // Determine if this is a retweet or quote retweet
+  const isRetweet = updatedPost?.originalPost;
+  const originalPost = isRetweet ? updatedPost.originalPost : updatedPost;
+  const postOwner = isRetweet ? originalPost?.user : updatedPost?.user;
+  const retweetedBy = isRetweet ? updatedPost?.user : null;
+  
+  // Check if current user retweeted the original post
+  const isRetweeted = authUser?._id ? originalPost?.retweetedBy?.some(
+    (user) => {
+      const userId = typeof user === 'object' ? user._id : user;
+      return userId === authUser._id;
+    }
+  ) : false;
+  
   const isLiked = authUser?._id ? updatedPost.likes.includes(authUser._id) : false;
   const isSaved = authUser?._id ? updatedPost.saves.includes(authUser._id) : false;
 
   const isMyPost = authUser?._id === updatedPost.user?._id;
+  
+  // Get retweet text
+  const getRetweetText = () => {
+    if (!isRetweet || !retweetedBy) return null;
+    
+    if (retweetedBy._id === authUser?._id) {
+      return "Yeniden gönderdin";
+    } else {
+      return `${retweetedBy.fullname || retweetedBy.username} yeniden gönderdi`;
+    }
+  };
 
   const formattedDate = formatPostDate(updatedPost.createdAt);
 
@@ -91,9 +117,8 @@ const Post = ({ post, isHidden = false }) => {
     savePost();
   };
 
-  const handleRepost = (e) => {
-    e.stopPropagation();
-  };
+
+  // Retweet is now handled in PostActions component
 
   const handleProfileClick = (e) => {
     e.stopPropagation();
@@ -146,6 +171,13 @@ const Post = ({ post, isHidden = false }) => {
           )}
         </div>
         <div className="flex flex-col flex-1 min-w-0">
+          {/* Retweet Badge */}
+          {isRetweet && retweetedBy && (
+            <div className="flex items-center gap-1 mb-1 text-xs text-base-content/60">
+              <BiRepost className="w-3 h-3" />
+              <span>{getRetweetText()}</span>
+            </div>
+          )}
           {/* Pinned Badge */}
           {updatedPost?.isPinned && (
             <div className="flex items-center gap-1 mb-1 text-xs text-base-content/60">
@@ -208,19 +240,75 @@ const Post = ({ post, isHidden = false }) => {
           </div>
           {/* Post Content */}
           <div className="flex flex-col gap-3 overflow-hidden mt-2">
-            <p 
-              className="text-sm md:text-base leading-relaxed cursor-pointer"
-              onClick={handlePostClick}
-            >
-              <MentionText text={updatedPost.text} />
-            </p>
-            {updatedPost.img && (
+            {/* Quote retweet text - show first if quote retweet */}
+            {isRetweet && updatedPost.isQuoteRetweet && (
+              <>
+                {updatedPost.text && (
+                  <p 
+                    className="text-sm md:text-base leading-relaxed cursor-pointer"
+                    onClick={handlePostClick}
+                  >
+                    <MentionText text={updatedPost.text} />
+                  </p>
+                )}
+                {updatedPost.img && (
+                  <img
+                    src={updatedPost.img}
+                    alt=""
+                    className="w-full max-h-96 object-cover rounded-xl cursor-pointer"
+                    onClick={handlePostClick}
+                  />
+                )}
+              </>
+            )}
+            {/* If quote retweet, show original post preview below quote text */}
+            {isRetweet && updatedPost.isQuoteRetweet && originalPost && (
+              <div className="p-3 border border-base-300/50 rounded-xl bg-base-200/30">
+                <div className="flex gap-2 items-center mb-2">
+                  <span className="text-xs font-semibold">
+                    {originalPost.user?.fullname || "Kullanıcı"}
+                  </span>
+                  <span className="text-xs text-base-content/60">
+                    @{originalPost.user?.username || "kullanici"}
+                  </span>
+                </div>
+                {originalPost.text && (
+                  <p className="text-sm mb-2">{originalPost.text}</p>
+                )}
+                {originalPost.img && (
+                  <img
+                    src={originalPost.img}
+                    alt=""
+                    className="w-full max-h-48 object-cover rounded-lg"
+                  />
+                )}
+              </div>
+            )}
+            {/* Direct retweet or regular post text */}
+            {isRetweet && !updatedPost.isQuoteRetweet ? (
+              // Direct retweet - show original post text
+              <p 
+                className="text-sm md:text-base leading-relaxed cursor-pointer"
+                onClick={handlePostClick}
+              >
+                <MentionText text={originalPost?.text || ""} />
+              </p>
+            ) : !isRetweet ? (
+              // Regular post
+              <p 
+                className="text-sm md:text-base leading-relaxed cursor-pointer"
+                onClick={handlePostClick}
+              >
+                <MentionText text={updatedPost.text} />
+              </p>
+            ) : null}
+            {(isRetweet && !updatedPost.isQuoteRetweet ? originalPost?.img : updatedPost.img) && (
               <div 
                 className="post-image-container rounded-2xl overflow-hidden border border-base-300/50 hover:border-base-300 transition-all duration-300 group/image"
                 onClick={handleImageClick}
               >
                 <img
-                  src={updatedPost.img}
+                  src={isRetweet ? originalPost?.img : updatedPost.img}
                   className="w-full max-h-[300px] object-cover cursor-pointer hover:scale-[1.02] transition-transform duration-500"
                   alt=""
                   draggable="false"
@@ -230,15 +318,15 @@ const Post = ({ post, isHidden = false }) => {
           </div>
           {/* Post Actions */}
           <PostActions
-            post={updatedPost}
+            post={isRetweet ? originalPost : updatedPost}
             isLiked={isLiked}
             isSaved={isSaved}
+            isRetweeted={isRetweeted}
             isLiking={false}
             isSaving={false}
             onLike={handleLikePost}
             onSave={handleSavePost}
             onComment={handlePostClick}
-            onRepost={handleRepost}
             showCounts={true}
             variant="compact"
           />
@@ -270,6 +358,7 @@ const Post = ({ post, isHidden = false }) => {
           modalId={`edit_post_modal_${post._id}`}
         />
       )}
+
     </>
   );
 };

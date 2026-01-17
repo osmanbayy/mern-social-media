@@ -270,3 +270,25 @@ export const searchPosts = async (query, page = 1, limit = 5) => {
   });
   return handleResponse(response);
 };
+
+// Retweet post (direct retweet)
+export const retweetPost = async (postId) => {
+  const response = await fetch(`${API_BASE}/retweet/${postId}`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
+
+// Quote retweet
+export const quoteRetweet = async (postId, postData) => {
+  const response = await fetch(`${API_BASE}/quote/${postId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(postData),
+  });
+  return handleResponse(response);
+};

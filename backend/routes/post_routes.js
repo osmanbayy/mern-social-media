@@ -21,7 +21,9 @@ import {
   reply_to_comment,
   delete_comment,
   edit_comment,
-  search_posts
+  search_posts,
+  retweet_post,
+  quote_retweet
 } from "../controllers/post_controller.js";
 
 const router = express.Router();
@@ -42,6 +44,8 @@ router.post("/hide/:id", protect_route, hide_post);
 router.post("/like/:id", protect_route, like_unlike_post);
 router.post("/comment/:id", protect_route, comment_on_post);
 router.post("/pin/:id", protect_route, pin_unpin_post);
+router.post("/retweet/:id", protect_route, retweet_post);
+router.post("/quote/:id", protect_route, quote_retweet);
 router.delete("/hide/:id", protect_route, unhide_post);
 
 // Comment routes

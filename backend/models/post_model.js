@@ -92,7 +92,22 @@ const postSchema = new mongoose.Schema(
     isPinned: {
       type: Boolean,
       default: false,
-    }
+    },
+    retweetedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    originalPost: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+      default: null,
+    },
+    isQuoteRetweet: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

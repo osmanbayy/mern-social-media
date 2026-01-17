@@ -81,8 +81,8 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Resim boyutu 5MB'dan küçük olmalıdır.");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Resim boyutu 10MB'dan küçük olmalıdır.");
       return;
     }
 
