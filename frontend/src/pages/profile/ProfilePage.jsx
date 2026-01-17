@@ -6,6 +6,7 @@ import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkele
 import ProfileImageModal from "../../components/modals/ProfileImageModal";
 import CoverImageModal from "../../components/modals/CoverImageModal";
 import BlockUserDialog from "../../components/modals/BlockUserDialog";
+import ImageCropModal from "../../components/modals/ImageCropModal";
 import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
@@ -60,6 +61,11 @@ const ProfilePage = () => {
     profileImgRef,
     handleImgChange,
     resetImages,
+    cropImageSrc,
+    showCropModal,
+    cropType,
+    handleCropComplete,
+    handleCropCancel,
   } = useProfileImage();
 
   const isMyProfile = authUser?._id === user?._id;
@@ -426,6 +432,16 @@ const ProfilePage = () => {
           isBlocking={isBlocking}
         />
       )}
+
+      {/* Image Crop Modal */}
+      <ImageCropModal
+        imageSrc={cropImageSrc}
+        isOpen={showCropModal}
+        onClose={handleCropCancel}
+        onCropComplete={handleCropComplete}
+        aspectRatio={cropType === "profileImage" ? 1 : 16 / 9}
+        cropShape={cropType === "profileImage" ? "round" : "rect"}
+      />
     </>
   );
 };
