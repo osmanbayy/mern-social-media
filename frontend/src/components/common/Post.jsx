@@ -335,12 +335,12 @@ const Post = ({ post, isHidden = false }) => {
 
       {/* Image Viewer */}
       <PostImageViewer 
-        imageUrl={updatedPost.img}
+        imageUrl={isRetweet && !updatedPost.isQuoteRetweet ? originalPost?.img : updatedPost.img}
         isOpen={showImageModal}
         onClose={closeImageModal}
       />
       
-      <PostImageModal post={updatedPost} />
+      <PostImageModal post={isRetweet && !updatedPost.isQuoteRetweet ? originalPost : updatedPost} />
 
       {/* Delete Post Modal */}
       <DeletePostDialog 

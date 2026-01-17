@@ -57,3 +57,12 @@ export const deleteAllNotifications = async () => {
   });
   return handleResponse(response);
 };
+
+// Delete single notification
+export const deleteNotification = async (notificationId) => {
+  const response = await fetch(`${API_BASE}/${notificationId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  return handleResponse(response);
+};

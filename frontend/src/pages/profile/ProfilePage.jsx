@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Posts from "../../components/common/Posts";
@@ -7,6 +7,7 @@ import ProfileImageModal from "../../components/modals/ProfileImageModal";
 import CoverImageModal from "../../components/modals/CoverImageModal";
 import BlockUserDialog from "../../components/modals/BlockUserDialog";
 import ImageCropModal from "../../components/modals/ImageCropModal";
+import ShareModal from "../../components/modals/ShareModal";
 import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
@@ -31,6 +32,9 @@ const ProfilePage = () => {
   const [isBlocking, setIsBlocking] = useState(false);
   const [showProfileImageModal, setShowProfileImageModal] = useState(false);
   const [showCoverImageModal, setShowCoverImageModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const dropdownTriggerRef = useRef(null);
+  const dropdownMenuRef = useRef(null);
 
   const { username } = useParams();
   const navigate = useNavigate();
@@ -139,6 +143,17 @@ const ProfilePage = () => {
     }
   }, [username, refetchUser]);
 
+  // Close dropdown when share modal opens
+  useEffect(() => {
+    if (showShareModal && dropdownTriggerRef.current) {
+      dropdownTriggerRef.current.blur();
+      // Force close by removing focus
+      if (document.activeElement) {
+        document.activeElement.blur();
+      }
+    }
+  }, [showShareModal]);
+
   return (
     <>
       <div className="w-full min-h-screen pb-20 lg:pb-0">
@@ -149,6 +164,13 @@ const ProfilePage = () => {
 
         {!isLoading && !isRefetching && user && (
           <>
+            {/* Share Modal */}
+            <ShareModal
+              user={user}
+              isOpen={showShareModal}
+              onClose={() => setShowShareModal(false)}
+            />
+
             {/* Üst başlık - Twitter benzeri */}
             <div className="sticky top-0 z-20 flex items-center gap-4 px-4 py-2 border-b border-base-300 bg-base-100/95 backdrop-blur-md">
               <button
@@ -251,6 +273,7 @@ const ProfilePage = () => {
                   {/* 3 nokta dropdown */}
                   <div className="dropdown dropdown-left">
                     <button
+                      ref={dropdownTriggerRef}
                       type="button"
                       className="btn btn-sm rounded-full btn-outline p-2 h-8 w-8 min-h-8 flex items-center justify-center outline-none"
                     >
@@ -261,6 +284,7 @@ const ProfilePage = () => {
                       />
                     </button>
                     <ul
+                      ref={dropdownMenuRef}
                       tabIndex={0}
                       className="dropdown-content rounded-xl border border-base-300/50 menu bg-base-100/95 backdrop-blur-xl z-[100] font-semibold min-w-60 p-2 shadow-2xl transition-all duration-200 ease-out"
                     >
@@ -277,7 +301,30 @@ const ProfilePage = () => {
                           <GoMute /> <span>Sessize Al</span>
                         </a>
                       </li>
-                      <li className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg">
+                      <li 
+                        className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          
+                          // Close dropdown immediately
+                          if (dropdownMenuRef.current) {
+                            dropdownMenuRef.current.blur();
+                          }
+                          if (dropdownTriggerRef.current) {
+                            dropdownTriggerRef.current.blur();
+                          }
+                          // Force close by removing focus
+                          if (document.activeElement) {
+                            document.activeElement.blur();
+                          }
+                          
+                          // Small delay to ensure dropdown closes before modal opens
+                          setTimeout(() => {
+                            setShowShareModal(true);
+                          }, 100);
+                        }}
+                      >
                         <a className="rounded-none flex whitespace-nowrap cursor-pointer">
                           <LuShare2 /> <span>Profili Paylaş</span>
                         </a>

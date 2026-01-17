@@ -3,17 +3,25 @@ import { LuX, LuCopy, LuCheck } from "react-icons/lu";
 import toast from "react-hot-toast";
 import { getShareOptions } from "../../constants/shareOptions";
 
-const ShareModal = ({ post, postOwner, isOpen, onClose }) => {
+const ShareModal = ({ post, postOwner, user, isOpen, onClose }) => {
   const [copied, setCopied] = useState(false);
   
-  const postUrl = `${window.location.origin}/post/${post._id}`;
-  const shareText = postOwner 
-    ? `${postOwner.fullname || postOwner.username} tarafından paylaşıldı: ${post.text?.substring(0, 100)}${post.text?.length > 100 ? '...' : ''}`
-    : post.text?.substring(0, 100) || 'Bu gönderiyi paylaş';
+  // Determine if sharing post or user
+  const isUserShare = !!user && !post;
+  
+  const shareUrl = isUserShare 
+    ? `${window.location.origin}/profile/${user.username}`
+    : `${window.location.origin}/post/${post._id}`;
+    
+  const shareText = isUserShare
+    ? `${user.fullname || user.username} kullanıcısının profilini paylaş`
+    : postOwner 
+      ? `${postOwner.fullname || postOwner.username} tarafından paylaşıldı: ${post.text?.substring(0, 100)}${post.text?.length > 100 ? '...' : ''}`
+      : post.text?.substring(0, 100) || 'Bu gönderiyi paylaş';
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(postUrl);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success('Link kopyalandı!');
       setTimeout(() => setCopied(false), 2000);
@@ -22,7 +30,7 @@ const ShareModal = ({ post, postOwner, isOpen, onClose }) => {
     }
   };
 
-  const shareOptions = getShareOptions(postUrl, shareText, copyToClipboard);
+  const shareOptions = getShareOptions(shareUrl, shareText, copyToClipboard);
 
   if (!isOpen) return null;
 
@@ -47,7 +55,9 @@ const ShareModal = ({ post, postOwner, isOpen, onClose }) => {
         {/* Header */}
         <div className="mb-6">
           <h3 className="font-bold text-xl text-base-content mb-2">Paylaş</h3>
-          <p className="text-sm text-base-content/70">Gönderiyi paylaş</p>
+          <p className="text-sm text-base-content/70">
+            {isUserShare ? 'Profili paylaş' : 'Gönderiyi paylaş'}
+          </p>
         </div>
 
         {/* Share Options Grid */}
@@ -74,8 +84,10 @@ const ShareModal = ({ post, postOwner, isOpen, onClose }) => {
         <div className="border-t border-base-300/50 pt-4">
           <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-xl border border-base-300/30">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-base-content/60 mb-1">Gönderi Linki</p>
-              <p className="text-sm font-mono text-base-content truncate">{postUrl}</p>
+              <p className="text-xs text-base-content/60 mb-1">
+                {isUserShare ? 'Profil Linki' : 'Gönderi Linki'}
+              </p>
+              <p className="text-sm font-mono text-base-content truncate">{shareUrl}</p>
             </div>
             <button
               onClick={copyToClipboard}
