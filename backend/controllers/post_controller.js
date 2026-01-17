@@ -86,7 +86,8 @@ export const create_post = async (req, res) => {
 
 export const delete_post = async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const postId = req.params.id;
+    const post = await Post.findById(postId);
     if (!post) {
       return res.status(404).json({
         message: "Gönderiye ulaşılamıyor. Silinmiş veya arşivlenmiş olabilir.",
@@ -97,12 +98,35 @@ export const delete_post = async (req, res) => {
         .status(401)
         .json({ message: "Gönderiyi silmek için giriş yapmalısınız." });
     }
+    
+    // Delete post image from Cloudinary if exists
     if (post.img) {
       const imageId = post.img.split("/").pop().split(".")[0];
       await cloudinary.uploader.destroy(imageId);
     }
 
-    await Post.findByIdAndDelete(req.params.id);
+    // Find all posts that reference this post as originalPost (retweets and quote retweets)
+    const relatedPosts = await Post.find({ originalPost: postId });
+    
+    // Delete images from related posts (quote retweets might have images)
+    for (const relatedPost of relatedPosts) {
+      if (relatedPost.img) {
+        try {
+          const imageId = relatedPost.img.split("/").pop().split(".")[0];
+          await cloudinary.uploader.destroy(imageId);
+        } catch (imgError) {
+          console.log("Error deleting related post image:", imgError.message);
+        }
+      }
+    }
+
+    // Delete all related posts (retweets and quote retweets)
+    if (relatedPosts.length > 0) {
+      await Post.deleteMany({ originalPost: postId });
+    }
+
+    // Delete the original post
+    await Post.findByIdAndDelete(postId);
 
     res.status(200).json({ message: "Gönderi silindi." });
   } catch (error) {
