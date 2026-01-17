@@ -318,7 +318,7 @@ const Post = ({ post, isHidden = false }) => {
           </div>
           {/* Post Actions */}
           <PostActions
-            post={isRetweet ? originalPost : updatedPost}
+            post={updatedPost}
             isLiked={isLiked}
             isSaved={isSaved}
             isRetweeted={isRetweeted}

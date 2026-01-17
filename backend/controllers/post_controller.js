@@ -1083,13 +1083,13 @@ export const retweet_post = async (req, res) => {
       if (originalPost.user.toString() !== userId) {
         await Notification.findOneAndUpdate(
           {
-            user: originalPost.user,
+            to: originalPost.user,
             type: "retweet",
             post: postId,
             from: userId,
           },
           {
-            user: originalPost.user,
+            to: originalPost.user,
             type: "retweet",
             post: postId,
             from: userId,
@@ -1110,13 +1110,17 @@ export const retweet_post = async (req, res) => {
             path: "user",
             select: "-password",
           },
+        })
+        .populate({
+          path: "retweetedBy",
+          select: "-password",
         });
 
       return res.status(200).json({ message: "Gönderi retweet edildi.", retweeted: true, post: populatedRetweet });
     }
   } catch (error) {
-    console.log("Error in retweet post controller", error.message);
-    res.status(500).json({ message: "Sunucu hatası." });
+    console.log("Error in retweet post controller", error);
+    res.status(500).json({ message: "Sunucu hatası.", error: error.message });
   }
 };
 
@@ -1168,22 +1172,22 @@ export const quote_retweet = async (req, res) => {
 
     // Create notification for original post owner (if not self)
     if (originalPost.user.toString() !== userId) {
-      await Notification.findOneAndUpdate(
-        {
-          user: originalPost.user,
-          type: "quote_retweet",
-          post: postId,
-          from: userId,
-        },
-        {
-          user: originalPost.user,
-          type: "quote_retweet",
-          post: postId,
-          from: userId,
-          read: false,
-        },
-        { upsert: true, new: true }
-      );
+        await Notification.findOneAndUpdate(
+          {
+            to: originalPost.user,
+            type: "quote_retweet",
+            post: postId,
+            from: userId,
+          },
+          {
+            to: originalPost.user,
+            type: "quote_retweet",
+            post: postId,
+            from: userId,
+            read: false,
+          },
+          { upsert: true, new: true }
+        );
     }
 
     const populatedPost = await Post.findById(quotePost._id)
@@ -1197,11 +1201,15 @@ export const quote_retweet = async (req, res) => {
           path: "user",
           select: "-password",
         },
+      })
+      .populate({
+        path: "retweetedBy",
+        select: "-password",
       });
 
     res.status(201).json(populatedPost);
   } catch (error) {
-    console.log("Error in quote retweet controller", error.message);
-    res.status(500).json({ message: "Sunucu hatası." });
+    console.log("Error in quote retweet controller", error);
+    res.status(500).json({ message: "Sunucu hatası.", error: error.message });
   }
 };
