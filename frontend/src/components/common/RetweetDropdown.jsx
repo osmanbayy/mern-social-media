@@ -20,6 +20,8 @@ const RetweetDropdown = ({ post, isRetweeted, onClose }) => {
   const imgRef = useRef(null);
   const queryClient = useQueryClient();
 
+  const { theme } = useTheme();
+
   const {
     showMentionDropdown,
     mentionQuery,
