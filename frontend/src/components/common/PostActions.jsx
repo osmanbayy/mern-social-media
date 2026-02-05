@@ -14,8 +14,6 @@ const PostActions = ({
   isLiked,
   isSaved,
   isRetweeted = false,
-  isLiking,
-  isSaving,
   onLike,
   onSave,
   onComment,
@@ -26,7 +24,7 @@ const PostActions = ({
   const dropdownRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const { mutate: directRetweet, isPending: isDirectRetweeting } = useMutation({
+  const { mutate: directRetweet } = useMutation({
     mutationFn: () => retweetPost(post._id),
     onSuccess: (data) => {
       toast.success(data.retweeted ? "Gönderi retweet edildi." : "Retweet geri alındı.");

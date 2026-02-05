@@ -7,7 +7,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getNavItems } from "../../constants/navItems";
 import { useTheme } from "../../contexts/ThemeContext";
 
-const DesktopSidebar = ({ authUser, activeTab, setActiveTab, isNotRead, isSettingPage, onLogoutClick }) => {
+const DesktopSidebar = ({
+  authUser,
+  activeTab,
+  setActiveTab,
+  isNotRead,
+  isSettingPage,
+  onLogoutClick,
+}) => {
   const { theme } = useTheme();
   const isDark = (theme || "").toLowerCase() === "dark";
   const queryClient = useQueryClient();
@@ -23,12 +30,14 @@ const DesktopSidebar = ({ authUser, activeTab, setActiveTab, isNotRead, isSettin
       <div className="sticky top-0 h-screen flex flex-col border-r border-base-300/50 bg-base-100/80 backdrop-blur-sm w-full z-10 overflow-y-auto">
         <Link to="/" className="flex justify-center md:justify-start mb-12">
           <OSSvg
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["posts"] })}
+            onClick={() =>
+              queryClient.invalidateQueries({ queryKey: ["posts"] })
+            }
             className="px-2 w-12 h-12 rounded-full"
           />
         </Link>
 
-        <div className="items-center flex gap-2 flex-col mb-16">
+        <div className="items-center flex gap-2 flex-col mb-8">
           <div>
             <Link to={`/profile/${authUser?.username}`}>
               <img
@@ -47,10 +56,16 @@ const DesktopSidebar = ({ authUser, activeTab, setActiveTab, isNotRead, isSettin
             <p className="whitespace-nowrap">{authUser?.bio}</p>
             <div className="flex gap-2">
               <p className="text-sm">
-                <span className="text-base-100 invert">{authUser?.following.length || 0}</span> Takip
+                <span className="text-base-100 invert">
+                  {authUser?.following.length || 0}
+                </span>{" "}
+                Takip
               </p>
               <p className="text-sm">
-                <span className="text-base-100 invert">{authUser?.followers.length || 0}</span> Takipçi
+                <span className="text-base-100 invert">
+                  {authUser?.followers.length || 0}
+                </span>{" "}
+                Takipçi
               </p>
             </div>
           </div>
@@ -61,26 +76,28 @@ const DesktopSidebar = ({ authUser, activeTab, setActiveTab, isNotRead, isSettin
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
-              <li
+              <Link
+                to={item.path}
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 className={`flex justify-center md:justify-start w-full rounded-xl transition-all duration-300 ${
                   isActive
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-secondary/10 text-base-content"
                     : "hover:bg-base-200/50 text-base-content/70"
                 }`}
               >
-                <Link
-                  to={item.path}
+                <div
                   className="relative flex gap-3 items-center rounded-xl duration-300 py-3 pl-3 pr-4 max-w-fit cursor-pointer w-full"
                 >
                   <Icon className="w-6 h-6" />
                   {item.hasBadge && (
-                    <GoDotFill className="absolute top-2 left-3 w-2 h-2 fill-primary animate-pulse" />
+                    <GoDotFill className="absolute top-2 left-6 size-4 fill-red-500 animate-pulse" />
                   )}
-                  <span className="text-base font-medium hidden md:block">{item.label}</span>
-                </Link>
-              </li>
+                  <span className="text-base font-medium hidden md:block">
+                    {item.label}
+                  </span>
+                </div>
+              </Link>
             );
           })}
         </ul>

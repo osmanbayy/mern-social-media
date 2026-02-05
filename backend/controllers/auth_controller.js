@@ -141,6 +141,7 @@ export const login = async (req, res) => {
     });
   }
 };
+
 export const logout = (req, res) => {
   const isProduction = process.env.NODE_ENV === "production";
 
@@ -155,7 +156,6 @@ export const logout = (req, res) => {
   return res.status(200).json({ message: "Çıkış yapıldı." });
 };
 
-
 export const get_me = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -169,7 +169,6 @@ export const get_me = async (req, res) => {
 export const sendVerifyOtp = async (req, res) => {
   try {
     const { userId } = req.body;
-    console.log("userId from body:", userId);
 
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res
@@ -265,11 +264,6 @@ export const verifyEmail = async (req, res) => {
 
     // OTP kontrolü
     if (!user.verifyOtp || user.verifyOtp === "" || user.verifyOtp !== otp) {
-      console.log("OTP mismatch:", {
-        provided: otp,
-        stored: user.verifyOtp,
-        userId: userId
-      });
       return res.status(400).json({
         success: false,
         message: "Geçersiz doğrulama kodu."
@@ -278,7 +272,6 @@ export const verifyEmail = async (req, res) => {
 
     // OTP süresi kontrolü
     if (!user.verifyOtpExpiresAt || user.verifyOtpExpiresAt === 0) {
-      console.log("OTP expiration not set for user:", userId);
       return res.status(400).json({
         success: false,
         message: "Doğrulama kodu süresi dolmuş. Lütfen yeni bir kod isteyin."
@@ -286,11 +279,6 @@ export const verifyEmail = async (req, res) => {
     }
 
     if (user.verifyOtpExpiresAt < Date.now()) {
-      console.log("OTP expired:", {
-        expiresAt: new Date(user.verifyOtpExpiresAt),
-        now: new Date(),
-        userId: userId
-      });
       return res.status(400).json({
         success: false,
         message: "Doğrulama kodunun süresi dolmuş. Lütfen yeni bir kod isteyin."
@@ -303,8 +291,6 @@ export const verifyEmail = async (req, res) => {
     user.verifyOtpExpiresAt = 0;
 
     await user.save();
-
-    console.log("Email verified successfully for user:", userId);
 
     return res.json({
       success: true,

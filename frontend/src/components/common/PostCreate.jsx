@@ -140,7 +140,7 @@ const PostCreate = () => {
             onChange={handleImgChange}
           />
           <button 
-            className="btn btn-primary rounded-full btn-sm text-white px-6 hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg disabled:opacity-50"
+            className="btn btn-primary rounded-full btn-sm text-white px-6 transition-transform duration-200 shadow-md hover:shadow-lg disabled:opacity-50"
             disabled={isPending || (!text.trim() && !img)}
           >
             {isPending ? (

@@ -84,7 +84,7 @@ const RightPanel = () => {
   }
 
   return (
-    <div className="hidden lg:flex flex-shrink-0 w-80">
+    <div className="hidden lg:flex flex-shrink-0 w-92">
       <div className="sticky top-0 h-screen flex flex-col p-5 pt-4 overflow-y-auto gap-4">
         {/* Search Input */}
         <div className="w-full">
@@ -94,7 +94,7 @@ const RightPanel = () => {
               placeholder="Ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-full bg-base-200/50 border border-base-300/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm"
+              className="w-full pl-10 pr-4 py-2.5 rounded-full bg-base-200/50 border border-base-300/50 focus:outline-none focus:ring-2 focus:ring-base-content/50 transition-all duration-200 text-sm"
             />
             <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40" />
           </form>
@@ -118,7 +118,7 @@ const RightPanel = () => {
               >
                 <div className="flex gap-3 items-center flex-1 min-w-0 overflow-hidden">
                   <div className="avatar flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full ring-2 ring-base-300 group-hover:ring-primary transition-all duration-300">
+                    <div className="w-10 h-10 rounded-full ring-2 ring-base-300">
                       <img
                         src={user.profileImage || defaultProfilePicture}
                         className="w-full h-full rounded-full object-cover"
@@ -137,11 +137,11 @@ const RightPanel = () => {
                 </div>
                 <div className="flex-shrink-0">
                   <button
-                    className="btn btn-primary btn-sm rounded-full text-white hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                    className="btn btn-soft btn-sm rounded-full transition-transform duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
                     onClick={(e) => handleFollowClick(e, user._id)}
                     disabled={loadingUserId === user._id}
                   >
-                    {loadingUserId === user._id ? <LoadingSpinner size="sm" /> : "Takip et"}
+                    {loadingUserId === user._id ? <LoadingSpinner size="sm" /> : "Takip Et"}
                   </button>
                 </div>
               </Link>

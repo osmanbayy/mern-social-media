@@ -59,18 +59,19 @@ const CreatePost = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [showPicker]);
 
   // Calculate emoji picker position
   useEffect(() => {
-    if (!showPicker || !emojiButtonRef.current || !emojiPickerRef.current) return;
+    if (!showPicker || !emojiButtonRef.current || !emojiPickerRef.current)
+      return;
 
     const button = emojiButtonRef.current;
     const picker = emojiPickerRef.current;
@@ -81,18 +82,20 @@ const CreatePost = () => {
 
     let left = 0;
     let top = buttonRect.height + 8; // mt-2 equivalent
-    let transform = '';
+    let transform = "";
 
     // Check if picker would overflow on the right
     if (buttonRect.left + pickerRect.width > viewportWidth) {
       left = viewportWidth - buttonRect.right;
-      transform = 'translateX(-100%)';
+      transform = "translateX(-100%)";
     }
 
     // Check if picker would overflow on the bottom (mobile)
     if (buttonRect.bottom + pickerRect.height > viewportHeight) {
       top = -(pickerRect.height + 8);
-      transform = transform ? `${transform} translateY(-100%)` : 'translateY(-100%)';
+      transform = transform
+        ? `${transform} translateY(-100%)`
+        : "translateY(-100%)";
     }
 
     picker.style.left = `${left}px`;
@@ -119,7 +122,7 @@ const CreatePost = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-      createPostMutation({ text, img });
+    createPostMutation({ text, img });
   };
 
   const handleImgChange = async (e) => {
@@ -148,7 +151,7 @@ const CreatePost = () => {
           className="w-10 h-10 rounded-full ring-2 ring-base-300 hover:ring-primary transition-all duration-300 cursor-pointer"
           onClick={() => navigate(`/profile/${authUser.username}`)}
         >
-          <img 
+          <img
             src={authUser?.profileImage || defaultProfilePicture}
             className="w-full h-full rounded-full object-cover"
           />
@@ -201,18 +204,18 @@ const CreatePost = () => {
           <div className="flex gap-3 items-center">
             <div className="p-2 rounded-full hover:bg-primary/10 transition-all duration-200 cursor-pointer group">
               <CiImageOn
-                className="w-5 h-5 text-base-content/60 group-hover:text-primary transition-colors"
+                className="w-5 h-5 text-base-content/60 transition-colors"
                 onClick={() => imgRef.current.click()}
               />
             </div>
             <div className="relative">
-              <div 
+              <div
                 ref={emojiButtonRef}
                 className="p-2 rounded-full hover:bg-primary/10 transition-all duration-200 cursor-pointer group"
               >
                 <BsEmojiSmileFill
                   onClick={() => setShowPicker(!showPicker)}
-                  className={`w-5 h-5 transition-all duration-200 group-hover:scale-110 ${
+                  className={`w-5 h-5 ${
                     theme === "dark" ? "fill-yellow-400" : "fill-blue-500"
                   }`}
                 />
@@ -220,16 +223,16 @@ const CreatePost = () => {
               {showPicker && (
                 <>
                   {/* Backdrop for mobile */}
-                  <div 
+                  <div
                     className="fixed inset-0 z-[50] md:hidden bg-black/20"
                     onClick={() => setShowPicker(false)}
                   />
-                  <div 
+                  <div
                     ref={emojiPickerRef}
                     className="absolute z-[60] shadow-2xl rounded-2xl overflow-hidden bg-base-100 border border-base-300/50 animate-dropdownFadeIn"
                     style={{
-                      maxWidth: 'calc(100vw - 2rem)',
-                      maxHeight: 'calc(100vh - 200px)',
+                      maxWidth: "calc(100vw - 2rem)",
+                      maxHeight: "calc(100vh - 200px)",
                     }}
                   >
                     <div className="md:hidden max-h-[400px] overflow-y-auto">
@@ -266,8 +269,8 @@ const CreatePost = () => {
             ref={imgRef}
             onChange={handleImgChange}
           />
-          <button 
-            className="btn btn-primary rounded-full btn-sm text-white px-6 hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg disabled:opacity-50"
+          <button
+            className="btn btn-primary rounded-full btn-sm text-white px-6 transition-transform duration-200 shadow-md hover:shadow-lg disabled:opacity-50"
             disabled={isPending || (!text.trim() && !img)}
           >
             {isPending ? (
@@ -279,7 +282,9 @@ const CreatePost = () => {
             )}
           </button>
         </div>
-        {isError && <div className="text-error text-sm mt-2">{error.message}</div>}
+        {isError && (
+          <div className="text-error text-sm mt-2">{error.message}</div>
+        )}
       </form>
     </div>
   );

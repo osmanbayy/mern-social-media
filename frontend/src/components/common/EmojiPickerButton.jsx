@@ -57,11 +57,11 @@ const EmojiPickerButton = ({ theme, onEmojiClick, showPicker, setShowPicker }) =
     <div className="relative">
       <div 
         ref={emojiButtonRef}
-        className="p-2 rounded-full hover:bg-primary/10 transition-all duration-200 cursor-pointer group"
+        className="p-2 rounded-full hover:bg-primary/10 transition-all duration-200 cursor-pointer"
       >
         <BsEmojiSmileFill
           onClick={() => setShowPicker(!showPicker)}
-          className={`w-5 h-5 transition-all duration-200 group-hover:scale-110 ${emojiColor}`}
+          className={`w-5 h-5 ${emojiColor}`}
         />
       </div>
       {showPicker && (
@@ -73,7 +73,7 @@ const EmojiPickerButton = ({ theme, onEmojiClick, showPicker, setShowPicker }) =
           />
           <div 
             ref={emojiPickerRef}
-            className="absolute z-[60] shadow-2xl rounded-2xl overflow-hidden bg-base-100 border border-base-300/50 animate-dropdownFadeIn"
+            className="absolute z-[999] shadow-2xl rounded-2xl overflow-hidden bg-base-100 border border-base-300/50 animate-dropdownFadeIn"
             style={{
               maxWidth: 'calc(100vw - 2rem)',
               maxHeight: 'calc(100vh - 200px)',

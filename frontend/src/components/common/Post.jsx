@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/AuthContext";
-import toast from "react-hot-toast";
 import { LuPin } from "react-icons/lu";
 import { BiRepost } from "react-icons/bi";
 import LoadingSpinner from "../common/LoadingSpinner";
@@ -311,7 +309,7 @@ const Post = ({ post, isHidden = false }) => {
               >
                 <img
                   src={isRetweet ? originalPost?.img : updatedPost.img}
-                  className="w-full max-h-[300px] object-cover cursor-pointer hover:scale-[1.02] transition-transform duration-500"
+                  className="w-full max-h-[300px] object-cover cursor-pointer transition-transform duration-500"
                   alt=""
                   draggable="false"
                 />

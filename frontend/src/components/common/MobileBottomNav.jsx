@@ -17,7 +17,7 @@ const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
       <div
         className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
           isActive
-            ? "bg-primary/15 scale-100"
+            ? "bg-secondary/15 scale-100"
             : "bg-transparent scale-95 group-active:scale-100 group-active:bg-base-200/50"
         }`}
       />
@@ -25,7 +25,7 @@ const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
         {typeof Icon === "function" ? (
           <Icon
             className={`w-6 h-6 transition-all duration-300 ${
-              isActive ? "text-primary scale-110" : "text-base-content/60 group-active:scale-105"
+              isActive ? "text-base-content scale-110" : "text-base-content/60 group-active:scale-105"
             }`}
           />
         ) : (
@@ -36,7 +36,7 @@ const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
         )}
       </div>
       {isActive && (
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white" />
       )}
     </Link>
   );

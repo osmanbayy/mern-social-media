@@ -16,12 +16,12 @@ const HomePage = () => {
             onClick={() => setFeedType("forYou")}
           >
             <span className={`font-medium transition-colors ${
-              feedType === "forYou" ? "text-primary" : "text-base-content/70 group-hover:text-base-content"
+              feedType === "forYou" ? "text-base-content" : "text-base-content/20 group-hover:text-base-content"
             }`}>
               Senin İçin
             </span>
             {feedType === "forYou" && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 bg-primary h-1 rounded-full"></div>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 bg-base-content h-1 rounded-full"></div>
             )}
           </div>
           <div
@@ -29,12 +29,12 @@ const HomePage = () => {
             onClick={() => setFeedType("following")}
           >
             <span className={`font-medium transition-colors ${
-              feedType === "following" ? "text-primary" : "text-base-content/70 group-hover:text-base-content"
+              feedType === "following" ? "text-base-content" : "text-base-content/20 group-hover:text-base-content"
             }`}>
               Takip Ettiklerin
             </span>
             {feedType === "following" && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 bg-primary h-1 rounded-full"></div>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 bg-base-content h-1 rounded-full"></div>
             )}
           </div>
         </div>

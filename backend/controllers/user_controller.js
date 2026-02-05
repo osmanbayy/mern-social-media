@@ -24,7 +24,7 @@ export const get_user_profile = async (req, res) => {
     const isBlockedByUser = user.blockedUsers.some(
       (id) => id.toString() === currentUserId.toString()
     );
-    
+
     if (isBlockedByUser) {
       return res.status(403).json({ message: "Bu profili görüntüleme yetkiniz yok." });
     }
@@ -99,21 +99,21 @@ export const get_suggested_users = async (req, res) => {
     }
 
     const followingIds = currentUser.following.map(id => id.toString());
-    
+
     // Get blocked user IDs (users who blocked current user)
     const blockedByUsers = await User.find({
       blockedUsers: userId
     }).select("_id");
 
     const blockedByUserIds = blockedByUsers.map(u => u._id.toString());
-    
+
     // Also exclude users that current user has blocked
     const blockedUserIds = currentUser.blockedUsers.map(id => id.toString());
-    
+
     // Get random sample of users (larger sample to account for filtering)
     // Get more users to ensure we have enough after filtering
     const totalUsers = await User.countDocuments({
-      _id: { 
+      _id: {
         $ne: userId,
         $nin: [...blockedUserIds, ...blockedByUserIds]
       },
@@ -133,7 +133,7 @@ export const get_suggested_users = async (req, res) => {
     const users = await User.aggregate([
       {
         $match: {
-          _id: { 
+          _id: {
             $ne: userId,
             $nin: [...blockedUserIds.map(id => new mongoose.Types.ObjectId(id)), ...blockedByUserIds.map(id => new mongoose.Types.ObjectId(id))]
           },
@@ -152,9 +152,9 @@ export const get_suggested_users = async (req, res) => {
     const suggestedUsers = filteredUsers.slice(skip, skip + limit);
 
     suggestedUsers.forEach((user) => (user.password = null));
-    
+
     const hasMore = skip + suggestedUsers.length < filteredUsers.length;
-    
+
     res.status(200).json({
       users: suggestedUsers,
       hasMore,
@@ -289,16 +289,16 @@ export const search_users = async (req, res) => {
     }).select("_id");
 
     const blockedByUserIds = blockedByUsers.map(u => u._id.toString());
-    
+
     // Also exclude users that current user has blocked
     const blockedUserIds = currentUser.blockedUsers.map(id => id.toString());
 
     const searchQuery = query.trim().toLowerCase();
-    
+
     // Search by username or fullname (case insensitive)
     // Exclude: current user, users blocked by current user, users who blocked current user
     const users = await User.find({
-      _id: { 
+      _id: {
         $ne: userId,
         $nin: [...blockedUserIds, ...blockedByUserIds]
       },
@@ -307,8 +307,8 @@ export const search_users = async (req, res) => {
         { fullname: { $regex: searchQuery, $options: "i" } }
       ]
     })
-    .select("username fullname profileImage")
-    .limit(10);
+      .select("username fullname profileImage")
+      .limit(10);
 
     res.status(200).json(users);
   } catch (error) {
@@ -343,17 +343,17 @@ export const search_users_paginated = async (req, res) => {
     }).select("_id");
 
     const blockedByUserIds = blockedByUsers.map(u => u._id.toString());
-    
+
     // Also exclude users that current user has blocked
     const blockedUserIds = currentUser.blockedUsers.map(id => id.toString());
 
     const searchQuery = query.trim();
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    
+
     // Search by username or fullname (case insensitive)
     // Exclude: current user, users blocked by current user, users who blocked current user
     const users = await User.find({
-      _id: { 
+      _id: {
         $ne: userId,
         $nin: [...blockedUserIds, ...blockedByUserIds]
       },
@@ -362,13 +362,13 @@ export const search_users_paginated = async (req, res) => {
         { fullname: { $regex: searchQuery, $options: "i" } }
       ]
     })
-    .select("-password")
-    .skip(skip)
-    .limit(parseInt(limit));
+      .select("-password")
+      .skip(skip)
+      .limit(parseInt(limit));
 
     // Get total count for hasMore
     const totalCount = await User.countDocuments({
-      _id: { 
+      _id: {
         $ne: userId,
         $nin: [...blockedUserIds, ...blockedByUserIds]
       },
@@ -421,11 +421,11 @@ export const block_user = async (req, res) => {
 
     // Block the user
     currentUser.blockedUsers.push(id);
-    
+
     // Remove from following/followers if exists
     await User.findByIdAndUpdate(currentUserId, { $pull: { following: id } });
     await User.findByIdAndUpdate(id, { $pull: { followers: currentUserId } });
-    
+
     await currentUser.save();
 
     res.status(200).json({ message: "Kullanıcı engellendi." });
