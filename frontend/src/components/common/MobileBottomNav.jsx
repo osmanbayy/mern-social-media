@@ -36,7 +36,7 @@ const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
         )}
       </div>
       {isActive && (
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white" />
+        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-base-content" />
       )}
     </Link>
   );

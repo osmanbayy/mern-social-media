@@ -32,7 +32,6 @@ const Posts = ({ feedType, username, userId }) => {
     data: postsData,
     isLoading,
     isFetching,
-    refetch,
     isRefetching,
   } = useQuery({
     queryKey: ["posts", feedType, username, userId, page],

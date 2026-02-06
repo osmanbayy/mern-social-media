@@ -9,7 +9,6 @@ import { useRef } from "react";
 const CommentItem = ({
   commentItem,
   authUser,
-  post,
   postOwner,
   isMyComment,
   isPostOwner,
@@ -38,12 +37,24 @@ const CommentItem = ({
   // Reply mention hook - create a ref if not provided
   const internalReplyRef = useRef(null);
   const actualReplyRef = replyTextareaRef || internalReplyRef;
-  
+
   const replyMentionHook = useMention(
     replyText,
     onReplyTextChange,
-    typeof actualReplyRef === 'function' ? null : actualReplyRef
+    typeof actualReplyRef === "function" ? null : actualReplyRef,
   );
+
+  const handleEditChange = (e) => {
+    onEdit({ ...editingComment, text: e.target.value });
+  };
+
+  const stopPropagation = (e) => e.stopPropagation();
+
+  const setReplyRef = (el) => {
+    if (!actualReplyRef) return;
+    if (typeof actualReplyRef === "function") actualReplyRef(el);
+    else actualReplyRef.current = el;
+  };
 
   return (
     <div className="py-3">
@@ -51,7 +62,7 @@ const CommentItem = ({
         <Link
           to={`/profile/${commentItem.user.username}`}
           className="avatar flex-shrink-0"
-          onClick={(e) => e.stopPropagation()}
+          onClick={stopPropagation}
         >
           <div className="w-10 h-10 rounded-full ring-2 ring-base-300 hover:ring-primary transition-all duration-300">
             <img
@@ -67,7 +78,7 @@ const CommentItem = ({
               <Link
                 to={`/profile/${commentItem.user.username}`}
                 className="font-semibold text-sm hover:text-primary transition-colors"
-                onClick={(e) => e.stopPropagation()}
+                onClick={stopPropagation}
               >
                 {commentItem.user.fullname || "Kullanıcı"}
               </Link>
@@ -87,19 +98,13 @@ const CommentItem = ({
               theme={theme}
             />
           </div>
-          
+
           {isEditing ? (
-            <form 
-              onSubmit={onSubmitEdit}
-              className="flex flex-col gap-2"
-            >
+            <form onSubmit={onSubmitEdit} className="flex flex-col gap-2">
               <textarea
                 className="textarea textarea-bordered w-full min-h-[80px] max-h-32 resize-none rounded-xl text-sm bg-base-200/50 border-base-300 focus:border-primary/50"
                 value={editingComment?.text || ""}
-                onChange={(e) => {
-                  const updatedComment = { ...editingComment, text: e.target.value };
-                  onEdit(updatedComment);
-                }}
+                onChange={handleEditChange}
                 rows={3}
                 autoFocus
               />
@@ -113,7 +118,10 @@ const CommentItem = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={!editingComment?.text?.trim() || editCommentMutation.isPending}
+                  disabled={
+                    !editingComment?.text?.trim() ||
+                    editCommentMutation.isPending
+                  }
                   className="btn btn-primary btn-sm"
                 >
                   {editCommentMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
@@ -125,13 +133,15 @@ const CommentItem = ({
               <p className="text-base-content text-sm leading-relaxed mb-2">
                 <MentionText text={commentItem.text} />
               </p>
-              
+
               {/* Comment Actions */}
               <div className="flex items-center gap-4 mt-2">
                 <button
                   onClick={onLike}
                   className={`flex items-center gap-1.5 text-sm transition-colors ${
-                    isLiked ? "text-red-500" : "text-base-content/60 hover:text-red-500"
+                    isLiked
+                      ? "text-red-500"
+                      : "text-base-content/60 hover:text-red-500"
                   }`}
                 >
                   <FaHeart className={isLiked ? "fill-current" : ""} />
@@ -148,19 +158,10 @@ const CommentItem = ({
 
               {/* Reply Input */}
               {isReplying && (
-                <form 
-                  onSubmit={onSubmitReply}
-                  className="mt-3 flex gap-2"
-                >
+                <form onSubmit={onSubmitReply} className="mt-3 flex gap-2">
                   <div className="flex-1 relative">
                     <textarea
-                      ref={(el) => {
-                        if (typeof actualReplyRef === 'function') {
-                          actualReplyRef(el);
-                        } else if (actualReplyRef) {
-                          actualReplyRef.current = el;
-                        }
-                      }}
+                      ref={setReplyRef}
                       className="textarea textarea-bordered w-full min-h-[60px] max-h-24 resize-none rounded-xl text-sm bg-base-200/50 border-base-300 focus:border-primary/50"
                       placeholder={`@${commentItem.user.username} yanıtla...`}
                       value={replyText}
@@ -179,7 +180,9 @@ const CommentItem = ({
                   <div className="flex flex-col gap-1">
                     <button
                       type="submit"
-                      disabled={!replyText.trim() || replyToCommentMutation.isPending}
+                      disabled={
+                        !replyText.trim() || replyToCommentMutation.isPending
+                      }
                       className="btn btn-primary btn-sm"
                     >
                       {replyToCommentMutation.isPending ? "..." : "Gönder"}
@@ -200,20 +203,24 @@ const CommentItem = ({
                 <div className="mt-3 ml-4 pl-4 border-l-2 border-base-300/30 space-y-3">
                   {commentItem.replies.map((reply) => {
                     if (!reply.user) return null;
-                    const isReplyLiked = reply.likes?.some(
-                      (id) => id?._id === authUser?._id || id === authUser?._id
-                    ) || false;
-                    
+                    const isReplyLiked =
+                      reply.likes?.some(
+                        (id) =>
+                          id?._id === authUser?._id || id === authUser?._id,
+                      ) || false;
+
                     return (
                       <div key={reply._id} className="flex gap-2">
                         <Link
                           to={`/profile/${reply.user.username}`}
                           className="avatar flex-shrink-0"
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={stopPropagation}
                         >
                           <div className="w-8 h-8 rounded-full ring-2 ring-base-300">
                             <img
-                              src={reply.user.profileImage || defaultProfilePicture}
+                              src={
+                                reply.user.profileImage || defaultProfilePicture
+                              }
                               alt={reply.user.fullname || "Kullanıcı"}
                               className="w-full h-full rounded-full object-cover"
                             />
@@ -224,7 +231,7 @@ const CommentItem = ({
                             <Link
                               to={`/profile/${reply.user.username}`}
                               className="font-semibold text-xs hover:text-primary transition-colors"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={stopPropagation}
                             >
                               {reply.user.fullname || "Kullanıcı"}
                             </Link>
@@ -237,15 +244,16 @@ const CommentItem = ({
                           </p>
                           <div className="flex items-center gap-3 mt-1">
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Like reply functionality can be added here
-                              }}
+                              onClick={stopPropagation}
                               className={`flex items-center gap-1 text-xs transition-colors ${
-                                isReplyLiked ? "text-red-500" : "text-base-content/60 hover:text-red-500"
+                                isReplyLiked
+                                  ? "text-red-500"
+                                  : "text-base-content/60 hover:text-red-500"
                               }`}
                             >
-                              <FaHeart className={isReplyLiked ? "fill-current" : ""} />
+                              <FaHeart
+                                className={isReplyLiked ? "fill-current" : ""}
+                              />
                               <span>{reply.likes?.length || 0}</span>
                             </button>
                           </div>

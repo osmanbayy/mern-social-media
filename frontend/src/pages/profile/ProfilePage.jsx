@@ -26,6 +26,8 @@ import defaultCoverPicture from "../../assets/default-cover.jpg";
 import useUpdateProfile from "../../hooks/useUpdateProfile";
 import useProfileImage from "../../hooks/useProfileImage";
 import { FEED_TYPES } from "../../constants/feedTypes";
+import { SlUserFollow, SlUserUnfollow } from "react-icons/sl";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const ProfilePage = () => {
   const [feedType, setFeedType] = useState(FEED_TYPES.POSTS);
@@ -77,6 +79,7 @@ const ProfilePage = () => {
   const isMyProfile = authUser?._id === user?._id;
   const memberSinceDate = formatMemberSinceDate(user?.createdAt);
   const amIFollowing = authUser?.following?.includes(user?._id) || false;
+  const { theme } = useTheme();
 
   const handleProfileImageClick = (e) => {
     e.stopPropagation();
@@ -110,7 +113,7 @@ const ProfilePage = () => {
 
   const handleBlockUser = async () => {
     if (!user?._id) return;
-    
+
     setIsBlocking(true);
     try {
       await blockUser(user._id);
@@ -135,11 +138,35 @@ const ProfilePage = () => {
   };
 
   const getTabClassName = (tabType) => {
-    const baseClasses = "flex-1 py-3 text-sm font-medium hover:bg-base-200 transition-colors";
-    const activeClasses = "border-b-2 border-primary text-primary";
+    const baseClasses =
+      "flex-1 py-3 text-sm font-medium hover:bg-base-200 transition-colors";
+    const activeClasses =
+      "border-b-2 border-primary text-primary font-semibold";
     const inactiveClasses = "text-base-content/70";
-    
+
     return `${baseClasses} ${feedType === tabType ? activeClasses : inactiveClasses}`;
+  };
+
+  const handleShareModalOpen = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Close dropdown immediately
+    if (dropdownMenuRef.current) {
+      dropdownMenuRef.current.blur();
+    }
+    if (dropdownTriggerRef.current) {
+      dropdownTriggerRef.current.blur();
+    }
+    // Force close by removing focus
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
+
+    // Small delay to ensure dropdown closes before modal opens
+    setTimeout(() => {
+      setShowShareModal(true);
+    }, 100);
   };
 
   // Close dropdown when share modal opens
@@ -228,12 +255,16 @@ const ProfilePage = () => {
                 onChange={(e) => handleImgChange(e, "profileImage")}
               />
 
-              {/* Profil fotoğrafı */}
+              {/* Profile Picture */}
               <div className="absolute -bottom-16 left-4">
                 <div className="relative">
                   <div className="w-32 h-32 rounded-full border-4 border-base-100 bg-base-100 overflow-hidden">
                     <img
-                      src={profileImage || user?.profileImage || defaultProfilePicture}
+                      src={
+                        profileImage ||
+                        user?.profileImage ||
+                        defaultProfilePicture
+                      }
                       alt={user?.fullname}
                       className="w-full h-full object-cover cursor-pointer"
                       onClick={handleProfileImageClick}
@@ -255,10 +286,10 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Kapak ile içerik arası boşluk */}
+            {/* padding between cover and content */}
             <div className="h-16" />
 
-            {/* Profil aksiyonları (Takip / Profili düzenle / Güncelle) */}
+            {/* Profile Actions (Follow / Edit Profile / Update) */}
             <div className="flex justify-end items-center px-4 mb-3 gap-2">
               {isMyProfile ? (
                 <button
@@ -269,12 +300,12 @@ const ProfilePage = () => {
                 </button>
               ) : (
                 <>
-                  {/* 3 nokta dropdown */}
+                  {/* Ellipsis Dropdown */}
                   <div className="dropdown dropdown-left">
                     <button
                       ref={dropdownTriggerRef}
                       type="button"
-                      className="btn btn-sm rounded-full btn-outline p-2 h-8 w-8 min-h-8 flex items-center justify-center outline-none"
+                      className="btn btn-sm rounded-full p-2 h-8 w-8 min-h-8 flex items-center justify-center outline-none"
                     >
                       <HiDotsHorizontal
                         tabIndex={0}
@@ -285,9 +316,13 @@ const ProfilePage = () => {
                     <ul
                       ref={dropdownMenuRef}
                       tabIndex={0}
-                      className="dropdown-content rounded-xl border border-base-300/50 menu bg-base-100/95 backdrop-blur-xl z-[100] font-semibold min-w-60 p-2 shadow-2xl transition-all duration-200 ease-out"
+                      className={`dropdown-content rounded-xl border border-base-300/50 menu bg-base-100/95 backdrop-blur-xl z-[100] font-semibold min-w-60 p-2 shadow-2xl transition-all duration-200 ease-out ${
+                        theme === "dark" 
+                          ? "shadow-black/40 ring-1 ring-white/10" 
+                          : "shadow-black/20 ring-1 ring-black/5"
+                      }`}
                     >
-                      <li 
+                      <li
                         className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
                         onClick={handleBlockClick}
                       >
@@ -300,29 +335,9 @@ const ProfilePage = () => {
                           <GoMute /> <span>Sessize Al</span>
                         </a>
                       </li>
-                      <li 
+                      <li
                         className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          
-                          // Close dropdown immediately
-                          if (dropdownMenuRef.current) {
-                            dropdownMenuRef.current.blur();
-                          }
-                          if (dropdownTriggerRef.current) {
-                            dropdownTriggerRef.current.blur();
-                          }
-                          // Force close by removing focus
-                          if (document.activeElement) {
-                            document.activeElement.blur();
-                          }
-                          
-                          // Small delay to ensure dropdown closes before modal opens
-                          setTimeout(() => {
-                            setShowShareModal(true);
-                          }, 100);
-                        }}
+                        onClick={handleShareModalOpen}
                       >
                         <a className="rounded-none flex whitespace-nowrap cursor-pointer">
                           <LuShare2 /> <span>Profili Paylaş</span>
@@ -335,17 +350,23 @@ const ProfilePage = () => {
                       </li>
                     </ul>
                   </div>
-                  
+
                   <button
-                    className={`btn btn-sm rounded-full px-4 ${
-                      amIFollowing ? "btn-outline" : "btn-primary text-white"
-                    }`}
+                    className={`btn btn-sm rounded-full btn-neutral px-4 flex items-center justify-center gap-2 `}
                     onClick={() => follow(user?._id)}
                     disabled={isPending}
                   >
                     {isPending && <LoadingSpinner size="sm" />}
-                    {!isPending && amIFollowing && "Takibi Bırak"}
-                    {!isPending && !amIFollowing && "Takip Et"}
+                    {!isPending && amIFollowing && (
+                      <div className="flex gap-2 items-center">
+                        <SlUserUnfollow className="size-3" /> Takibi Bırak{" "}
+                      </div>
+                    )}
+                    {!isPending && !amIFollowing && (
+                      <div className="flex gap-2 items-center">
+                        <SlUserFollow className="size-3" /> Takip Et{" "}
+                      </div>
+                    )}
                   </button>
                 </>
               )}
@@ -420,7 +441,7 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Sekmeler */}
+            {/* Tabs */}
             <div className="mt-4 border-b border-base-300 flex">
               <button
                 className={getTabClassName(FEED_TYPES.POSTS)}
@@ -438,7 +459,11 @@ const ProfilePage = () => {
 
             {/* Orta içerik: gönderiler */}
             <div className="px-0">
-              <Posts feedType={feedType} username={username} userId={user?._id} />
+              <Posts
+                feedType={feedType}
+                username={username}
+                userId={user?._id}
+              />
             </div>
           </>
         )}

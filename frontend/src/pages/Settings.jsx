@@ -113,7 +113,7 @@ const Settings = () => {
   return (
     <div className="flex min-h-screen w-full">
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-96 border-r border-base-300/50 bg-base-100">
+      <div className="hidden md:flex w-[500px] border-r border-base-300/50 bg-base-100">
         <div className="w-full flex flex-col">
           {/* Header */}
           <div className="sticky top-0 z-10 p-6 border-b border-base-300/50 bg-base-100/95 backdrop-blur-md">
@@ -139,14 +139,14 @@ const Settings = () => {
                     onClick={() => setSelectedSetting(item.id)}
                     className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-all duration-200 text-left ${
                       selectedSetting === item.id
-                        ? "bg-primary/10 text-primary font-semibold"
+                        ? "bg-base-300 text-base-content font-semibold"
                         : "text-base-content/70 hover:bg-base-200/50 hover:text-base-content"
                     }`}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
                     <span className="flex-1 text-base">{item.label}</span>
                     {selectedSetting === item.id && (
-                      <div className="w-2 h-2 rounded-full bg-primary" />
+                      <div className="w-2 h-2 rounded-full bg-base-content" />
                     )}
                   </button>
                 );
@@ -216,14 +216,14 @@ const Settings = () => {
                       onClick={() => handleSettingClick(item.id)}
                       className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 text-left w-full ${
                         selectedSetting === item.id
-                          ? "bg-primary/10 text-primary font-semibold"
+                          ? "bg-primary/10 text-base-content font-semibold"
                           : "text-base-content/70 hover:bg-base-200/50 active:bg-base-200"
                       }`}
                     >
                       <Icon className="w-5 h-5 flex-shrink-0" />
                       <span className="flex-1 text-base">{item.label}</span>
                       {selectedSetting === item.id && (
-                        <div className="w-2 h-2 rounded-full bg-primary" />
+                        <div className="w-2 h-2 rounded-full bg-base-content" />
                       )}
                     </button>
                   );
@@ -235,7 +235,7 @@ const Settings = () => {
       )}
 
       {/* Content Area */}
-      <div className="w-full min-h-screen pb-20 md:pb-0">
+      <div className="w-full min-h-screen max-md:pt-20 pb-20 md:pb-0">
         <div className="p-4 md:p-6 lg:p-8">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">
