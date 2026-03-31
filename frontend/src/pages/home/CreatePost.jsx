@@ -145,7 +145,7 @@ const CreatePost = () => {
   };
 
   return (
-    <div className="flex p-5 items-start gap-4 border-b border-base-300/50 bg-base-100/50 backdrop-blur-sm">
+    <div className="flex p-5 items-start gap-4 border-b border-base-300/50 bg-base-100/95 backdrop-blur-md">
       <div className="avatar flex-shrink-0">
         <div
           className="w-10 h-10 rounded-full ring-2 ring-base-300 hover:ring-primary transition-all duration-300 cursor-pointer"

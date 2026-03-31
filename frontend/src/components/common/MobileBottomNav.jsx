@@ -33,88 +33,104 @@ const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
   const isHomeActive = location.pathname === "/";
   const isSearchActive = location.pathname.startsWith("/search");
   const isNotificationsActive = location.pathname === "/notifications";
   const isProfileActive = location.pathname === `/profile/${authUser?.username}`;
 
-  const NavItem = ({ to, isActive, icon: Icon, children, badge }) => (
+  const NavItem = ({ to, isActive, icon: Icon, badge }) => (
     <Link
       to={to}
-      className="relative flex flex-col items-center justify-center min-w-[60px] py-2 rounded-2xl transition-all duration-300 group"
+      className="relative flex flex-1 min-w-0 flex-col items-center justify-center py-2.5 rounded-2xl transition-all duration-300 ease-out group active:scale-95"
     >
-      <div
-        className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
+      <span
+        className={`absolute inset-x-1 inset-y-1 rounded-2xl transition-all duration-300 ease-out ${
           isActive
-            ? "bg-secondary/15 scale-100"
-            : "bg-transparent scale-95 group-active:scale-100 group-active:bg-base-200/50"
+            ? "bg-base-200 shadow-inner"
+            : "bg-transparent group-hover:bg-base-200 group-active:bg-base-300"
         }`}
       />
-      <div className="relative">
+      <span className="relative flex items-center justify-center size-11">
         {typeof Icon === "function" ? (
           <Icon
-            className={`w-6 h-6 transition-all duration-300 ${
-              isActive ? "text-base-content scale-110" : "text-base-content/60 group-active:scale-105"
+            className={`size-[1.35rem] transition-all duration-300 ease-out ${
+              isActive
+                ? "text-primary scale-105"
+                : "text-base-content/45 group-hover:text-base-content/75 group-active:text-base-content"
             }`}
           />
         ) : (
           Icon
         )}
         {badge && (
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-base-100 animate-pulse" />
+          <span className="absolute top-1.5 right-1.5 flex size-2.5 items-center justify-center">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-40" />
+            <span className="relative size-2 rounded-full bg-gradient-to-br from-red-400 to-red-600 shadow-sm ring-2 ring-base-100" />
+          </span>
         )}
-      </div>
-      {isActive && (
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-base-content" />
-      )}
+      </span>
     </Link>
   );
 
   return (
     <div
-      className={`md:hidden z-50 fixed bottom-0 left-0 w-full bg-base-100/95 backdrop-blur-2xl border-t border-base-300/30 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transform-gpu will-change-[transform,opacity] transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] ${
+      className={`md:hidden z-50 fixed inset-x-0 bottom-0 flex justify-center pointer-events-none transform-gpu will-change-[transform,opacity] transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 ${
         isVisible
           ? "translate-y-0 opacity-100"
-          : "translate-y-full opacity-0 pointer-events-none"
+          : "translate-y-[calc(100%+0.5rem)] opacity-0"
       }`}
     >
-      <div className="flex justify-around items-center px-2 py-2.5 safe-area-bottom">
-        <NavItem to="/" isActive={isHomeActive} icon={LuHouse} />
-        <NavItem to="/search" isActive={isSearchActive} icon={LuSearch} />
-        <NavItem
-          to="/notifications"
-          isActive={isNotificationsActive}
-          icon={LuBell}
-          badge={isNotRead}
-        />
-        <NavItem
-          to={`/profile/${authUser?.username}`}
-          isActive={isProfileActive}
-          icon={
-            authUser?.profileImage ? (
-              <div
-                className={`relative w-6 h-6 rounded-full overflow-hidden border-2 transition-all duration-300 ${
-                  isProfileActive ? "border-primary scale-110" : "border-base-300"
-                }`}
-              >
-                <img
-                  src={authUser.profileImage || defaultProfilePicture}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              LuUser
-            )
-          }
-        />
-        <button
-          onClick={onMenuClick}
-          className="relative flex flex-col items-center justify-center min-w-[60px] py-2 rounded-2xl transition-all duration-300 group active:bg-base-200/50"
-        >
-          <LuMenu className="w-6 h-6 text-base-content/60 transition-all duration-300 group-active:scale-105" />
-        </button>
-      </div>
+      <nav
+        aria-label="Ana navigasyon"
+        className={`relative w-full max-w-md overflow-hidden rounded-[1.35rem] border border-base-300 bg-base-100 shadow-[0_-4px_24px_rgba(0,0,0,0.08),0_12px_32px_-8px_rgba(0,0,0,0.12)] dark:shadow-[0_-4px_32px_rgba(0,0,0,0.45),0_12px_40px_-8px_rgba(0,0,0,0.55)] ${
+          isVisible ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+      >
+        <div className="relative flex items-stretch justify-between gap-0.5 px-1 py-1">
+          <NavItem to="/" isActive={isHomeActive} icon={LuHouse} />
+          <NavItem to="/search" isActive={isSearchActive} icon={LuSearch} />
+          <NavItem
+            to="/notifications"
+            isActive={isNotificationsActive}
+            icon={LuBell}
+            badge={isNotRead}
+          />
+          <NavItem
+            to={`/profile/${authUser?.username}`}
+            isActive={isProfileActive}
+            icon={
+              authUser?.profileImage ? (
+                <div
+                  className={`relative size-[1.35rem] rounded-full overflow-hidden transition-all duration-300 ease-out ${
+                    isProfileActive
+                      ? "ring-2 ring-primary ring-offset-2 ring-offset-base-100 scale-105 shadow-md"
+                      : "ring-1 ring-base-300"
+                  }`}
+                >
+                  <img
+                    src={authUser.profileImage || defaultProfilePicture}
+                    alt=""
+                    className="size-full object-cover"
+                  />
+                </div>
+              ) : (
+                LuUser
+              )
+            }
+          />
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="relative flex flex-1 min-w-0 flex-col items-center justify-center rounded-2xl py-2.5 transition-all duration-300 ease-out active:scale-95 group"
+          >
+            <span className="absolute inset-x-1 inset-y-1 rounded-2xl bg-transparent transition-colors duration-300 group-hover:bg-base-200 group-active:bg-base-300" />
+            <span className="relative flex items-center justify-center size-11">
+              <LuMenu className="size-[1.35rem] text-base-content/45 transition-all duration-300 group-hover:text-base-content/75 group-active:text-base-content group-active:scale-95" />
+            </span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 };

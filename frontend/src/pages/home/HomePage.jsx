@@ -8,7 +8,7 @@ const HomePage = () => {
   return (
     <div className="w-full min-h-screen mb-14 md:mb-0">
         {/* Header */}
-        <div className="flex w-full border-b border-base-300/50 bg-base-100/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex w-full border-b border-base-300/50 bg-base-100/95 backdrop-blur-md sticky top-0 z-10">
           <div
             className={
               "flex justify-center flex-1 p-4 hover:bg-base-200/50 transition-all duration-300 cursor-pointer relative group"
