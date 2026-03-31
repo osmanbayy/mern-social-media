@@ -43,6 +43,13 @@ export const SocketProvider = ({ children }) => {
     s.on("message:new", () => {
       invalidate([["conversations"], ["messages"]]);
     });
+    s.on("message:read", (payload) => {
+      const { conversationId } = payload || {};
+      if (!conversationId) return;
+      const cid = String(conversationId);
+      /** Sunucudaki read alanı ile cache’i eşitle (setQueryData id eşleşmesi kaçırılabiliyordu) */
+      queryClient.invalidateQueries({ queryKey: ["messages", cid] });
+    });
     s.on("conversations:updated", () => {
       invalidate([["conversations"]]);
     });

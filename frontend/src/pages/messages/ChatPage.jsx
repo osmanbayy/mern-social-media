@@ -1,13 +1,18 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getConversations, getMessages, sendMessage } from "../../api/messages";
+import {
+  getConversations,
+  getMessages,
+  sendMessage,
+  markConversationRead,
+} from "../../api/messages";
 import { getUserByIdSummary } from "../../api/users";
 import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { FaArrowLeft } from "react-icons/fa6";
-import { LuSendHorizontal } from "react-icons/lu";
+import { LuSendHorizontal, LuCheck, LuCheckCheck } from "react-icons/lu";
 import toast from "react-hot-toast";
 
 const formatMsgTime = (iso) => {
@@ -35,6 +40,9 @@ const formatDayLabel = (iso) => {
 
 const senderId = (m) =>
   (typeof m.sender === "object" && m.sender?._id) || m.sender?.toString?.() || String(m.sender);
+
+/** API `read` + şema `readReceipt` (geriye uyum) */
+const messageIsRead = (m) => m.read === true || m.readReceipt === true;
 
 const ChatPage = () => {
   const { conversationId, userId: composePeerId } = useParams();
@@ -141,6 +149,11 @@ const ChatPage = () => {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages?.length, conversationId, composePeerId]);
+
+  useEffect(() => {
+    if (!conversationId || isCompose || isLoading) return;
+    markConversationRead(conversationId).catch(() => {});
+  }, [conversationId, isCompose, isLoading, messages.length]);
 
   const { mutate: send, isPending } = useMutation({
     mutationFn: () => sendMessage(peerId, text),
@@ -375,11 +388,24 @@ const ChatPage = () => {
                     </div>
                     {clusterBottom && (
                       <span
-                        className={`mt-1 px-1 text-[10px] tabular-nums text-base-content/35 ${
-                          mine ? "text-right" : "text-left"
+                        className={`mt-1 flex items-center gap-1 px-1 text-[10px] tabular-nums text-base-content/35 ${
+                          mine ? "justify-end text-right" : "text-left"
                         }`}
                       >
                         {formatMsgTime(m.createdAt)}
+                        {mine && (
+                          <span
+                            className="inline-flex shrink-0"
+                            title={messageIsRead(m) ? "Görüldü" : "İletildi"}
+                            aria-label={messageIsRead(m) ? "Görüldü" : "İletildi"}
+                          >
+                            {messageIsRead(m) ? (
+                              <LuCheckCheck className="size-3.5 text-primary" />
+                            ) : (
+                              <LuCheck className="size-3.5 text-base-content/45" />
+                            )}
+                          </span>
+                        )}
                       </span>
                     )}
                   </div>

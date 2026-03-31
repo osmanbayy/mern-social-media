@@ -53,6 +53,15 @@ export const getMessages = async (conversationId, page = 1) => {
   return handleResponse(response);
 };
 
+/** Karşı tarafın mesajlarını okundu işaretle; gönderene socket ile bildirilir */
+export const markConversationRead = async (conversationId) => {
+  const response = await fetch(
+    `${API_BASE}/conversations/${encodeURIComponent(conversationId)}/read`,
+    { method: "POST", credentials: "include" }
+  );
+  return handleResponse(response);
+};
+
 export const getIncomingMessageRequests = async () => {
   const response = await fetch(`${API_BASE}/requests/incoming`, {
     credentials: "include",

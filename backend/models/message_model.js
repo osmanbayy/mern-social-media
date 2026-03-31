@@ -19,7 +19,8 @@ const messageSchema = new mongoose.Schema(
       maxlength: 4000,
       trim: true,
     },
-    read: {
+    /** Karşı taraf okudu mu (görüldü). `read` Mongoose ile çakışabildiği için readReceipt */
+    readReceipt: {
       type: Boolean,
       default: false,
     },

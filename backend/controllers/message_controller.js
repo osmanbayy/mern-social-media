@@ -90,9 +90,11 @@ export const send_message = async (req, res) => {
         .populate("sender", "username profileImage fullname")
         .lean();
 
+      const msgOut = { ...populated, read: populated.readReceipt === true };
+
       const payload = {
         conversationId: conv._id.toString(),
-        message: populated,
+        message: msgOut,
       };
 
       emitToUser(toUserId, "message:new", payload);
@@ -102,7 +104,7 @@ export const send_message = async (req, res) => {
         conversationId: conv._id.toString(),
       });
 
-      return res.status(201).json({ ...populated, conversationId: conv._id });
+      return res.status(201).json({ ...msgOut, conversationId: conv._id });
     }
 
     // 2) Henüz sohbet yok; karşılıklı takipte yeni sohbet açılır
@@ -126,9 +128,11 @@ export const send_message = async (req, res) => {
         .populate("sender", "username profileImage fullname")
         .lean();
 
+      const msgOut = { ...populated, read: populated.readReceipt === true };
+
       const payload = {
         conversationId: conv._id.toString(),
-        message: populated,
+        message: msgOut,
       };
 
       emitToUser(toUserId, "message:new", payload);
@@ -138,7 +142,7 @@ export const send_message = async (req, res) => {
         conversationId: conv._id.toString(),
       });
 
-      return res.status(201).json({ ...populated, conversationId: conv._id });
+      return res.status(201).json({ ...msgOut, conversationId: conv._id });
     }
 
     // 3) Sohbet yok ve karşılıklı takip yok → mesaj isteği
@@ -231,14 +235,66 @@ export const get_messages = async (req, res) => {
       Message.countDocuments({ conversation: conversationId }),
     ]);
 
+    const ordered = messages.reverse().map((m) => ({
+      ...m,
+      read: m.readReceipt === true,
+    }));
+
     res.status(200).json({
-      messages: messages.reverse(),
+      messages: ordered,
       page,
       totalPages: Math.ceil(total / limit) || 1,
       total,
     });
   } catch (error) {
     console.log("Error in get_messages", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+/** Karşı tarafın gönderdiği okunmamış mesajları okundu işaretle; gönderene socket ile bildir */
+export const mark_conversation_read = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user._id;
+
+    const conv = await Conversation.findById(conversationId);
+    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
+      return res.status(404).json({ message: "Sohbet bulunamadı." });
+    }
+
+    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
+    if (!peerId) {
+      return res.status(400).json({ message: "Geçersiz sohbet." });
+    }
+
+    /** Okunmamış = readReceipt doğru değil (şema: readReceipt) */
+    const unread = await Message.find({
+      conversation: conversationId,
+      sender: peerId,
+      readReceipt: { $ne: true },
+    })
+      .select("_id")
+      .lean();
+
+    if (unread.length === 0) {
+      return res.status(200).json({ ok: true, count: 0, messageIds: [] });
+    }
+
+    await Message.updateMany(
+      { _id: { $in: unread.map((m) => m._id) } },
+      { $set: { readReceipt: true } }
+    );
+
+    const messageIds = unread.map((m) => m._id.toString());
+    emitToUser(peerId.toString(), "message:read", {
+      conversationId: String(conversationId),
+      messageIds,
+    });
+
+    res.status(200).json({ ok: true, count: unread.length, messageIds });
+  } catch (error) {
+    console.log("Error in mark_conversation_read", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };
@@ -309,9 +365,11 @@ export const accept_request = async (req, res) => {
       .populate("sender", "username profileImage fullname")
       .lean();
 
+    const msgOut = { ...populated, read: populated.readReceipt === true };
+
     const payload = {
       conversationId: conv._id.toString(),
-      message: populated,
+      message: msgOut,
     };
 
     emitToUser(reqDoc.from.toString(), "message_request:accepted", {
@@ -326,7 +384,7 @@ export const accept_request = async (req, res) => {
       conversationId: conv._id.toString(),
     });
 
-    res.status(200).json({ conversation: conv, message: populated });
+    res.status(200).json({ conversation: conv, message: msgOut });
   } catch (error) {
     console.log("Error in accept_request", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
