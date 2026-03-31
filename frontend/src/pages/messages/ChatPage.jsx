@@ -250,7 +250,7 @@ const ChatPage = () => {
     <div className="flex h-[100dvh] max-h-[100dvh] min-h-0 w-full flex-col bg-base-100">
       {/* Header */}
       <header className="sticky top-0 z-30 shrink-0 border-b border-base-300/60 bg-base-100/90 shadow-sm backdrop-blur-lg backdrop-saturate-150">
-        <div className="flex items-center gap-1 px-2 py-2 sm:px-3 sm:py-2.5">
+        <div className="flex w-full items-center gap-1 px-1 py-2 sm:px-2 sm:py-2.5">
           <button
             type="button"
             className="btn btn-ghost btn-sm btn-circle shrink-0"
@@ -290,7 +290,7 @@ const ChatPage = () => {
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="custom-scrollbar min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-base-200/25 via-base-100 to-base-100 px-3 py-4 sm:px-4"
+        className="scrollbar-hide min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-base-200/25 via-base-100 to-base-100 px-1 py-4 sm:px-2"
       >
         {isLoading && (
           <div className="flex justify-center py-16">
@@ -311,7 +311,7 @@ const ChatPage = () => {
         )}
 
         {!isLoading && messages.length > 0 && (
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-1 pb-2">
+          <div className="flex w-full flex-col gap-1 pb-2">
             {timeline.map((row) => {
               if (row.kind === "day") {
                 return (
@@ -420,9 +420,9 @@ const ChatPage = () => {
       </div>
 
       {/* Composer */}
-      <div className="shrink-0 border-t border-base-300/60 bg-base-100/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md">
+      <div className="shrink-0 border-t border-base-300/60 bg-base-100/95 px-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md sm:px-2">
         <form
-          className="mx-auto flex w-full max-w-3xl items-end gap-2"
+          className="flex w-full items-end gap-2"
           onSubmit={handleSubmit}
         >
           <label className="relative min-h-[48px] flex-1">
