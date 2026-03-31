@@ -13,7 +13,6 @@ import cookieParser from "cookie-parser";
 import connect_mongodb from "./database/connect_mongodb.js";
 import { v2 as cloudinary } from "cloudinary";
 import cors from "cors";
-import { initSocketServer } from "./socket/socketServer.js";
 
 import "./models/message_request_model.js";
 import "./models/conversation_model.js";
@@ -96,6 +95,7 @@ app.use("/api/messages", messageRoutes);
 // Vercel serverless bazen isteği /api öneki olmadan iletir; aynı router'ı kök path ile de bağla
 app.use("/messages", messageRoutes);
 
+/** Vercel serverless bu dosyayı import eder; socket.io statik import deploy/bundle sorunlarına yol açabiliyor — sadece yerelde dinamik import */
 if (!process.env.VERCEL) {
   if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(__dirname, "../frontend/dist")));
@@ -105,11 +105,16 @@ if (!process.env.VERCEL) {
     });
   }
 
-  const server = http.createServer(app);
-  initSocketServer(server);
-
-  server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  (async () => {
+    const { initSocketServer } = await import("./socket/socketServer.js");
+    const server = http.createServer(app);
+    initSocketServer(server);
+    server.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  })().catch((err) => {
+    console.error("Server bootstrap failed:", err);
+    process.exit(1);
   });
 }
 
