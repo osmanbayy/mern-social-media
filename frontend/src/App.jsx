@@ -36,6 +36,10 @@ function AppContent() {
 
   const location = useLocation();
   const isSettingPage = location.pathname === "/settings";
+  const hideMobileTopPadding =
+    isLoggedIn &&
+    isAccountVerified &&
+    location.pathname.startsWith("/messages");
 
   if (isLoading) {
     return (
@@ -145,6 +149,13 @@ function AppContent() {
       {/* Mobile/Unauthenticated Layout: Single Column */}
       <div className="md:hidden w-full">
         {isLoggedIn && isAccountVerified && <Sidebar />}
+        <div
+          className={
+            isLoggedIn && isAccountVerified && !hideMobileTopPadding
+              ? "pt-[calc(3.75rem+env(safe-area-inset-top))]"
+              : undefined
+          }
+        >
         <Routes>
           <Route
             path="/"
@@ -305,6 +316,7 @@ function AppContent() {
             }
           />
         </Routes>
+        </div>
       </div>
 
       <PWAInstallPrompt />

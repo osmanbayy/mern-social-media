@@ -27,6 +27,13 @@ body {
   font-size: 40px;
 }
 
+.mobile-header-brand {
+  font-family: Billabong, cursive;
+  font-size: 1.35rem;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
 /* Modern Design Enhancements */
 * {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
