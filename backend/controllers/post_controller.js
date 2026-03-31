@@ -3,6 +3,7 @@ import User from "../models/user_model.js";
 import Notification from "../models/notification_model.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
+import { emitToUser } from "../lib/socket_emit.js";
 
 // Helper function to parse mentions from text
 const parseMentions = async (text, excludeUserId) => {
@@ -37,7 +38,14 @@ const sendMentionNotifications = async (mentionedUserIds, fromUserId, postId, co
   }));
 
   try {
-    await Notification.insertMany(notifications);
+    const inserted = await Notification.insertMany(notifications);
+    const ids = inserted.map((n) => n._id);
+    const populated = await Notification.find({ _id: { $in: ids } })
+      .populate("from", "username profileImage fullname")
+      .populate("post", "_id");
+    for (const n of populated) {
+      emitToUser(n.to.toString(), "notification:new", n.toObject());
+    }
   } catch (error) {
     console.log("Error creating mention notifications:", error.message);
   }
@@ -76,6 +84,17 @@ export const create_post = async (req, res) => {
 
     // Send mention notifications
     await sendMentionNotifications(mentions, userId, newPost._id);
+
+    const populatedPost = await Post.findById(newPost._id)
+      .populate("user", "username fullname profileImage")
+      .lean();
+
+    const author = await User.findById(userId).select("followers");
+    if (author?.followers?.length) {
+      for (const fid of author.followers) {
+        emitToUser(fid.toString(), "feed:new_post", { post: populatedPost });
+      }
+    }
 
     res.status(201).json(newPost);
   } catch (error) {

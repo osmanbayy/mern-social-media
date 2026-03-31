@@ -1,6 +1,15 @@
-import { LuSettings, LuBookmark, LuEyeOff } from "react-icons/lu";
+import { LuSettings, LuBookmark, LuEyeOff, LuMessageSquare } from "react-icons/lu";
 
 export const MOBILE_MENU_ITEMS = [
+  {
+    id: "messages",
+    path: "/messages",
+    icon: LuMessageSquare,
+    label: "Mesajlar",
+    description: "Özel mesajlar ve istekler",
+    color: "sky-500",
+    delay: "delay-75",
+  },
   {
     id: "settings",
     path: "/settings",

@@ -1,16 +1,33 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+/** Kök dizindeki .env içinden PORT=... oku (backend ile aynı porta proxy) */
+function readBackendPortFromRootEnv() {
+  try {
+    const envPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".env");
+    const raw = fs.readFileSync(envPath, "utf8");
+    const m = raw.match(/^\s*PORT\s*=\s*(\d+)/m);
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
+}
+
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-  // Development için proxy target
-  const proxyTarget = process.env.VITE_API_BASE_URL || "http://localhost:5000";
-  
+export default defineConfig(() => {
+  const portFromRoot = readBackendPortFromRootEnv();
+  const proxyTarget =
+    process.env.VITE_API_BASE_URL ||
+    `http://localhost:${portFromRoot || process.env.PORT || "8000"}`;
+
   return {
     plugins: [
-      react(), 
+      react(),
       tailwindcss(),
       VitePWA({
         registerType: "autoUpdate",
@@ -72,6 +89,11 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget,
           changeOrigin: true,
           secure: false,
+        },
+        "/socket.io": {
+          target: proxyTarget,
+          changeOrigin: true,
+          ws: true,
         },
       },
     },

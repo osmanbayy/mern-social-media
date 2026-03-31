@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/AuthContext";
 import Posts from "../../components/common/Posts";
@@ -15,9 +15,10 @@ import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { HiDotsHorizontal } from "react-icons/hi";
 import { GoBlocked, GoMute } from "react-icons/go";
-import { LuShare2 } from "react-icons/lu";
+import { LuShare2, LuMessageSquare } from "react-icons/lu";
 import { CiFlag1 } from "react-icons/ci";
 import { getUserProfile, blockUser } from "../../api/users";
+import { getConversations } from "../../api/messages";
 import { formatMemberSinceDate } from "../../utils/date";
 import useFollow from "../../hooks/useFollow";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
@@ -43,7 +44,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { authUser } = useAuth();
+  const { authUser, isAccountVerified } = useAuth();
 
   const {
     data: user,
@@ -78,6 +79,32 @@ const ProfilePage = () => {
 
   const isMyProfile = authUser?._id === user?._id;
   const memberSinceDate = formatMemberSinceDate(user?.createdAt);
+
+  const { data: conversations, isLoading: loadingConversations } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: getConversations,
+    enabled:
+      !!authUser &&
+      !!isAccountVerified &&
+      !isMyProfile &&
+      !!user?._id,
+  });
+
+  const conversationWithProfileUser = useMemo(() => {
+    if (!conversations?.length || !user?._id) return null;
+    const target = String(user._id);
+    return (
+      conversations.find((c) => {
+        if (c.otherUser?._id && String(c.otherUser._id) === target) return true;
+        return c.participants?.some((p) => String(p) === target);
+      }) ?? null
+    );
+  }, [conversations, user?._id]);
+
+  const messageLinkTo = conversationWithProfileUser
+    ? `/messages/chat/${conversationWithProfileUser._id}`
+    : `/messages/chat/new/${user?._id}`;
+
   const amIFollowing = authUser?.following?.includes(user?._id) || false;
   const { theme } = useTheme();
 
@@ -351,6 +378,39 @@ const ProfilePage = () => {
                     </ul>
                   </div>
 
+                  {loadingConversations ? (
+                    <span
+                      className="btn btn-sm rounded-full btn-outline px-3 btn-disabled pointer-events-none flex items-center justify-center gap-1"
+                      title="Yükleniyor…"
+                    >
+                      <LoadingSpinner size="sm" />
+                    </span>
+                  ) : (
+                    <Link
+                      to={messageLinkTo}
+                      state={
+                        !conversationWithProfileUser && user
+                          ? {
+                              messagePeer: {
+                                _id: user._id,
+                                username: user.username,
+                                fullname: user.fullname,
+                                profileImage: user.profileImage,
+                              },
+                            }
+                          : undefined
+                      }
+                      className="btn btn-sm rounded-full btn-outline px-3 flex items-center justify-center gap-1"
+                      title={
+                        conversationWithProfileUser
+                          ? "Sohbete devam et"
+                          : "Mesaj gönder"
+                      }
+                    >
+                      <LuMessageSquare className="size-4" />
+                      <span className="hidden sm:inline">Mesaj</span>
+                    </Link>
+                  )}
                   <button
                     className={`btn btn-sm rounded-full btn-neutral px-4 flex items-center justify-center gap-2 `}
                     onClick={() => follow(user?._id)}

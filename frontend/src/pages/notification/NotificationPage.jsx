@@ -1,12 +1,29 @@
 import { Link, useNavigate } from "react-router-dom";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-import { LuHeart, LuSettings, LuUser, LuTrash2, LuCheckCheck, LuMessageCircle, LuX } from "react-icons/lu";
+import { LuHeart, LuSettings, LuUser, LuTrash2, LuCheckCheck, LuMessageCircle, LuX, LuMessageSquare } from "react-icons/lu";
 import { BiRepost } from "react-icons/bi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { FaArrowLeft } from "react-icons/fa6";
 import { getNotifications, deleteAllNotifications, markAllNotificationsAsRead, deleteNotification } from "../../api/notifications";
+
+const getNotificationLink = (notification) => {
+  if (notification.type === "message_request") return "/messages/requests";
+  if (notification.type === "mention" && notification.post?._id) {
+    return `/post/${notification.post._id}`;
+  }
+  if (
+    (notification.type === "like" ||
+      notification.type === "comment" ||
+      notification.type === "retweet" ||
+      notification.type === "quote_retweet") &&
+    notification.post?._id
+  ) {
+    return `/post/${notification.post._id}`;
+  }
+  return `/profile/${notification.from?.username}`;
+};
 
 const NotificationPage = () => {
   const navigate = useNavigate();
@@ -148,11 +165,7 @@ const NotificationPage = () => {
                 )}
 
                 <Link
-                  to={
-                    (notification.type === "like" || notification.type === "comment" || notification.type === "retweet" || notification.type === "quote_retweet") && notification.post?._id
-                      ? `/post/${notification.post._id}`
-                      : `/profile/${notification.from?.username}`
-                  }
+                  to={getNotificationLink(notification)}
                   className="flex items-center gap-4 flex-1 min-w-0"
                 >
                   {/* Icon Container */}
@@ -164,6 +177,10 @@ const NotificationPage = () => {
                         ? "bg-emerald-500/10 group-hover:bg-emerald-500/20"
                         : notification.type === "retweet" || notification.type === "quote_retweet"
                         ? "bg-green-500/10 group-hover:bg-green-500/20"
+                        : notification.type === "mention"
+                        ? "bg-violet-500/10 group-hover:bg-violet-500/20"
+                        : notification.type === "message_request"
+                        ? "bg-amber-500/10 group-hover:bg-amber-500/20"
                         : "bg-red-500/10 group-hover:bg-red-500/20"
                     }`}
                   >
@@ -189,6 +206,18 @@ const NotificationPage = () => {
                           !notification.read
                             ? "text-green-500 fill-green-500"
                             : "text-green-500/70 fill-green-500/30"
+                        }`}
+                      />
+                    ) : notification.type === "mention" ? (
+                      <LuMessageCircle
+                        className={`w-6 h-6 transition-colors ${
+                          !notification.read ? "text-violet-500" : "text-violet-500/70"
+                        }`}
+                      />
+                    ) : notification.type === "message_request" ? (
+                      <LuMessageSquare
+                        className={`w-6 h-6 transition-colors ${
+                          !notification.read ? "text-amber-500" : "text-amber-500/70"
                         }`}
                       />
                     ) : (
@@ -239,6 +268,10 @@ const NotificationPage = () => {
                           ? "gönderini retweet etti"
                           : notification.type === "quote_retweet"
                           ? "gönderini alıntı retweet etti"
+                          : notification.type === "mention"
+                          ? "senden bahsetti"
+                          : notification.type === "message_request"
+                          ? "sana bir mesaj isteği gönderdi"
                           : "gönderini beğendi"}
                       </p>
                       {notification.createdAt && (

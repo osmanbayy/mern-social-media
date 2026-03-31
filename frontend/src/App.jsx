@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import HomePage from "./pages/home/HomePage";
 import SignupPage from "./pages/auth/signup/SignupPage";
 import LoginPage from "./pages/auth/login/LoginPage";
@@ -23,6 +23,13 @@ import SuggestionsPage from "./pages/SuggestionsPage";
 import SearchResultsPage from "./pages/search/SearchResultsPage";
 import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
 import SplashLoading from "./components/skeletons/SplashLoading";
+import MessagesPage from "./pages/messages/MessagesPage";
+import MessageRequestsPage from "./pages/messages/MessageRequestsPage";
+import ChatPage from "./pages/messages/ChatPage";
+function RedirectWriteToChat() {
+  const { userId } = useParams();
+  return <Navigate to={`/messages/chat/new/${userId}`} replace />;
+}
 
 function AppContent() {
   const { isLoading, isLoggedIn, isAccountVerified } = useAuth();
@@ -73,6 +80,11 @@ function AppContent() {
                 <Route path="/edit-profile" element={<EditProfilePage />} />
                 <Route path="/suggestions" element={<SuggestionsPage />} />
                 <Route path="/search" element={<SearchResultsPage />} />
+                <Route path="/messages" element={<MessagesPage />} />
+                <Route path="/messages/requests" element={<MessageRequestsPage />} />
+                <Route path="/messages/chat/new/:userId" element={<ChatPage />} />
+                <Route path="/messages/chat/:conversationId" element={<ChatPage />} />
+                <Route path="/messages/write/:userId" element={<RedirectWriteToChat />} />
                 <Route
                   path="/verify-account"
                   element={
@@ -237,6 +249,56 @@ function AppContent() {
             element={
               isLoggedIn && isAccountVerified ? (
                 <SearchResultsPage />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              isLoggedIn && isAccountVerified ? (
+                <MessagesPage />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/messages/requests"
+            element={
+              isLoggedIn && isAccountVerified ? (
+                <MessageRequestsPage />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/messages/chat/new/:userId"
+            element={
+              isLoggedIn && isAccountVerified ? (
+                <ChatPage />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/messages/chat/:conversationId"
+            element={
+              isLoggedIn && isAccountVerified ? (
+                <ChatPage />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/messages/write/:userId"
+            element={
+              isLoggedIn && isAccountVerified ? (
+                <RedirectWriteToChat />
               ) : (
                 <Navigate to="/login" />
               )

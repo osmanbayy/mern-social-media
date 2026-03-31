@@ -45,6 +45,49 @@ export const get_user_profile = async (req, res) => {
   }
 };
 
+/** Mesaj ekranı için: id ile minimal kullanıcı (engel kontrolleri ile) */
+export const get_user_by_id_summary = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user._id;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Geçersiz kullanıcı." });
+    }
+    if (id === currentUserId.toString()) {
+      return res.status(400).json({ message: "Kendinize mesaj gönderemezsiniz." });
+    }
+    const user = await User.findById(id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+    const currentUser = await User.findById(currentUserId);
+    if (!currentUser) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+    const isBlockedByUser = user.blockedUsers.some(
+      (x) => x.toString() === currentUserId.toString()
+    );
+    if (isBlockedByUser) {
+      return res.status(403).json({ message: "Bu kullanıcıya mesaj gönderemezsiniz." });
+    }
+    const isBlockedByUs = currentUser.blockedUsers.some(
+      (x) => x.toString() === id.toString()
+    );
+    if (isBlockedByUs) {
+      return res.status(403).json({ message: "Bu kullanıcıya mesaj gönderemezsiniz." });
+    }
+    res.status(200).json({
+      _id: user._id,
+      username: user.username,
+      fullname: user.fullname,
+      profileImage: user.profileImage,
+    });
+  } catch (error) {
+    console.log("Error in get_user_by_id_summary", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
 export const follow_unfollow_user = async (req, res) => {
   try {
     const { id } = req.params;

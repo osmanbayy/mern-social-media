@@ -1,7 +1,8 @@
-import { LuBell, LuUser, LuBookmark, LuSettings, LuHouse, LuEyeOff } from "react-icons/lu";
+import { LuBell, LuUser, LuBookmark, LuSettings, LuHouse, LuEyeOff, LuMessageSquare } from "react-icons/lu";
 
 export const BASE_NAV_ITEMS = [
   { id: "home", path: "/", icon: LuHouse, label: "Anasayfa" },
+  { id: "messages", path: "/messages", icon: LuMessageSquare, label: "Mesajlar" },
   { id: "notifications", path: "/notifications", icon: LuBell, label: "Bildirimler" },
   { id: "savedPosts", path: "/saved-posts", icon: LuBookmark, label: "Kaydedilenler" },
   { id: "hiddenPosts", path: "/hidden-posts", icon: LuEyeOff, label: "Gizlenenler" },

@@ -12,6 +12,10 @@ export const gel_all_notifications = async (req, res) => {
         path: "post",
         select: "_id",
       })
+      .populate({
+        path: "messageRequest",
+        select: "text status",
+      })
       .sort({ createdAt: -1 }); // latest notifications first
 
     await Notification.updateMany({ to: userId }, { read: true });

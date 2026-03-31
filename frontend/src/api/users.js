@@ -19,7 +19,13 @@ const handleResponse = async (response) => {
   const contentType = response.headers.get("content-type");
   if (!contentType || !contentType.includes("application/json")) {
     const text = await response.text();
-    throw new Error(text || "Beklenmeyen bir hata oluştu.");
+    const t = text.trim();
+    if (t.startsWith("<!DOCTYPE") || t.startsWith("<html") || t.includes("<pre>")) {
+      throw new Error(
+        "API'ye ulaşılamadı (HTML yanıtı). Geliştirmede proxy ve VITE_API_BASE_URL'i kontrol edin."
+      );
+    }
+    throw new Error(t.slice(0, 200) || "Beklenmeyen bir hata oluştu.");
   }
   
   const data = await response.json();
@@ -32,6 +38,14 @@ const handleResponse = async (response) => {
 // Get user profile
 export const getUserProfile = async (username) => {
   const response = await fetch(`${API_BASE}/profile/${username}`, {
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
+
+/** Mesaj ekranı başlığı için id ile özet (engelli kullanıcılar 403) */
+export const getUserByIdSummary = async (id) => {
+  const response = await fetch(`${API_BASE}/by-id/${encodeURIComponent(id)}`, {
     credentials: "include",
   });
   return handleResponse(response);
