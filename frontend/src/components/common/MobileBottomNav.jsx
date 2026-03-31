@@ -1,9 +1,38 @@
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LuBell, LuUser, LuSearch, LuHouse, LuMenu } from "react-icons/lu";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 
+const SCROLL_DELTA = 6;
+const TOP_REVEAL_PX = 48;
+
 const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
   const location = useLocation();
+  const lastScrollY = useRef(0);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    setIsVisible(true);
+    lastScrollY.current = typeof window !== "undefined" ? window.scrollY : 0;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const delta = y - lastScrollY.current;
+
+      if (y <= TOP_REVEAL_PX) {
+        setIsVisible(true);
+      } else if (Math.abs(delta) >= SCROLL_DELTA) {
+        setIsVisible(delta < 0);
+      }
+
+      lastScrollY.current = y;
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   const isHomeActive = location.pathname === "/";
   const isSearchActive = location.pathname.startsWith("/search");
   const isNotificationsActive = location.pathname === "/notifications";
@@ -42,7 +71,13 @@ const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
   );
 
   return (
-    <div className="md:hidden z-50 fixed bottom-0 left-0 w-full bg-base-100/95 backdrop-blur-2xl border-t border-base-300/30 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+    <div
+      className={`md:hidden z-50 fixed bottom-0 left-0 w-full bg-base-100/95 backdrop-blur-2xl border-t border-base-300/30 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transform-gpu will-change-[transform,opacity] transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] ${
+        isVisible
+          ? "translate-y-0 opacity-100"
+          : "translate-y-full opacity-0 pointer-events-none"
+      }`}
+    >
       <div className="flex justify-around items-center px-2 py-2.5 safe-area-bottom">
         <NavItem to="/" isActive={isHomeActive} icon={LuHouse} />
         <NavItem to="/search" isActive={isSearchActive} icon={LuSearch} />
