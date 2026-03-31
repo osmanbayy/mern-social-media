@@ -39,6 +39,10 @@ const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
   const isNotificationsActive = location.pathname === "/notifications";
   const isProfileActive = location.pathname === `/profile/${authUser?.username}`;
 
+  if (location.pathname.startsWith("/messages")) {
+    return null;
+  }
+
   const NavItem = ({ to, isActive, icon: Icon, badge }) => (
     <Link
       to={to}

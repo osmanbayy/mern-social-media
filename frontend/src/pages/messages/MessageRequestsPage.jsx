@@ -54,7 +54,7 @@ const MessageRequestsPage = () => {
   });
 
   return (
-    <div className="w-full min-h-screen mb-14 md:mb-0">
+    <div className="w-full min-h-screen">
       <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 border-b border-base-300 bg-base-100/95 backdrop-blur-md">
         <button
           type="button"

@@ -234,7 +234,7 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-[100dvh] max-h-[100dvh] min-h-0 w-full flex-col bg-base-100 mb-14 md:mb-0">
+    <div className="flex h-[100dvh] max-h-[100dvh] min-h-0 w-full flex-col bg-base-100">
       {/* Header */}
       <header className="sticky top-0 z-30 shrink-0 border-b border-base-300/60 bg-base-100/90 shadow-sm backdrop-blur-lg backdrop-saturate-150">
         <div className="flex items-center gap-1 px-2 py-2 sm:px-3 sm:py-2.5">

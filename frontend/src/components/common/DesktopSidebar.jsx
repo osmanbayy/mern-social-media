@@ -1,16 +1,28 @@
-import { Link } from "react-router-dom";
-import { LuLogOut } from "react-icons/lu";
+import { Link, useLocation } from "react-router-dom";
+import { LuLogOut, LuEllipsis } from "react-icons/lu";
 import { GoDotFill } from "react-icons/go";
 import OSSvg from "../svgs/OS";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useQueryClient } from "@tanstack/react-query";
-import { getNavItems } from "../../constants/navItems";
+import { getNavItems, DESKTOP_MORE_NAV_ITEMS } from "../../constants/navItems";
 import { useTheme } from "../../contexts/ThemeContext";
+
+const isMainItemActive = (item, pathname, username) => {
+  if (item.id === "home") return pathname === "/";
+  if (item.id === "messages") return pathname.startsWith("/messages");
+  if (item.id === "notifications") return pathname === "/notifications";
+  if (item.id === "profile" && username) {
+    return pathname.startsWith(`/profile/${username}`);
+  }
+  if (item.id === "settings") return pathname === "/settings";
+  return false;
+};
+
+const isMoreItemActive = (pathname) =>
+  pathname === "/saved-posts" || pathname === "/hidden-posts";
 
 const DesktopSidebar = ({
   authUser,
-  activeTab,
-  setActiveTab,
   isNotRead,
   isSettingPage,
   onLogoutClick,
@@ -18,8 +30,12 @@ const DesktopSidebar = ({
   const { theme } = useTheme();
   const isDark = (theme || "").toLowerCase() === "dark";
   const queryClient = useQueryClient();
+  const location = useLocation();
+  const pathname = location.pathname;
+  const username = authUser?.username;
 
   const navItems = getNavItems(authUser, isNotRead);
+  const moreActive = isMoreItemActive(pathname);
 
   return (
     <div
@@ -74,32 +90,75 @@ const DesktopSidebar = ({
         <ul className="flex flex-col gap-2 mt-4 mr-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const isActive = isMainItemActive(item, pathname, username);
             return (
-              <Link
-                to={item.path}
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex justify-center md:justify-start w-full rounded-xl transition-all duration-300 ${
-                  isActive
+              <li key={item.id} className="list-none w-full">
+                <Link
+                  to={item.path}
+                  className={`flex justify-center md:justify-start w-full rounded-xl transition-all duration-300 ${
+                    isActive
+                      ? "bg-secondary/10 text-base-content"
+                      : "hover:bg-base-200/50 text-base-content/70"
+                  }`}
+                >
+                  <div className="relative flex gap-3 items-center rounded-xl duration-300 py-3 pl-3 pr-4 max-w-fit cursor-pointer w-full">
+                    <Icon className="w-6 h-6" />
+                    {item.hasBadge && (
+                      <GoDotFill className="absolute top-2 left-6 size-4 fill-red-500 animate-pulse" />
+                    )}
+                    <span className="text-base font-medium hidden md:block">
+                      {item.label}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+
+          <li className="list-none w-full">
+            <div className="dropdown dropdown-top block w-full max-w-full min-w-0">
+              <div
+                tabIndex={0}
+                role="button"
+                className={`flex justify-center md:justify-start w-full rounded-xl transition-all duration-300 cursor-pointer ${
+                  moreActive
                     ? "bg-secondary/10 text-base-content"
                     : "hover:bg-base-200/50 text-base-content/70"
                 }`}
               >
-                <div
-                  className="relative flex gap-3 items-center rounded-xl duration-300 py-3 pl-3 pr-4 max-w-fit cursor-pointer w-full"
-                >
-                  <Icon className="w-6 h-6" />
-                  {item.hasBadge && (
-                    <GoDotFill className="absolute top-2 left-6 size-4 fill-red-500 animate-pulse" />
-                  )}
+                <div className="relative flex gap-3 items-center rounded-xl duration-300 py-3 pl-3 pr-4 max-w-fit w-full">
+                  <LuEllipsis className="w-6 h-6 shrink-0" />
                   <span className="text-base font-medium hidden md:block">
-                    {item.label}
+                    Daha fazla
                   </span>
                 </div>
-              </Link>
-            );
-          })}
+              </div>
+              <ul
+                tabIndex={0}
+                className="dropdown-content menu bg-base-100 rounded-xl z-[100] w-full min-w-0 max-w-full left-0 right-0 p-2 mb-1.5 shadow-xl border border-base-300/50"
+              >
+                {DESKTOP_MORE_NAV_ITEMS.map((sub) => {
+                  const SubIcon = sub.icon;
+                  const subActive = pathname === sub.path;
+                  return (
+                    <li key={sub.id}>
+                      <Link
+                        to={sub.path}
+                        className={`flex items-center gap-3 rounded-lg py-2.5 ${
+                          subActive
+                            ? "bg-secondary/10 font-medium text-base-content"
+                            : ""
+                        }`}
+                      >
+                        <SubIcon className="w-5 h-5 shrink-0 opacity-80" />
+                        {sub.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </li>
         </ul>
 
         {authUser && (
