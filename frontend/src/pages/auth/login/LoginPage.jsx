@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import OSSvg from "../../../components/svgs/OS";
@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { LuEye, LuEyeClosed } from "react-icons/lu";
 import { login } from "../../../api/auth";
 import { useAutoAnimate } from '@formkit/auto-animate/react'
+import StatusNotice from "../../../components/common/StatusNotice";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const LoginPage = () => {
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [isRequestDelayed, setIsRequestDelayed] = useState(false);
 
   const queryClient = useQueryClient();
   const { mutate, isError, error, isPending } = useMutation({
@@ -39,6 +41,19 @@ const LoginPage = () => {
 
   const [loginErrorAnimate] = useAutoAnimate();
   const isFormInvalid = !formData.username.trim() || !formData.password.trim();
+
+  useEffect(() => {
+    if (!isPending) {
+      setIsRequestDelayed(false);
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setIsRequestDelayed(true);
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [isPending]);
 
   return (
     <div className="min-h-screen w-full bg-base-100">
@@ -106,6 +121,13 @@ const LoginPage = () => {
               >
                 <FiLogIn /> {isPending ? "Giris yapiliyor..." : "Giris Yap"}
               </button>
+              {/* Status Notice for request delay */}
+              {isRequestDelayed && !isError && (
+                <StatusNotice
+                  title="Bağlantı gecikmesi algılandı"
+                  message="İşlem şu anda normalden uzun sürüyor. Geçici bir servis sorunu olabilir; sorunu çözmeye çalışıyoruz. Lütfen kısa bir süre sonra tekrar deneyin."
+                />
+              )}
               {/* Error message animation */}
               <div ref={loginErrorAnimate}>
                 {isError && <p className="text-red-500 text-sm">{error.message}</p>}

@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import HomePage from "./pages/home/HomePage";
 import SignupPage from "./pages/auth/signup/SignupPage";
@@ -22,6 +23,7 @@ import EditProfilePage from "./pages/profile/EditProfilePage";
 import SuggestionsPage from "./pages/SuggestionsPage";
 import SearchResultsPage from "./pages/search/SearchResultsPage";
 import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
+import StatusNotice from "./components/common/StatusNotice";
 import SplashLoading from "./components/skeletons/SplashLoading";
 import MessagesPage from "./pages/messages/MessagesPage";
 import MessageRequestsPage from "./pages/messages/MessageRequestsPage";
@@ -33,6 +35,20 @@ function RedirectWriteToChat() {
 
 function AppContent() {
   const { isLoading, isLoggedIn, isAccountVerified } = useAuth();
+  const [isLoadingDelayed, setIsLoadingDelayed] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setIsLoadingDelayed(false);
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setIsLoadingDelayed(true);
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   const location = useLocation();
   const isSettingPage = location.pathname === "/settings";
@@ -43,8 +59,16 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="h-screen flex justify-center items-center">
+      <div className="h-screen flex flex-col gap-4 justify-center items-center px-4 text-center">
         <LoadingSpinner size="lg" />
+        {isLoadingDelayed && (
+          <StatusNotice
+            title="Baglanti gecikmesi algilandi"
+            message="Sunucu su an beklenenden gec yanit veriyor. Sorunu cozmeye calisiyoruz, lutfen kisa bir sure sonra tekrar dene."
+            actionLabel="Tekrar Dene"
+            onAction={() => window.location.reload()}
+          />
+        )}
       </div>
     );
   }

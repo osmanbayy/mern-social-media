@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HiOutlineMail } from "react-icons/hi";
 import { FiUser, FiLogIn } from "react-icons/fi";
 import { GoLock } from "react-icons/go";
@@ -12,6 +12,7 @@ import { signup } from "../../../api/auth";
 import { LuEye, LuEyeClosed } from "react-icons/lu";
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import PasswordStrengthIndicator from "../../../components/auth/PasswordStrengthIndicator";
+import StatusNotice from "../../../components/common/StatusNotice";
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -24,6 +25,7 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  const [isRequestDelayed, setIsRequestDelayed] = useState(false);
   const queryClient = useQueryClient();
 
   const { mutate, isError, error, isPending } = useMutation({
@@ -73,6 +75,19 @@ const SignUpPage = () => {
     !formData.fullname.trim() ||
     !formData.password.trim() ||
     !formData.confirmPassword.trim();
+
+  useEffect(() => {
+    if (!isPending) {
+      setIsRequestDelayed(false);
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setIsRequestDelayed(true);
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [isPending]);
 
   return (
     <div className="min-h-screen w-full bg-base-100">
@@ -204,6 +219,13 @@ const SignUpPage = () => {
               >
                 <FaUserPlus /> {isPending ? "Hesap olusturuluyor..." : "Hesap Olustur"}
               </button>
+              {/* Status Notice for request delay */}
+              {isRequestDelayed && !isError && (
+                <StatusNotice
+                  title="Bağlantı gecikmesi algılandı"
+                  message="İşlem şu anda normalden uzun sürüyor. Geçici bir servis sorunu olabilir; sorunu çözmeye çalışıyoruz. Lütfen kısa bir süre sonra tekrar deneyin."
+                />
+              )}
               {/* Error message animation */}
               <div ref={signupErrorAnimate}>
                 {isError && <p className="text-red-500 text-sm">{error.message}</p>}

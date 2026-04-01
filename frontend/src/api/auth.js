@@ -12,6 +12,8 @@ const getApiBase = () => {
 };
 
 const API_BASE = getApiBase();
+const AUTH_ME_TIMEOUT_MS = 7000;
+const AUTH_MUTATION_TIMEOUT_MS = 10000;
 
 const handleResponse = async (response) => {
   const contentType = response.headers.get("content-type");
@@ -28,10 +30,14 @@ const handleResponse = async (response) => {
 };
 
 export const getCurrentUser = async () => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AUTH_ME_TIMEOUT_MS);
+
   try {
     const response = await fetch(`${API_BASE}/me`, {
       credentials: "include",
       cache: "no-store",
+      signal: controller.signal,
     });
     
     if (response.status === 401 || response.status === 403) {
@@ -46,31 +52,63 @@ export const getCurrentUser = async () => {
     return data;
   } catch (error) {
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 };
 
 export const login = async (username, password) => {
-  const response = await fetch(`${API_BASE}/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify({ username, password }),
-  });
-  return handleResponse(response);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AUTH_MUTATION_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${API_BASE}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ username, password }),
+      signal: controller.signal,
+    });
+    return handleResponse(response);
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(
+        "Giris istegi zaman asimina ugradi. Sunucuda su an bir sorun olabilir, lutfen biraz sonra tekrar dene."
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
 export const signup = async (userData) => {
-  const response = await fetch(`${API_BASE}/signup`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify(userData),
-  });
-  return handleResponse(response);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AUTH_MUTATION_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${API_BASE}/signup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(userData),
+      signal: controller.signal,
+    });
+    return handleResponse(response);
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(
+        "Kayit istegi zaman asimina ugradi. Sunucuda su an bir sorun olabilir, lutfen biraz sonra tekrar dene."
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
 export const logout = async () => {
