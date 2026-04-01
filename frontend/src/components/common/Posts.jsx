@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Post from "./Post";
 import PostSkeleton from "../skeletons/PostSkeleton";
-import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { getAllPosts, getFollowingPosts, getUserPosts, getLikedPosts, getSavedPosts, getHiddenPosts } from "../../api/posts";
 import MobileSuggestedUsers from "./MobileSuggestedUsers";
 import { POST_FEED_TYPES, POST_CONSTANTS } from "../../constants/postFeedTypes";
 import { sortPostsByPinned, extractPostsFromData, getHasMoreFromData } from "../../utils/postSorting";
+import { POSTS_FEED_RESET_EVENT } from "../../constants/feedEvents";
 
 const Posts = ({ feedType, username, userId }) => {
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [allPosts, setAllPosts] = useState([]);
   const [hasMore, setHasMore] = useState(true);
@@ -87,36 +87,23 @@ const Posts = ({ feedType, username, userId }) => {
     setHasMore(hasMoreData);
   }, [postsData, page, isLoading, isRefetching, feedType]);
 
-  // Subscribe to cache updates to sync allPosts state
-  useEffect(() => {
-    if (feedType !== POST_FEED_TYPES.FOR_YOU || allPosts.length === 0) return;
-
-    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-      if (event?.type === "updated" && event?.query?.queryKey?.[0] === "posts") {
-        const cachedData = queryClient.getQueryData(["posts", feedType, username, userId, 1]);
-        if (!cachedData) return;
-
-        const cachedPosts = extractPostsFromData(cachedData);
-        setAllPosts((prev) => {
-          const updatedPosts = prev.map((prevPost) => {
-            const cachedPost = cachedPosts.find((p) => p._id === prevPost._id);
-            return cachedPost || prevPost;
-          });
-          const existingIds = new Set(prev.map(p => p._id));
-          const newPosts = cachedPosts.filter(p => !existingIds.has(p._id));
-          return [...updatedPosts, ...newPosts];
-        });
-      }
-    });
-    return unsubscribe;
-  }, [feedType, allPosts.length, queryClient, username, userId]);
-
   const resetPostsState = useCallback(() => {
     setPage(1);
     setAllPosts([]);
     setHasMore(true);
     setSuggestionPosition(null);
   }, []);
+
+  /** Gönderi ekleme/silme/socket sonrası: sayfa>1 iken yerel liste sunucuyla sapıyordu; sıfırla */
+  useEffect(() => {
+    if (feedType !== POST_FEED_TYPES.FOR_YOU) return undefined;
+
+    const onReset = () => {
+      resetPostsState();
+    };
+    window.addEventListener(POSTS_FEED_RESET_EVENT, onReset);
+    return () => window.removeEventListener(POSTS_FEED_RESET_EVENT, onReset);
+  }, [feedType, resetPostsState]);
 
   // Reset when feedType changes
   useEffect(() => {

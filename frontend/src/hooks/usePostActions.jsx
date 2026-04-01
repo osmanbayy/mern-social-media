@@ -9,6 +9,7 @@ import {
   unhidePost as unhidePostAPI,
   pinPost as pinPostAPI,
 } from "../api/posts";
+import { invalidatePostsFeed } from "../utils/invalidatePostsFeed";
 
 /**
  * Hook for post actions (like, save, delete, hide, unhide) with optimistic updates
@@ -145,7 +146,7 @@ const usePostActions = (postId, updatedPost) => {
     mutationFn: () => deletePostAPI(postId),
     onSuccess: () => {
       toast.success("Gönderi silindi.");
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      invalidatePostsFeed(queryClient);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -157,7 +158,7 @@ const usePostActions = (postId, updatedPost) => {
     mutationFn: () => hidePostAPI(postId),
     onSuccess: () => {
       toast.success("Gönderi gizlendi.");
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      invalidatePostsFeed(queryClient);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -169,7 +170,7 @@ const usePostActions = (postId, updatedPost) => {
     mutationFn: () => unhidePostAPI(postId),
     onSuccess: () => {
       toast.success("Gönderi görünür hale getirildi.");
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      invalidatePostsFeed(queryClient);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -184,7 +185,7 @@ const usePostActions = (postId, updatedPost) => {
         ? "Gönderi başa sabitlendi." 
         : "Gönderi sabitlemeden kaldırıldı.";
       toast.success(message);
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      invalidatePostsFeed(queryClient);
       queryClient.invalidateQueries({ queryKey: ["user"] });
     },
     onError: (error) => {

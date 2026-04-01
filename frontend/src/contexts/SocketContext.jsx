@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { invalidatePostsFeed } from "../utils/invalidatePostsFeed";
 import { useAuth } from "./AuthContext";
 
 const SocketContext = createContext(null);
@@ -38,7 +39,7 @@ export const SocketProvider = ({ children }) => {
       invalidate([["notifications"]]);
     });
     s.on("feed:new_post", () => {
-      invalidate([["posts"]]);
+      invalidatePostsFeed(queryClient);
     });
     s.on("message:new", () => {
       invalidate([["conversations"], ["messages"]]);

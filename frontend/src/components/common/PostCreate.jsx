@@ -12,6 +12,7 @@ import MentionDropdown from "./MentionDropdown";
 import ImagePreview from "./ImagePreview";
 import EmojiPickerButton from "./EmojiPickerButton";
 import { createPost } from "../../api/posts";
+import { invalidatePostsFeed } from "../../utils/invalidatePostsFeed";
 import { optimizeImage, isImageFile } from "../../utils/imageOptimizer";
 
 const PostCreate = () => {
@@ -46,7 +47,7 @@ const PostCreate = () => {
       setText("");
       setImg(null);
       toast.success("Gönderi paylaşıldı.");
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      invalidatePostsFeed(queryClient);
       navigate("/");
     }
   });

@@ -11,6 +11,7 @@ import { toast } from "react-hot-toast";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useNavigate } from "react-router-dom";
 import { createPost } from "../../api/posts";
+import { invalidatePostsFeed } from "../../utils/invalidatePostsFeed";
 import useMention from "../../hooks/useMention";
 import MentionDropdown from "../../components/common/MentionDropdown";
 
@@ -116,7 +117,7 @@ const CreatePost = () => {
       setText("");
       setImg(null);
       toast.success("Gönderi paylaşıldı.");
-      queryClient.invalidateQueries("posts");
+      invalidatePostsFeed(queryClient);
     },
   });
 
