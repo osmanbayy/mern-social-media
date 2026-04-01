@@ -67,127 +67,158 @@ const SignUpPage = () => {
   };
 
   const [signupErrorAnimate] = useAutoAnimate();
+  const isFormInvalid =
+    !formData.email.trim() ||
+    !formData.username.trim() ||
+    !formData.fullname.trim() ||
+    !formData.password.trim() ||
+    !formData.confirmPassword.trim();
 
   return (
-    <div className="max-w-screen-xl mx-auto flex h-screen px-10 lg:-mt-20">
-      <div className="flex-1 hidden md:flex items-center justify-center">
-        <OSSvg forceDark className="w-full max-w-md" />
-      </div>
-      <div className="flex-1 flex flex-col justify-center items-center">
-        <form
-          className="w-full lg:w-2/3 mx-auto md:mx-20 flex gap-4 flex-col items-center"
-          onSubmit={handleSubmit}
-        >
-          <OSSvg forceDark className="w-32 h-32 md:hidden flex-shrink-0" />
-          <h1 className="signup-title text-4xl font-extrabold">OnSekiz</h1>
-          <label className="input input-bordered rounded flex items-center gap-2 w-full">
-            <HiOutlineMail />
-            <input
-              type="email"
-              className="grow"
-              placeholder="E-Posta"
-              name="email"
-              autoComplete="off"
-              onChange={handleInputChange}
-              value={formData.email}
-            />
-          </label>
+    <div className="min-h-screen w-full bg-base-100">
+      <div className="grid min-h-screen w-full lg:grid-cols-2">
+        <div className="hidden h-full w-full lg:flex flex-col items-center justify-center gap-6 px-10">
+          <OSSvg forceDark className="w-full max-w-md" />
+          <div className="max-w-md space-y-2 text-center">
+            <h2 className="text-2xl font-bold">Yeni nesil sosyal deneyim</h2>
+            <p className="text-base-content/70">
+              Dakikalar içinde hesabını oluştur ve topluluğa katıl.
+            </p>
+          </div>
+        </div>
+        <div className="flex h-full w-full items-center justify-center px-4 py-8 md:px-8">
+          <div className="w-full max-w-md rounded-3xl border border-base-300/60 bg-base-100 p-6 shadow-2xl md:p-8">
+            <div className="mb-6 flex flex-col items-center gap-3">
+              <OSSvg forceDark className="w-20 h-20 md:hidden flex-shrink-0" />
+              <h1 className="text-3xl font-extrabold">Hesap oluştur</h1>
+              <p className="text-center text-sm text-base-content/70">
+                Bilgilerini doldur, hemen başla.
+              </p>
+            </div>
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+              <label className="input input-bordered rounded-xl flex items-center gap-2 w-full focus-within:ring-2 focus-within:ring-accent/30">
+                <HiOutlineMail />
+                <input
+                  type="email"
+                  className="grow"
+                  placeholder="E-posta"
+                  name="email"
+                  autoComplete="email"
+                  onChange={handleInputChange}
+                  value={formData.email}
+                  required
+                />
+              </label>
 
-          <label className="input input-bordered rounded flex items-center gap-2 w-full">
-            <FiUser />
-            <input
-              type="text"
-              className="grow "
-              placeholder="Kullanıcı Adı"
-              name="username"
-              autoComplete="off"
-              onChange={handleInputChange}
-              value={formData.username}
-            />
-          </label>
-          <label className="input input-bordered rounded flex items-center gap-2 w-full">
-            <ImPencil2 />
-            <input
-              type="text"
-              className="grow"
-              placeholder="Ad Soyad"
-              name="fullname"
-              autoComplete="off"
-              onChange={handleInputChange}
-              value={formData.fullname}
-            />
-          </label>
+              <label className="input input-bordered rounded-xl flex items-center gap-2 w-full focus-within:ring-2 focus-within:ring-accent/30">
+                <FiUser />
+                <input
+                  type="text"
+                  className="grow "
+                  placeholder="Kullanıcı Adı"
+                  name="username"
+                  autoComplete="username"
+                  onChange={handleInputChange}
+                  value={formData.username}
+                  required
+                />
+              </label>
+              <label className="input input-bordered rounded-xl flex items-center gap-2 w-full focus-within:ring-2 focus-within:ring-accent/30">
+                <ImPencil2 />
+                <input
+                  type="text"
+                  className="grow"
+                  placeholder="Ad Soyad"
+                  name="fullname"
+                  autoComplete="name"
+                  onChange={handleInputChange}
+                  value={formData.fullname}
+                  required
+                />
+              </label>
 
-          <label className="input input-bordered rounded flex items-center gap-2 w-full">
-            <GoLock />
-            <input
-              type={showPassword ? "text" : "password"}
-              className="grow"
-              placeholder="Şifre"
-              name="password"
-              onChange={handleInputChange}
-              value={formData.password}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="btn btn-ghost btn-sm p-1"
-            >
-              {showPassword ? (
-                <LuEye />
-              ) : (
-                <LuEyeClosed />
-              )}
-            </button>
-          </label>
+              <label className="input input-bordered rounded-xl flex items-center gap-2 w-full focus-within:ring-2 focus-within:ring-accent/30">
+                <GoLock />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="grow"
+                  placeholder="Şifre"
+                  name="password"
+                  autoComplete="new-password"
+                  onChange={handleInputChange}
+                  value={formData.password}
+                  minLength={6}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="btn btn-ghost btn-sm p-1"
+                >
+                  {showPassword ? (
+                    <LuEye />
+                  ) : (
+                    <LuEyeClosed />
+                  )}
+                </button>
+              </label>
 
-          <div className="w-full">
-            <label className="input input-bordered rounded flex items-center gap-2 w-full">
-              <GoLock />
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                className="grow"
-                placeholder="Şifreyi Tekrar Girin"
-                name="confirmPassword"
-                onChange={handleInputChange}
-                value={formData.confirmPassword}
-              />
+              <div className="w-full">
+                <label className="input input-bordered rounded-xl flex items-center gap-2 w-full focus-within:ring-2 focus-within:ring-accent/30">
+                  <GoLock />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    className="grow"
+                    placeholder="Şifreyi tekrar girin"
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    onChange={handleInputChange}
+                    value={formData.confirmPassword}
+                    minLength={6}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="btn btn-ghost btn-sm p-1"
+                  >
+                    {showConfirmPassword ? (
+                      <LuEye />
+                    ) : (
+                      <LuEyeClosed />
+                    )}
+                  </button>
+                </label>
+
+                <div ref={signupErrorAnimate}>
+                  <PasswordStrengthIndicator password={formData.password} />
+                </div>
+              </div>
+
+              <div ref={signupErrorAnimate}>
+                {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
+              </div>
               <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="btn btn-ghost btn-sm p-1"
+                className="btn btn-accent rounded-xl w-full"
+                disabled={isPending || isFormInvalid}
               >
-                {showConfirmPassword ? (
-                  <LuEye />
-                ) : (
-                  <LuEyeClosed />
-                )}
+                <FaUserPlus /> {isPending ? "Hesap olusturuluyor..." : "Hesap Olustur"}
               </button>
-            </label>
-
-            <div ref={signupErrorAnimate}>
-              <PasswordStrengthIndicator password={formData.password} />
+              {/* Error message animation */}
+              <div ref={signupErrorAnimate}>
+                {isError && <p className="text-red-500 text-sm">{error.message}</p>}
+              </div>
+            </form>
+            <div className="divider my-6">veya</div>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-base-content/70">Zaten bir hesabın var mı?</p>
+              <Link to="/login">
+                <button className="btn btn-outline rounded-xl w-full">
+                  <FiLogIn /> Giriş Yap
+                </button>
+              </Link>
             </div>
           </div>
-
-          <div ref={signupErrorAnimate}>
-            {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
-          </div>
-          <button className="btn btn-accent rounded-full btn-outline w-full">
-            <FaUserPlus /> {isPending ? "Yükleniyor..." : "Hesap Oluştur"}
-          </button>
-          {/* Error message animation */}
-          <div ref={signupErrorAnimate}>
-            {isError && <p className="text-red-500">{error.message}</p>}
-          </div>
-        </form>
-        <div className="flex flex-col w-full lg:w-2/3 gap-2 mt-4">
-          <p className=" text-lg">Zaten bir hesabın var mı?</p>
-          <Link to="/login">
-            <button className="btn btn-primary rounded-full btn-outline w-full">
-              <FiLogIn /> Giriş Yap
-            </button>
-          </Link>
         </div>
       </div>
     </div>

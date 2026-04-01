@@ -38,72 +38,97 @@ const LoginPage = () => {
   };
 
   const [loginErrorAnimate] = useAutoAnimate();
+  const isFormInvalid = !formData.username.trim() || !formData.password.trim();
 
   return (
-    <div className="max-w-screen-xl mx-auto flex h-screen lg:-mt-20 px-10">
-      <div className="flex-1 hidden lg:flex items-center justify-center">
-        <OSSvg forceDark className="w-full max-w-md" />
-      </div>
-      <div className="flex-1 flex flex-col justify-center items-center">
-        <form
-          className="w-full lg:w-2/3 mx-auto md:mx-20 flex gap-4 flex-col items-center"
-          onSubmit={handleSubmit}
-        >
-          <OSSvg forceDark className="w-32 h-32 md:hidden flex-shrink-0" />
-          <h1 className="login-title text-4xl font-extrabold">OnSekiz</h1>
-          <label className="input input-bordered rounded flex items-center gap-2 w-full">
-            <FiUser />
-            <input
-              type="text"
-              className="grow"
-              placeholder="Kullanıcı Adı"
-              name="username"
-              autoComplete="off"
-              onChange={handleInputChange}
-              value={formData.username}
-            />
-          </label>
-
-          <label className="input input-bordered rounded flex items-center gap-2 w-full">
-            <GoLock />
-            <input
-              type={showPassword ? "text" : "password"}
-              className="grow"
-              placeholder="Şifre"
-              name="password"
-              onChange={handleInputChange}
-              value={formData.password}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="btn btn-ghost btn-sm p-1"
-            >
-              {showPassword ? (
-                <LuEye />
-              ) : (
-                <LuEyeClosed />
-              )}
-            </button>
-          </label>
-          <button className="btn btn-accent rounded-full w-full btn-outline">
-            <FiLogIn /> {isPending ? "Yükleniyor..." : "Giriş Yap"}
-          </button>
-          {/* Error message animation */}
-          <div ref={loginErrorAnimate}>
-            {isError && <p className="text-red-500">{error.message}</p>}
+    <div className="min-h-screen w-full bg-base-100">
+      <div className="grid min-h-screen w-full lg:grid-cols-2">
+        <div className="hidden h-full w-full lg:flex flex-col items-center justify-center gap-6 px-10">
+          <OSSvg forceDark className="w-full max-w-md" />
+          <div className="max-w-md space-y-2 text-center">
+            <h2 className="text-2xl font-bold">Topluluğunla anında bağlan</h2>
+            <p className="text-base-content/70">
+              OnSekiz ile paylaş, mesajlaş ve güncel kal.
+            </p>
           </div>
-        </form>
-        <div className="flex justify-end items-end w-full mt-3 lg:w-2/3">
-          <p onClick={() => navigate("/reset-password")} className="text-sm cursor-pointer">Şifreni mi unuttun?</p>
         </div>
-        <div className="flex flex-col w-full lg:w-2/3 gap-2 mt-4">
-          <p className="text-lg">Hesabın yok mu?</p>
-          <Link to="/signup">
-            <button className="btn btn-primary rounded-full btn-outline w-full">
-              <FaUserPlus /> Hesap Oluştur
-            </button>
-          </Link>
+        <div className="flex h-full w-full items-center justify-center px-4 py-8 md:px-8">
+          <div className="w-full max-w-md rounded-3xl border border-base-300/60 bg-base-100 p-6 shadow-2xl md:p-8">
+            <div className="mb-6 flex flex-col items-center gap-3">
+              <OSSvg forceDark className="h-20 w-20 md:hidden flex-shrink-0" />
+              <h1 className="text-3xl font-extrabold">Tekrar hoş geldin</h1>
+              <p className="text-center text-sm text-base-content/70">
+                Hesabına giriş yaparak akışını kaldığın yerden devam ettir.
+              </p>
+            </div>
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+              <label className="input input-bordered rounded-xl flex items-center gap-2 w-full focus-within:ring-2 focus-within:ring-accent/30">
+                <FiUser />
+                <input
+                  type="text"
+                  className="grow"
+                  placeholder="Kullanıcı Adı"
+                  name="username"
+                  autoComplete="username"
+                  onChange={handleInputChange}
+                  value={formData.username}
+                  required
+                />
+              </label>
+
+              <label className="input input-bordered rounded-xl flex items-center gap-2 w-full focus-within:ring-2 focus-within:ring-accent/30">
+                <GoLock />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="grow"
+                  placeholder="Şifre"
+                  name="password"
+                  autoComplete="current-password"
+                  onChange={handleInputChange}
+                  value={formData.password}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="btn btn-ghost btn-sm p-1"
+                >
+                  {showPassword ? (
+                    <LuEye />
+                  ) : (
+                    <LuEyeClosed />
+                  )}
+                </button>
+              </label>
+              <button
+                className="btn btn-accent rounded-xl w-full"
+                disabled={isPending || isFormInvalid}
+              >
+                <FiLogIn /> {isPending ? "Giris yapiliyor..." : "Giris Yap"}
+              </button>
+              {/* Error message animation */}
+              <div ref={loginErrorAnimate}>
+                {isError && <p className="text-red-500 text-sm">{error.message}</p>}
+              </div>
+            </form>
+            <div className="mt-4 flex justify-end">
+              <p
+                onClick={() => navigate("/reset-password")}
+                className="text-sm cursor-pointer text-base-content/70 hover:text-base-content transition-colors"
+              >
+                Şifreni mi unuttun?
+              </p>
+            </div>
+            <div className="divider my-6">veya</div>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-base-content/70">Hesabın yok mu?</p>
+              <Link to="/signup">
+                <button className="btn btn-outline rounded-xl w-full">
+                  <FaUserPlus /> Hesap Oluştur
+                </button>
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
