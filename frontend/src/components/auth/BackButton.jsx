@@ -6,11 +6,12 @@ const BackButton = () => {
 
   return (
     <button
+      type="button"
       onClick={() => navigate(-1)}
-      className="absolute top-6 left-4 sm:top-10 sm:left-10 z-20 flex items-center gap-2 text-slate-300 hover:text-white transition-colors duration-200 p-2 hover:bg-slate-800/50 rounded-full"
+      className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-base-content/80 transition-colors hover:bg-base-200 hover:text-base-content md:left-8 md:top-8"
     >
-      <LuArrowLeft className="w-5 h-5" />
-      <span className="text-sm font-medium">Geri</span>
+      <LuArrowLeft className="h-5 w-5" />
+      Geri
     </button>
   );
 };

@@ -42,23 +42,25 @@ const OtpInput = forwardRef(({ disabled = false }, ref) => {
         inputRefs.current[index].value = char;
       }
     });
-    
-    // Focus the next empty input or the last one
-    const nextEmptyIndex = pasteArray.length < OTP_LENGTH ? pasteArray.length : OTP_LENGTH - 1;
+
+    const nextEmptyIndex =
+      pasteArray.length < OTP_LENGTH ? pasteArray.length : OTP_LENGTH - 1;
     if (inputRefs.current[nextEmptyIndex]) {
       inputRefs.current[nextEmptyIndex].focus();
     }
   };
 
   const handleKeyDownForm = (e) => {
-    // Prevent form submission on Enter key
     if (e.key === "Enter") {
       e.preventDefault();
     }
   };
 
+  const cellClass =
+    "input input-bordered flex h-14 w-11 shrink-0 items-center justify-center rounded-xl border-base-300 bg-base-100 p-0 text-center text-xl font-bold tabular-nums focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 sm:h-16 sm:w-12 sm:text-2xl disabled:cursor-not-allowed disabled:opacity-50";
+
   return (
-    <div onPaste={handlePaste} className="flex justify-center gap-3 sm:gap-4 mb-8">
+    <div onPaste={handlePaste} className="flex flex-wrap justify-center gap-2 sm:gap-3">
       {Array(OTP_LENGTH)
         .fill(0)
         .map((_, index) => (
@@ -70,7 +72,7 @@ const OtpInput = forwardRef(({ disabled = false }, ref) => {
             inputMode="numeric"
             required
             disabled={disabled}
-            className="w-14 h-14 sm:w-16 sm:h-16 bg-slate-700/50 border-2 border-slate-600 text-white text-center text-2xl font-bold rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={cellClass}
             ref={(e) => (inputRefs.current[index] = e)}
             onInput={(e) => handleInput(e, index)}
             onKeyDown={(e) => {

@@ -1,21 +1,21 @@
 import { useRef, useState } from "react";
-import { LuMail, LuRefreshCw } from "react-icons/lu";
+import { LuRefreshCw } from "react-icons/lu";
 import toast from "react-hot-toast";
 import { requestPasswordReset, verifyResetOtp } from "../../api/auth.js";
-import StepHeader from "./StepHeader.jsx";
-import FormCard from "./FormCard.jsx";
+import AuthCardShell from "./AuthCardShell.jsx";
 import SubmitButton from "./SubmitButton.jsx";
 import OtpInput from "./OtpInput.jsx";
 import { ERROR_MESSAGES, OTP_LENGTH } from "../../constants/resetPassword.js";
 
-const OtpForm = ({ email, onOtpSubmitted }) => {
+const OtpForm = ({ email, onOtpSubmitted, footer }) => {
   const otpInputRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const otpValue = otpInputRef.current?.getValue() || "";
-    
+
     if (otpValue.length !== OTP_LENGTH) {
       toast.error(ERROR_MESSAGES.INVALID_OTP_LENGTH);
       return;
@@ -41,6 +41,7 @@ const OtpForm = ({ email, onOtpSubmitted }) => {
 
   const handleResend = async () => {
     try {
+      setIsResending(true);
       const data = await requestPasswordReset(email);
       if (data.success) {
         toast.success(data.message);
@@ -49,46 +50,54 @@ const OtpForm = ({ email, onOtpSubmitted }) => {
       }
     } catch (error) {
       toast.error(error.message || ERROR_MESSAGES.GENERIC_ERROR);
+    } finally {
+      setIsResending(false);
     }
   };
 
-  return (
+  const subtitle = (
     <>
-      <StepHeader
-        icon={LuMail}
-        title="Doğrulama Kodu"
-        highlightText="Kodu"
-        description={
-          <>
-            E-posta adresinize <span className="text-blue-400 font-medium">{email}</span> gönderdiğimiz {OTP_LENGTH} haneli doğrulama kodunu girin.
-          </>
-        }
-      />
-
-      <FormCard>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <OtpInput ref={otpInputRef} disabled={isSubmitting} />
-
-          <SubmitButton isLoading={isSubmitting} loadingText="Doğrulanıyor...">
-            Doğrula
-          </SubmitButton>
-        </form>
-
-        {/* Resend Code */}
-        <div className="mt-6 text-center">
-          <p className="text-slate-400 text-sm mb-2">
-            Doğrulama kodu almadınız mı?
-          </p>
-          <button
-            onClick={handleResend}
-            className="text-blue-400 hover:text-blue-300 font-medium text-sm transition-colors duration-200 inline-flex items-center gap-1"
-          >
-            <LuRefreshCw className="w-4 h-4" />
-            <span>Yeniden Gönder</span>
-          </button>
-        </div>
-      </FormCard>
+      <span className="font-medium text-accent">{email}</span> adresine {OTP_LENGTH} haneli kod gönderdik.
     </>
+  );
+
+  return (
+    <AuthCardShell
+      title="Doğrulama kodu"
+      titleHighlight="kodu"
+      subtitle={subtitle}
+      footer={footer}
+    >
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        <OtpInput ref={otpInputRef} disabled={isSubmitting} />
+
+        <SubmitButton isLoading={isSubmitting} loadingText="Doğrulanıyor...">
+          Doğrula
+        </SubmitButton>
+      </form>
+
+      <div className="mt-4 text-center">
+        <p className="mb-2 text-sm text-base-content/70">Kodu almadın mı?</p>
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={isResending}
+          className="btn btn-ghost btn-sm gap-1 text-accent"
+        >
+          {isResending ? (
+            <>
+              <LuRefreshCw className="h-4 w-4 animate-spin" />
+              Gönderiliyor...
+            </>
+          ) : (
+            <>
+              <LuRefreshCw className="h-4 w-4" />
+              Yeniden gönder
+            </>
+          )}
+        </button>
+      </div>
+    </AuthCardShell>
   );
 };
 
