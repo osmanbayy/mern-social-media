@@ -5,13 +5,9 @@ import User from "../models/user_model.js";
 import Conversation from "../models/conversation_model.js";
 import { setIo, emitToUser } from "../lib/socket_emit.js";
 import { setUserOnline, setUserOffline } from "../lib/presence.js";
+import { getAllowedOrigins } from "../lib/corsConfig.js";
 
-const corsOrigins = [
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "https://onsekiz.vercel.app",
-  process.env.FRONTEND_URL,
-].filter(Boolean);
+const corsOrigins = getAllowedOrigins();
 
 /**
  * @param {import("http").Server} httpServer
@@ -36,7 +32,9 @@ export const initSocketServer = (httpServer) => {
       if (!token) {
         return next(new Error("auth"));
       }
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+        algorithms: ["HS256"],
+      });
       const user = await User.findById(decoded.userId).select("-password");
       if (!user) {
         return next(new Error("auth"));

@@ -46,6 +46,9 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+notificationSchema.index({ to: 1, createdAt: -1 });
+notificationSchema.index({ to: 1, read: 1 });
+
 notificationSchema.post("save", async function (doc) {
   try {
     const Notification = mongoose.model("Notification");

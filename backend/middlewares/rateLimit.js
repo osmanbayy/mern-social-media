@@ -2,14 +2,46 @@ import rateLimit from "express-rate-limit";
 
 const msg = "Çok fazla istek. Lütfen bir süre sonra tekrar deneyin.";
 
-/** Genel API (IP başına) — brute force öncesi tüm uçları sınırlar */
-export const globalApiLimiter = rateLimit({
+const globalApiLimiterOptions = {
   windowMs: 15 * 60 * 1000,
   max: Number(process.env.RATE_LIMIT_GLOBAL_MAX) || 400,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: msg },
-});
+};
+
+/** Genel API (IP başına) — tek instance’da bellek; REDIS_URL ile çoklu instance için Redis */
+export let globalApiLimiter = rateLimit(globalApiLimiterOptions);
+
+/**
+ * REDIS_URL tanımlıysa global limiteri Redis store ile değiştirir (çoklu pod/replica).
+ * Bağlantı hatasında bellek tabanlı limiter kalır.
+ */
+export async function maybeUpgradeGlobalLimiterFromRedis() {
+  const url = process.env.REDIS_URL?.trim();
+  if (!url) return;
+
+  try {
+    const { createClient } = await import("redis");
+    const { RedisStore } = await import("rate-limit-redis");
+
+    const client = createClient({ url });
+    client.on("error", (err) => console.error("Redis (rate limit):", err.message));
+    await client.connect();
+
+    const store = new RedisStore({
+      sendCommand: (...args) => client.sendCommand(args),
+    });
+
+    globalApiLimiter = rateLimit({
+      ...globalApiLimiterOptions,
+      store,
+    });
+    console.log("Rate limit: Redis store aktif (global API).");
+  } catch (e) {
+    console.warn("Rate limit: Redis kullanılamadı, bellek tabanlı limiter kullanılıyor.", e.message);
+  }
+}
 
 /** Giriş denemeleri */
 export const authLoginLimiter = rateLimit({

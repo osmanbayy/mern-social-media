@@ -1,25 +1,29 @@
+import "dotenv/config";
 import path from "path";
 import http from "http";
 import { fileURLToPath } from "url";
 import express from "express";
+import helmet from "helmet";
+import compression from "compression";
+import mongoSanitize from "express-mongo-sanitize";
 import authRoutes from "./routes/auth_routes.js";
 import userRoutes from "./routes/user_routes.js";
 import postRoutes from "./routes/post_routes.js";
 import notificationRoutes from "./routes/notification_routes.js";
 import uploadRoutes from "./routes/upload_routes.js";
 import messageRoutes from "./routes/message_routes.js";
-import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connect_mongodb from "./database/connect_mongodb.js";
 import { v2 as cloudinary } from "cloudinary";
 import cors from "cors";
-import { globalApiLimiter } from "./middlewares/rateLimit.js";
+import { globalApiLimiter, maybeUpgradeGlobalLimiterFromRedis } from "./middlewares/rateLimit.js";
+import { getAllowedOrigins } from "./lib/corsConfig.js";
 
 import "./models/message_request_model.js";
 import "./models/conversation_model.js";
 import "./models/message_model.js";
 
-dotenv.config();
+await maybeUpgradeGlobalLimiterFromRedis();
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -33,6 +37,17 @@ const PORT = process.env.PORT || 8000;
 // cwd değil, bu dosyanın bulunduğu klasör (../frontend/dist yolu doğru çözülsün)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/** X-Forwarded-For (Vercel/proxy) — rate limit ve güvenlik için */
+app.set("trust proxy", Number(process.env.TRUST_PROXY) || 1);
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+app.use(compression());
 
 app.use(
   express.json({
@@ -71,22 +86,22 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(mongoSanitize());
+
 app.use(cookieParser());
 
+const allowedOrigins = getAllowedOrigins();
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "https://onsekiz.vercel.app",
-      process.env.FRONTEND_URL,
-    ].filter(Boolean),
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(null, false);
+    },
     credentials: true,
   })
 );
 
-/** X-Forwarded-For (Vercel/proxy) ile doğru IP; rate limit için gerekli */
-app.set("trust proxy", Number(process.env.TRUST_PROXY) || 1);
 app.use("/api", globalApiLimiter);
 
 app.get("/", (req, res) => {

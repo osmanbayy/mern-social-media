@@ -11,7 +11,9 @@ export const protect_route = async (req, res, next) => {
         .json({ message: "Bu işlemi yapabilmek için giriş yapmalısınız." });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
     if (!decoded) {
       console.log("Decode hatası");
       return res

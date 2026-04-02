@@ -1,4 +1,4 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 
 const postSchema = new mongoose.Schema(
   {
@@ -111,6 +111,10 @@ const postSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+postSchema.index({ user: 1, createdAt: -1 });
+postSchema.index({ user: 1, isPinned: -1, createdAt: -1 });
+postSchema.index({ originalPost: 1 });
 
 const Post = mongoose.model("Post", postSchema);
 export default Post;
