@@ -12,9 +12,18 @@ import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { FaArrowLeft } from "react-icons/fa6";
-import { LuSendHorizontal, LuCheck, LuCheckCheck } from "react-icons/lu";
+import { LuSendHorizontal, LuCheck, LuCheckCheck, LuEllipsisVertical } from "react-icons/lu";
 import toast from "react-hot-toast";
 import MessageSharePreview from "../../components/messages/MessageSharePreview";
+import {
+  CHAT_DENSITY_MAP,
+  CHAT_FONT_MAP,
+  DAY_PILL_CLASSES,
+  HEADER_STYLE_CLASSES,
+  getBubbleRadius,
+} from "../../constants/chatAppearance";
+import { useChatAppearance } from "../../contexts/ChatAppearanceContext";
+import ChatSettingsModal from "../../components/chat/ChatSettingsModal";
 
 const formatMsgTime = (iso) => {
   if (!iso) return "";
@@ -58,6 +67,13 @@ const ChatPage = () => {
   const queryClient = useQueryClient();
   const { authUser } = useAuth();
   const [text, setText] = useState("");
+  const [chatSettingsOpen, setChatSettingsOpen] = useState(false);
+  const { appearance, resolvedBubbles, chatBgClass } = useChatAppearance();
+  const density = CHAT_DENSITY_MAP[appearance.messageDensity] || CHAT_DENSITY_MAP.default;
+  const messageFontClass = CHAT_FONT_MAP[appearance.messageFontSize] || CHAT_FONT_MAP.md;
+  const headerBarClass =
+    HEADER_STYLE_CLASSES[appearance.headerStyle] || HEADER_STYLE_CLASSES.default;
+  const dayPillClass = DAY_PILL_CLASSES[appearance.dayPillStyle] || DAY_PILL_CLASSES.default;
   const bottomRef = useRef(null);
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
@@ -256,7 +272,7 @@ const ChatPage = () => {
   return (
     <div className="flex h-[100dvh] max-h-[100dvh] min-h-0 w-full min-w-0 flex-col overflow-x-hidden bg-base-100">
       {/* Header */}
-      <header className="sticky top-0 z-30 shrink-0 border-b border-base-300/60 bg-base-100/90 shadow-sm backdrop-blur-lg backdrop-saturate-150">
+      <header className={headerBarClass}>
         <div className="flex w-full min-w-0 max-w-full items-center gap-1 px-1 py-2 sm:px-2 sm:py-2.5">
           <button
             type="button"
@@ -291,13 +307,42 @@ const ChatPage = () => {
               </p>
             </div>
           </button>
+          <div className="dropdown dropdown-end shrink-0">
+            <button
+              type="button"
+              tabIndex={0}
+              className="btn btn-ghost btn-sm btn-circle"
+              aria-label="Sohbet menüsü"
+              aria-haspopup="menu"
+            >
+              <LuEllipsisVertical className="h-5 w-5" />
+            </button>
+            <ul
+              tabIndex={0}
+              className="dropdown-content menu z-40 mt-1 w-52 rounded-2xl border border-base-300/50 bg-base-100 p-2 shadow-lg"
+              role="menu"
+            >
+              <li>
+                <button
+                  type="button"
+                  className="rounded-xl text-left font-medium"
+                  role="menuitem"
+                  onClick={() => setChatSettingsOpen(true)}
+                >
+                  Sohbet ayarları
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
       </header>
+
+      <ChatSettingsModal isOpen={chatSettingsOpen} onClose={() => setChatSettingsOpen(false)} />
 
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="scrollbar-hide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-base-200/25 via-base-100 to-base-100 px-3 py-4 sm:px-4"
+        className={`scrollbar-hide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden ${density.scrollPadding} ${chatBgClass}`}
       >
         {isLoading && (
           <div className="flex justify-center py-16">
@@ -318,7 +363,7 @@ const ChatPage = () => {
         )}
 
         {!isLoading && messages.length > 0 && (
-          <div className="flex w-full min-w-0 max-w-full flex-col gap-1 pb-2">
+          <div className={`flex w-full min-w-0 max-w-full flex-col ${density.rowGap} pb-2`}>
             {timeline.map((row) => {
               if (row.kind === "day") {
                 return (
@@ -326,9 +371,7 @@ const ChatPage = () => {
                     key={row.id}
                     className="flex justify-center py-4 first:pt-0"
                   >
-                    <span className="rounded-full bg-base-300/40 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-base-content/55">
-                      {formatDayLabel(row.date)}
-                    </span>
+                    <span className={dayPillClass}>{formatDayLabel(row.date)}</span>
                   </div>
                 );
               }
@@ -336,6 +379,7 @@ const ChatPage = () => {
               const m = row.m;
               const i = row.index;
               const mine = senderId(m) === myId;
+              const bubbleResolved = mine ? resolvedBubbles.mine : resolvedBubbles.theirs;
               const prev = messages[i - 1];
               const next = messages[i + 1];
               const sameSenderAsPrev = prev && senderId(prev) === senderId(m);
@@ -344,27 +388,18 @@ const ChatPage = () => {
               const clusterTop = !sameSenderAsPrev;
               const clusterBottom = !sameSenderAsNext;
 
-              const bubbleRadius = mine
-                ? clusterTop && clusterBottom
-                  ? "rounded-2xl rounded-br-md"
-                  : clusterTop
-                  ? "rounded-2xl rounded-br-sm"
-                  : clusterBottom
-                  ? "rounded-2xl rounded-br-md"
-                  : "rounded-2xl rounded-br-sm"
-                : clusterTop && clusterBottom
-                ? "rounded-2xl rounded-bl-md"
-                : clusterTop
-                ? "rounded-2xl rounded-bl-sm"
-                : clusterBottom
-                ? "rounded-2xl rounded-bl-md"
-                : "rounded-2xl rounded-bl-sm";
+              const bubbleRadius = getBubbleRadius(
+                appearance.bubbleShape,
+                mine,
+                clusterTop,
+                clusterBottom
+              );
 
               return (
                 <div
                   key={m._id}
                   className={`flex w-full min-w-0 max-w-full ${mine ? "justify-end" : "justify-start"} ${
-                    clusterTop ? "mt-2" : "mt-0.5"
+                    clusterTop ? density.clusterTop : density.clusterRest
                   }`}
                 >
                   <div
@@ -375,13 +410,25 @@ const ChatPage = () => {
                     }`}
                   >
                     <div
-                      className={`relative min-w-0 max-w-full text-[15px] leading-relaxed shadow-sm ${bubbleRadius} ${
+                      className={`relative min-w-0 max-w-full shadow-sm ${messageFontClass} ${bubbleRadius} ${
                         m.share?.kind ? "px-2 py-2 sm:px-2.5 sm:py-2.5" : "px-3.5 py-2.5"
                       } ${
-                        mine
-                          ? "bg-primary text-primary-content"
-                          : "border border-base-300/40 bg-base-100 text-base-content"
+                        bubbleResolved.mode === "theme"
+                          ? mine
+                            ? "bg-primary text-primary-content"
+                            : "border border-base-300/40 bg-base-100 text-base-content"
+                          : mine
+                          ? ""
+                          : "border border-black/5 dark:border-white/10"
                       }`}
+                      style={
+                        bubbleResolved.mode === "inline"
+                          ? {
+                              backgroundColor: bubbleResolved.bg,
+                              color: bubbleResolved.color,
+                            }
+                          : undefined
+                      }
                     >
                       {m.share?.kind ? (
                         <MessageSharePreview share={m.share} mine={mine} />
@@ -408,7 +455,16 @@ const ChatPage = () => {
                             aria-label={messageIsRead(m) ? "Görüldü" : "İletildi"}
                           >
                             {messageIsRead(m) ? (
-                              <LuCheckCheck className="size-3.5 text-primary" />
+                              <LuCheckCheck
+                                className={`size-3.5 ${
+                                  resolvedBubbles.mine.mode === "theme" ? "text-primary" : ""
+                                }`}
+                                style={
+                                  resolvedBubbles.mine.mode === "inline"
+                                    ? { color: resolvedBubbles.mine.color, opacity: 0.88 }
+                                    : undefined
+                                }
+                              />
                             ) : (
                               <LuCheck className="size-3.5 text-base-content/45" />
                             )}
