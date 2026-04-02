@@ -7,7 +7,7 @@ import { BsEmojiSmileFill } from "react-icons/bs";
 import { IoCloseSharp } from "react-icons/io5";
 import { LuSquarePen, LuX } from "react-icons/lu";
 import { LiaTelegram } from "react-icons/lia";
-import EmojiPicker from "emoji-picker-react";
+import EmojiMartPicker from "../common/EmojiMartPicker";
 
 import LoadingSpinner from "../common/LoadingSpinner";
 import { editPost } from "../../api/posts";
@@ -339,28 +339,10 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
                           maxHeight: "calc(100vh - 200px)",
                         }}
                       >
-                        <div className="max-h-[400px] overflow-y-auto md:hidden">
-                          <EmojiPicker
-                            onEmojiClick={handleEmojiClick}
-                            theme={theme === "dark" ? "dark" : "nord"}
-                            width={typeof window !== "undefined" ? Math.min(window.innerWidth - 32, 352) : 320}
-                            height={400}
-                            previewConfig={{ showPreview: false }}
-                            searchDisabled={false}
-                            skinTonesDisabled
-                          />
-                        </div>
-                        <div className="hidden md:block">
-                          <EmojiPicker
-                            onEmojiClick={handleEmojiClick}
-                            theme={theme === "dark" ? "dark" : "nord"}
-                            width={352}
-                            height={435}
-                            previewConfig={{ showPreview: true }}
-                            searchDisabled={false}
-                            skinTonesDisabled
-                          />
-                        </div>
+                        <EmojiMartPicker
+                          theme={theme}
+                          onEmojiSelect={handleEmojiClick}
+                        />
                       </div>
                     </>
                   )}

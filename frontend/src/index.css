@@ -172,6 +172,16 @@ body {
   animation: dropdownFadeIn 0.2s ease-out;
 }
 
+/*
+ * emoji-mart shadow host defaults to width: min-content (narrow column).
+ * Parent can be 480px wide while the picker stays skinny without this override.
+ */
+.emoji-mart-host em-emoji-picker {
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 /* Modern dropdown menu item hover effects */
 .dropdown-content.menu li > * {
   transition: all 0.15s ease-out;
