@@ -1,304 +1,6 @@
-import Conversation from "../models/conversation_model.js";
-import Message from "../models/message_model.js";
-import MessageRequest from "../models/message_request_model.js";
-import User from "../models/user_model.js";
-import Notification from "../models/notification_model.js";
-import Post from "../models/post_model.js";
-import { emitToUser } from "../lib/socket_emit.js";
-import { isUserOnline } from "../lib/presence.js";
-
-const ALLOWED_REACTION_EMOJI = new Set(["👍", "❤️", "😂", "😮", "😢", "🙏"]);
-
-const shapeOutgoingMessage = (m) => {
-  if (!m) return null;
-  return {
-    ...m,
-    read: m.readReceipt === true,
-    delivered: m.deliveredAt != null,
-  };
-};
-
-const SHARE_PREVIEW = {
-  post: "Bir gönderi paylaştı",
-  profile: "Bir profil paylaştı",
-};
-
-const MAX_CHAT_ATTACHMENTS = 5;
-const MAX_CHAT_FILE_BYTES = 15 * 1024 * 1024;
-
-const lastPreviewForMessage = (text, shareDoc, attachments) => {
-  if (shareDoc?.kind === "post") return SHARE_PREVIEW.post;
-  if (shareDoc?.kind === "profile") return SHARE_PREVIEW.profile;
-  if (attachments?.length) {
-    const imgs = attachments.filter((a) => a.kind === "image").length;
-    const files = attachments.length - imgs;
-    if (imgs && files) return `🖼️ ${imgs} fotoğraf, 📎 ${files} dosya`;
-    if (imgs > 1) return `🖼️ ${imgs} fotoğraf`;
-    if (imgs === 1) return "🖼️ Fotoğraf";
-    if (files > 1) return `📎 ${files} dosya`;
-    return "📎 Dosya";
-  }
-  return String(text || "").slice(0, 120);
-};
-
-const isAllowedAttachmentUrl = (url) => {
-  try {
-    const u = new URL(url);
-    if (u.protocol !== "https:") return false;
-    return u.hostname.toLowerCase().includes("cloudinary.com");
-  } catch {
-    return false;
-  }
-};
-
-const validateAttachments = (raw) => {
-  if (raw == null || raw === "") return { ok: true, attachments: [] };
-  if (!Array.isArray(raw)) {
-    return { ok: false, message: "Ekler geçersiz." };
-  }
-  if (raw.length > MAX_CHAT_ATTACHMENTS) {
-    return { ok: false, message: "En fazla 5 ek eklenebilir." };
-  }
-  const out = [];
-  for (const a of raw) {
-    if (!a || typeof a !== "object") {
-      return { ok: false, message: "Ekler geçersiz." };
-    }
-    const url = String(a.url || "").trim();
-    if (!isAllowedAttachmentUrl(url)) {
-      return { ok: false, message: "Geçersiz dosya adresi." };
-    }
-    const kind = a.kind === "file" ? "file" : "image";
-    const mimeType = String(a.mimeType || "").slice(0, 128);
-    const originalName = String(a.originalName || "dosya").slice(0, 200);
-    const size = Number(a.size);
-    if (Number.isFinite(size) && size > MAX_CHAT_FILE_BYTES) {
-      return { ok: false, message: "Bir dosya en fazla 15 MB olabilir." };
-    }
-    out.push({
-      url,
-      kind,
-      mimeType,
-      originalName,
-      size: Number.isFinite(size) && size >= 0 ? size : 0,
-    });
-  }
-  return { ok: true, attachments: out };
-};
-
-const pickAttachments = (body) => {
-  const b = normalizeRequestBody(body);
-  return b.attachments;
-};
-
-/** İstemciden gelen share gövdesini doğrula; yoksa share: null */
-const validateSharePayload = async (raw) => {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { ok: true, share: null };
-  }
-  let kind = raw.kind;
-  if (kind == null || kind === "") {
-    if (raw.postId != null && String(raw.postId).trim() !== "") {
-      kind = "post";
-    } else if (
-      (raw.userId != null && String(raw.userId).trim() !== "") ||
-      (raw.profileUser != null && String(raw.profileUser).trim() !== "")
-    ) {
-      kind = "profile";
-    }
-  }
-  if (kind == null || kind === "") {
-    return { ok: true, share: null };
-  }
-  kind = String(kind).toLowerCase().trim();
-  if (kind === "post") {
-    const postId = raw.postId ?? raw.post;
-    if (postId == null || String(postId).trim() === "") {
-      return { ok: false, status: 400, message: "Geçersiz gönderi." };
-    }
-    const post = await Post.findById(String(postId)).lean();
-    if (!post) return { ok: false, status: 404, message: "Gönderi bulunamadı." };
-    return { ok: true, share: { kind: "post", post: post._id } };
-  }
-  if (kind === "profile") {
-    const profileUserId = raw.userId ?? raw.profileUser;
-    if (profileUserId == null || String(profileUserId).trim() === "") {
-      return { ok: false, status: 400, message: "Geçersiz profil." };
-    }
-    const u = await User.findById(String(profileUserId)).select("_id").lean();
-    if (!u) return { ok: false, status: 404, message: "Kullanıcı bulunamadı." };
-    return { ok: true, share: { kind: "profile", profileUser: u._id } };
-  }
-  return { ok: false, status: 400, message: "Geçersiz paylaşım." };
-};
-
-const replyToPopulate = {
-  path: "replyTo",
-  select: "_id text sender share createdAt attachments",
-  populate: [
-    { path: "sender", select: "username profileImage fullname" },
-    {
-      path: "share.post",
-      select: "text img user createdAt",
-      populate: { path: "user", select: "username profileImage fullname" },
-    },
-    { path: "share.profileUser", select: "username profileImage fullname bio" },
-  ],
-};
-
-const populateMessageOutgoing = async (msgId) => {
-  const populated = await Message.findById(msgId)
-    .populate("sender", "username profileImage fullname")
-    .populate({
-      path: "share.post",
-      select: "text img user createdAt",
-      populate: { path: "user", select: "username profileImage fullname" },
-    })
-    .populate("share.profileUser", "username profileImage fullname bio")
-    .populate({ path: "reactions.user", select: "username fullname" })
-    .populate(replyToPopulate)
-    .lean();
-  if (!populated) return null;
-  return shapeOutgoingMessage(populated);
-};
-
-const messageQueryPopulate = [
-  { path: "sender", select: "username profileImage fullname" },
-  {
-    path: "share.post",
-    select: "text img user createdAt",
-    populate: { path: "user", select: "username profileImage fullname" },
-  },
-  { path: "share.profileUser", select: "username profileImage fullname bio" },
-  { path: "reactions.user", select: "username fullname" },
-  replyToPopulate,
-];
-
-const sortParticipantIds = (a, b) => {
-  const sa = a.toString();
-  const sb = b.toString();
-  return sa.localeCompare(sb);
-};
-
-const participantKey = (a, b) => {
-  const [x, y] = [a.toString(), b.toString()].sort();
-  return `${x}_${y}`;
-};
-
-const isMutualFollow = async (userIdA, userIdB) => {
-  const [uA, uB] = await Promise.all([
-    User.findById(userIdA).select("following"),
-    User.findById(userIdB).select("following"),
-  ]);
-  if (!uA || !uB) return false;
-  const followingA = uA.following || [];
-  const followingB = uB.following || [];
-  const aFollowsB = followingA.some((id) => id.toString() === userIdB.toString());
-  const bFollowsA = followingB.some((id) => id.toString() === userIdA.toString());
-  return aFollowsB && bFollowsA;
-};
-
-const isEitherBlocked = (fromUser, toUser) => {
-  const fromId = fromUser._id.toString();
-  const toId = toUser._id.toString();
-  const fromBlocked = fromUser.blockedUsers || [];
-  const toBlocked = toUser.blockedUsers || [];
-  if (fromBlocked.some((id) => id.toString() === toId)) return true;
-  if (toBlocked.some((id) => id.toString() === fromId)) return true;
-  return false;
-};
-
-/** Vercel / proxy bazen body'yi string veya Buffer verir; share düz kökte de gelebilir */
-const normalizeRequestBody = (raw) => {
-  if (raw == null) return {};
-  if (Buffer.isBuffer(raw)) {
-    try {
-      const o = JSON.parse(raw.toString("utf8"));
-      return o && typeof o === "object" && !Array.isArray(o) ? o : {};
-    } catch {
-      return {};
-    }
-  }
-  if (typeof raw === "string") {
-    try {
-      const o = JSON.parse(raw);
-      return o && typeof o === "object" && !Array.isArray(o) ? o : {};
-    } catch {
-      return {};
-    }
-  }
-  if (typeof raw === "object" && !Array.isArray(raw)) return raw;
-  return {};
-};
-
-const pickShareInput = (body) => {
-  const b = normalizeRequestBody(body);
-  const nested = b.share ?? b.Share;
-  if (nested && typeof nested === "object" && !Array.isArray(nested)) return nested;
-  if (b.postId != null && String(b.postId).trim() !== "") {
-    return {
-      kind:
-        b.kind != null && String(b.kind).trim() !== ""
-          ? String(b.kind).toLowerCase().trim()
-          : "post",
-      postId: b.postId,
-    };
-  }
-  return undefined;
-};
-
-const pickReplyToId = (body) => {
-  const b = normalizeRequestBody(body);
-  let raw = b.replyTo ?? b.replyToMessageId ?? b.quotedMessageId;
-  if (raw != null && typeof raw === "object" && !Array.isArray(raw)) {
-    raw = raw._id ?? raw.id ?? raw.$oid;
-  }
-  if (raw == null || raw === "") return null;
-  const s = String(raw).trim();
-  return s || null;
-};
-
-/** Alıntı: referans mesaj aynı sohbette olmalı */
-const validateReplyTo = async (replyToId, convId) => {
-  if (!replyToId) return { ok: true, replyTo: null };
-  const ref = await Message.findById(String(replyToId)).select("conversation").lean();
-  if (!ref) {
-    return { ok: false, status: 400, message: "Alıntılanan mesaj bulunamadı." };
-  }
-  if (ref.conversation.toString() !== convId.toString()) {
-    return { ok: false, status: 400, message: "Alıntı bu sohbete ait olmalı." };
-  }
-  return { ok: true, replyTo: String(replyToId) };
-};
-
-/** Alıntı balonunda gösterilecek metin + gönderen (DB’de saklanır) */
-const buildReplySnapshot = async (replyToId) => {
-  if (!replyToId) return null;
-  const ref = await Message.findById(String(replyToId))
-    .populate("sender", "username fullname")
-    .lean();
-  if (!ref) return null;
-  const trimmed = String(ref.text || "")
-    .replace(/\u2060/g, "")
-    .trim();
-  let preview = "";
-  if (ref.attachments?.length) {
-    const imgs = ref.attachments.filter((x) => x.kind === "image").length;
-    const files = ref.attachments.length - imgs;
-    if (imgs && files) preview = `🖼️ ${imgs} · 📎 ${files}`;
-    else if (imgs > 1) preview = `🖼️ ${imgs} fotoğraf`;
-    else if (imgs === 1) preview = "🖼️ Fotoğraf";
-    else if (files > 1) preview = `📎 ${files} dosya`;
-    else preview = "📎 Dosya";
-  } else {
-    preview = lastPreviewForMessage(trimmed, ref.share, ref.attachments);
-  }
-  if (!preview || !String(preview).trim()) {
-    preview = "Mesaj";
-  }
-  const senderLabel = ref.sender?.fullname || ref.sender?.username || "…";
-  return { senderLabel, preview };
-};
+import { normalizeRequestBody } from "../lib/normalizeRequestBody.js";
+import { sendServiceResult } from "../lib/controllerHttp.js";
+import * as messageOps from "../services/message/message.operations.js";
 
 export const send_message = async (req, res) => {
   try {
@@ -310,202 +12,12 @@ export const send_message = async (req, res) => {
     ) {
       incoming = normalizeRequestBody(req.rawBody);
     }
-    const replyToMessageId = pickReplyToId(incoming);
-    const shareInput = pickShareInput(incoming);
-    const text = incoming.text;
-    const toUserId = req.params.toUserId;
-    const fromUserId = req.user._id;
-
-    if (!toUserId || toUserId === "undefined") {
-      return res.status(400).json({ message: "Geçersiz alıcı." });
-    }
-    if (toUserId === fromUserId.toString()) {
-      return res.status(400).json({ message: "Kendinize mesaj gönderemezsiniz." });
-    }
-
-    const shareResult = await validateSharePayload(shareInput);
-    if (!shareResult.ok) {
-      return res.status(shareResult.status).json({ message: shareResult.message });
-    }
-    const shareDoc = shareResult.share;
-
-    const trimmed = text != null ? String(text).trim() : "";
-    const hadShareIntent =
-      (shareInput &&
-        typeof shareInput === "object" &&
-        !Array.isArray(shareInput) &&
-        (shareInput.kind != null ||
-          shareInput.postId != null ||
-          shareInput.post != null ||
-          shareInput.userId != null ||
-          shareInput.profileUser != null)) ||
-      (incoming.postId != null && String(incoming.postId).trim() !== "");
-
-    const attRes = validateAttachments(pickAttachments(incoming));
-    if (!attRes.ok) {
-      return res.status(400).json({ message: attRes.message });
-    }
-    const attachmentsDoc = attRes.attachments || [];
-
-    if (shareDoc && attachmentsDoc.length > 0) {
-      return res.status(400).json({ message: "Paylaşım ile dosya birlikte gönderilemez." });
-    }
-
-    if (!trimmed && !shareDoc && attachmentsDoc.length === 0) {
-      if (hadShareIntent) {
-        return res.status(400).json({ message: "Paylaşım doğrulanamadı." });
-      }
-      const emptyPayload = Object.keys(incoming).length === 0;
-      return res.status(400).json({
-        message: "Mesaj boş olamaz.",
-        ...(emptyPayload && {
-          hint:
-            "Sunucu gövdeyi alamadı. POST ile Content-Type: application/json kullanın; örnek: {\"share\":{\"kind\":\"post\",\"postId\":\"...\"}}",
-        }),
-      });
-    }
-
-    /** Paylaşım + boş metin: şema/önizleme için görünmez işaret (UI'da gösterilmez) */
-    const SHARE_TEXT_PLACEHOLDER = "\u2060";
-    const messageText =
-      shareDoc && !trimmed
-        ? SHARE_TEXT_PLACEHOLDER
-        : trimmed
-          ? trimmed.slice(0, 4000)
-          : attachmentsDoc.length > 0
-            ? SHARE_TEXT_PLACEHOLDER
-            : "";
-
-    const [toUser, fromUser] = await Promise.all([
-      User.findById(toUserId),
-      User.findById(fromUserId),
-    ]);
-
-    if (!toUser) {
-      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
-    }
-
-    if (isEitherBlocked(fromUser, toUser)) {
-      return res.status(403).json({ message: "Bu kullanıcıya mesaj gönderemezsiniz." });
-    }
-
-    const preview = lastPreviewForMessage(trimmed, shareDoc, attachmentsDoc);
-
-    const key = participantKey(fromUserId, toUserId);
-    let conv = await Conversation.findOne({ participantKey: key });
-
-    const createMessageDoc = async (convId, replyToRef, replySnapshotDoc) =>
-      Message.create({
-        conversation: convId,
-        sender: fromUserId,
-        text: messageText,
-        ...(shareDoc ? { share: shareDoc } : {}),
-        ...(attachmentsDoc.length ? { attachments: attachmentsDoc } : {}),
-        ...(replyToRef ? { replyTo: replyToRef } : {}),
-        ...(replySnapshotDoc ? { replySnapshot: replySnapshotDoc } : {}),
-      });
-
-    const respondWithMessage = async (convLocal, msgDoc) => {
-      const msgOut = await populateMessageOutgoing(msgDoc._id);
-      if (!msgOut) {
-        return res.status(500).json({ message: "Mesaj oluşturulamadı." });
-      }
-      const payload = {
-        conversationId: convLocal._id.toString(),
-        message: msgOut,
-      };
-      emitToUser(toUserId, "message:new", payload);
-      emitToUser(fromUserId.toString(), "message:new", payload);
-      emitToUser(toUserId, "conversations:updated", { conversationId: convLocal._id.toString() });
-      emitToUser(fromUserId.toString(), "conversations:updated", {
-        conversationId: convLocal._id.toString(),
-      });
-      return res.status(201).json({ ...msgOut, conversationId: convLocal._id });
-    };
-
-    // 1) Zaten açık sohbet varsa (ör. istek kabul edildikten sonra) karşılıklı takip olmasa da mesaj buraya gider
-    if (conv) {
-      const replyRes = await validateReplyTo(replyToMessageId, conv._id);
-      if (!replyRes.ok) {
-        return res.status(replyRes.status).json({ message: replyRes.message });
-      }
-      const replySnap = replyRes.replyTo ? await buildReplySnapshot(replyRes.replyTo) : null;
-      conv.lastMessageAt = new Date();
-      conv.lastMessagePreview = preview;
-      await conv.save();
-
-      const msg = await createMessageDoc(conv._id, replyRes.replyTo, replySnap);
-      return respondWithMessage(conv, msg);
-    }
-
-    // 2) Henüz sohbet yok; karşılıklı takipte yeni sohbet açılır
-    if (await isMutualFollow(fromUserId, toUserId)) {
-      const ids = [fromUserId, toUserId].sort(sortParticipantIds);
-
-      conv = await Conversation.create({
-        participantKey: key,
-        participants: ids,
-        lastMessageAt: new Date(),
-        lastMessagePreview: preview,
-      });
-
-      const replyRes = await validateReplyTo(replyToMessageId, conv._id);
-      if (!replyRes.ok) {
-        await Conversation.deleteOne({ _id: conv._id });
-        return res.status(replyRes.status).json({ message: replyRes.message });
-      }
-      const replySnapNew = replyRes.replyTo ? await buildReplySnapshot(replyRes.replyTo) : null;
-
-      const msg = await createMessageDoc(conv._id, replyRes.replyTo, replySnapNew);
-      return respondWithMessage(conv, msg);
-    }
-
-    // 3) Sohbet yok ve karşılıklı takip yok → mesaj isteği
-    if (replyToMessageId) {
-      return res.status(400).json({ message: "Mesaj isteği gönderilirken alıntı kullanılamaz." });
-    }
-    if (attachmentsDoc.length > 0) {
-      return res.status(400).json({ message: "Mesaj isteğinde dosya gönderilemez." });
-    }
-
-    const existingPending = await MessageRequest.findOne({
-      from: fromUserId,
-      to: toUserId,
-      status: "pending",
+    const result = await messageOps.sendMessage({
+      fromUserId: req.user._id,
+      toUserId: req.params.toUserId,
+      incoming,
     });
-    if (existingPending) {
-      return res.status(400).json({
-        message: "Bu kullanıcıya zaten bekleyen bir mesaj isteğiniz var.",
-      });
-    }
-
-    const reqDoc = await MessageRequest.create({
-      from: fromUserId,
-      to: toUserId,
-      text: messageText,
-      ...(shareDoc ? { share: shareDoc } : {}),
-    });
-
-    await Notification.create({
-      from: fromUserId,
-      to: toUserId,
-      type: "message_request",
-      messageRequest: reqDoc._id,
-    });
-
-    const populatedReq = await MessageRequest.findById(reqDoc._id)
-      .populate("from", "username profileImage fullname")
-      .populate({
-        path: "share.post",
-        select: "text img user createdAt",
-        populate: { path: "user", select: "username profileImage fullname" },
-      })
-      .populate("share.profileUser", "username profileImage fullname bio")
-      .lean();
-
-    emitToUser(toUserId, "message_request:new", { request: populatedReq });
-
-    return res.status(201).json({ request: populatedReq, pending: true });
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in send_message", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -514,32 +26,8 @@ export const send_message = async (req, res) => {
 
 export const get_conversations = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const conversations = await Conversation.find({
-      participants: userId,
-    })
-      .sort({ lastMessageAt: -1 })
-      .lean();
-
-    const populated = await Promise.all(
-      conversations.map(async (c) => {
-        const otherId = c.participants.find((p) => p.toString() !== userId.toString());
-        const other = await User.findById(otherId)
-          .select("_id username profileImage fullname lastSeen")
-          .lean();
-        return {
-          ...c,
-          otherUser: other
-            ? {
-                ...other,
-                online: isUserOnline(other._id),
-              }
-            : null,
-        };
-      })
-    );
-
-    res.status(200).json(populated);
+    const result = await messageOps.listConversations(req.user._id);
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in get_conversations", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -548,138 +36,40 @@ export const get_conversations = async (req, res) => {
 
 export const get_messages = async (req, res) => {
   try {
-    const { conversationId } = req.params;
-    const userId = req.user._id;
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = Math.min(parseInt(req.query.limit, 10) || 30, 50);
-    const skip = (page - 1) * limit;
-
-    const conv = await Conversation.findById(conversationId);
-    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
-      return res.status(404).json({ message: "Sohbet bulunamadı." });
-    }
-
-    const [messages, total] = await Promise.all([
-      Message.find({ conversation: conversationId })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate(messageQueryPopulate)
-        .lean(),
-      Message.countDocuments({ conversation: conversationId }),
-    ]);
-
-    const ordered = messages.reverse().map((m) => shapeOutgoingMessage(m));
-
-    res.status(200).json({
-      messages: ordered,
-      page,
-      totalPages: Math.ceil(total / limit) || 1,
-      total,
+    const result = await messageOps.listMessages({
+      userId: req.user._id,
+      conversationId: req.params.conversationId,
+      page: req.query.page,
+      limit: req.query.limit,
     });
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in get_messages", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };
 
-/** Karşı tarafın gönderdiği okunmamış mesajları okundu işaretle; gönderene socket ile bildir */
 export const mark_conversation_read = async (req, res) => {
   try {
-    const { conversationId } = req.params;
-    const userId = req.user._id;
-
-    const conv = await Conversation.findById(conversationId);
-    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
-      return res.status(404).json({ message: "Sohbet bulunamadı." });
-    }
-
-    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
-    if (!peerId) {
-      return res.status(400).json({ message: "Geçersiz sohbet." });
-    }
-
-    /** Okunmamış = readReceipt doğru değil (şema: readReceipt) */
-    const unread = await Message.find({
-      conversation: conversationId,
-      sender: peerId,
-      readReceipt: { $ne: true },
-    })
-      .select("_id")
-      .lean();
-
-    if (unread.length === 0) {
-      return res.status(200).json({ ok: true, count: 0, messageIds: [] });
-    }
-
-    await Message.updateMany(
-      { _id: { $in: unread.map((m) => m._id) } },
-      { $set: { readReceipt: true } }
-    );
-
-    const messageIds = unread.map((m) => m._id.toString());
-    emitToUser(peerId.toString(), "message:read", {
-      conversationId: String(conversationId),
-      messageIds,
+    const result = await messageOps.markConversationRead({
+      userId: req.user._id,
+      conversationId: req.params.conversationId,
     });
-
-    res.status(200).json({ ok: true, count: unread.length, messageIds });
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in mark_conversation_read", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };
 
-/** Okuyucu, karşı tarafın mesajlarını cihazına aldı (iletildi); gönderene bildirilir */
 export const ack_messages_delivered = async (req, res) => {
   try {
-    const { conversationId } = req.params;
-    const userId = req.user._id;
-    const b = normalizeRequestBody(req.body);
-    const rawIds = b.messageIds;
-    if (!Array.isArray(rawIds) || rawIds.length === 0) {
-      return res.status(400).json({ message: "messageIds gerekli." });
-    }
-
-    const conv = await Conversation.findById(conversationId);
-    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
-      return res.status(404).json({ message: "Sohbet bulunamadı." });
-    }
-    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
-    if (!peerId) {
-      return res.status(400).json({ message: "Geçersiz sohbet." });
-    }
-
-    const ids = rawIds.map((x) => String(x).trim()).filter(Boolean);
-    const now = new Date();
-    await Message.updateMany(
-      {
-        _id: { $in: ids },
-        conversation: conversationId,
-        sender: peerId,
-        deliveredAt: null,
-      },
-      { $set: { deliveredAt: now } }
-    );
-
-    const updated = await Message.find({
-      _id: { $in: ids },
-      conversation: conversationId,
-      sender: peerId,
-      deliveredAt: { $ne: null },
-    })
-      .select("_id")
-      .lean();
-    const messageIds = updated.map((m) => m._id.toString());
-
-    if (messageIds.length > 0) {
-      emitToUser(peerId.toString(), "message:delivered", {
-        conversationId: String(conversationId),
-        messageIds,
-      });
-    }
-
-    res.status(200).json({ ok: true, messageIds });
+    const result = await messageOps.ackMessagesDelivered({
+      userId: req.user._id,
+      conversationId: req.params.conversationId,
+      body: req.body,
+    });
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in ack_messages_delivered", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -688,56 +78,13 @@ export const ack_messages_delivered = async (req, res) => {
 
 export const toggle_message_reaction = async (req, res) => {
   try {
-    const { conversationId, messageId } = req.params;
-    const userId = req.user._id;
-    const b = normalizeRequestBody(req.body);
-    const emoji = b.emoji != null ? String(b.emoji).trim() : "";
-    if (!ALLOWED_REACTION_EMOJI.has(emoji)) {
-      return res.status(400).json({ message: "Geçersiz emoji." });
-    }
-
-    const conv = await Conversation.findById(conversationId);
-    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
-      return res.status(404).json({ message: "Sohbet bulunamadı." });
-    }
-
-    const msg = await Message.findOne({
-      _id: messageId,
-      conversation: conversationId,
+    const result = await messageOps.toggleMessageReaction({
+      userId: req.user._id,
+      conversationId: req.params.conversationId,
+      messageId: req.params.messageId,
+      body: req.body,
     });
-    if (!msg) {
-      return res.status(404).json({ message: "Mesaj bulunamadı." });
-    }
-
-    const list = msg.reactions || [];
-    const idx = list.findIndex((r) => r.user.toString() === userId.toString());
-    if (idx >= 0 && list[idx].emoji === emoji) {
-      list.splice(idx, 1);
-    } else {
-      if (idx >= 0) list.splice(idx, 1);
-      list.push({ user: userId, emoji });
-    }
-    msg.reactions = list;
-    await msg.save();
-
-    const msgOut = await populateMessageOutgoing(msg._id);
-    if (!msgOut) {
-      return res.status(500).json({ message: "Mesaj güncellenemedi." });
-    }
-
-    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
-    if (peerId) {
-      emitToUser(peerId.toString(), "message:reaction", {
-        conversationId: String(conversationId),
-        message: msgOut,
-      });
-    }
-    emitToUser(userId.toString(), "message:reaction", {
-      conversationId: String(conversationId),
-      message: msgOut,
-    });
-
-    res.status(200).json(msgOut);
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in toggle_message_reaction", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -746,22 +93,8 @@ export const toggle_message_reaction = async (req, res) => {
 
 export const get_incoming_requests = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const requests = await MessageRequest.find({
-      to: userId,
-      status: "pending",
-    })
-      .sort({ createdAt: -1 })
-      .populate("from", "username profileImage fullname")
-      .populate({
-        path: "share.post",
-        select: "text img user createdAt",
-        populate: { path: "user", select: "username profileImage fullname" },
-      })
-      .populate("share.profileUser", "username profileImage fullname bio")
-      .lean();
-
-    res.status(200).json(requests);
+    const result = await messageOps.getIncomingRequests(req.user._id);
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in get_incoming_requests", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -770,82 +103,11 @@ export const get_incoming_requests = async (req, res) => {
 
 export const accept_request = async (req, res) => {
   try {
-    const { requestId } = req.params;
-    const userId = req.user._id;
-
-    const reqDoc = await MessageRequest.findById(requestId);
-    if (!reqDoc || reqDoc.to.toString() !== userId.toString()) {
-      return res.status(404).json({ message: "İstek bulunamadı." });
-    }
-    if (reqDoc.status !== "pending") {
-      return res.status(400).json({ message: "Bu istek artık geçerli değil." });
-    }
-
-    const key = participantKey(reqDoc.from, reqDoc.to);
-    let conv = await Conversation.findOne({ participantKey: key });
-    const ids = [reqDoc.from, reqDoc.to].sort(sortParticipantIds);
-
-    const preview = lastPreviewForMessage(reqDoc.text, reqDoc.share, []);
-
-    if (!conv) {
-      conv = await Conversation.create({
-        participantKey: key,
-        participants: ids,
-        lastMessageAt: new Date(),
-        lastMessagePreview: preview,
-      });
-    } else {
-      conv.lastMessageAt = new Date();
-      conv.lastMessagePreview = preview;
-      await conv.save();
-    }
-
-    const msg = await Message.create({
-      conversation: conv._id,
-      sender: reqDoc.from,
-      text: reqDoc.text,
-      ...(reqDoc.share && reqDoc.share.kind
-        ? {
-            share: {
-              kind: reqDoc.share.kind,
-              post: reqDoc.share.post || undefined,
-              profileUser: reqDoc.share.profileUser || undefined,
-            },
-          }
-        : {}),
+    const result = await messageOps.acceptMessageRequest({
+      userId: req.user._id,
+      requestId: req.params.requestId,
     });
-
-    reqDoc.status = "accepted";
-    await reqDoc.save();
-
-    await Notification.deleteMany({
-      type: "message_request",
-      messageRequest: reqDoc._id,
-    });
-
-    const msgOut = await populateMessageOutgoing(msg._id);
-    if (!msgOut) {
-      return res.status(500).json({ message: "Mesaj oluşturulamadı." });
-    }
-
-    const payload = {
-      conversationId: conv._id.toString(),
-      message: msgOut,
-    };
-
-    emitToUser(reqDoc.from.toString(), "message_request:accepted", {
-      conversationId: conv._id.toString(),
-    });
-    emitToUser(reqDoc.from.toString(), "message:new", payload);
-    emitToUser(userId.toString(), "message:new", payload);
-    emitToUser(reqDoc.from.toString(), "conversations:updated", {
-      conversationId: conv._id.toString(),
-    });
-    emitToUser(userId.toString(), "conversations:updated", {
-      conversationId: conv._id.toString(),
-    });
-
-    res.status(200).json({ conversation: conv, message: msgOut });
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in accept_request", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -854,54 +116,13 @@ export const accept_request = async (req, res) => {
 
 export const edit_message = async (req, res) => {
   try {
-    const { conversationId, messageId } = req.params;
-    const userId = req.user._id;
-    const body = normalizeRequestBody(req.body);
-    const text = body.text != null ? String(body.text).trim() : "";
-
-    if (!text) {
-      return res.status(400).json({ message: "Mesaj boş olamaz." });
-    }
-
-    const conv = await Conversation.findById(conversationId);
-    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
-      return res.status(404).json({ message: "Sohbet bulunamadı." });
-    }
-
-    const msg = await Message.findById(messageId);
-    if (!msg) return res.status(404).json({ message: "Mesaj bulunamadı." });
-    if (msg.conversation.toString() !== conversationId) {
-      return res.status(400).json({ message: "Mesaj bu sohbete ait değil." });
-    }
-    if (msg.sender.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Bu mesajı düzenleyemezsiniz." });
-    }
-    if (msg.share && msg.share.kind) {
-      return res.status(400).json({ message: "Paylaşım mesajları düzenlenemez." });
-    }
-
-    msg.text = text.slice(0, 4000);
-    msg.editedAt = new Date();
-    await msg.save();
-
-    const msgOut = await populateMessageOutgoing(msg._id);
-    if (!msgOut) {
-      return res.status(500).json({ message: "Mesaj kaydedilemedi." });
-    }
-
-    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
-    if (peerId) {
-      emitToUser(peerId.toString(), "message:edited", {
-        conversationId: String(conversationId),
-        message: msgOut,
-      });
-    }
-    emitToUser(userId.toString(), "message:edited", {
-      conversationId: String(conversationId),
-      message: msgOut,
+    const result = await messageOps.editMessage({
+      userId: req.user._id,
+      conversationId: req.params.conversationId,
+      messageId: req.params.messageId,
+      body: req.body,
     });
-
-    res.status(200).json(msgOut);
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in edit_message", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -910,29 +131,12 @@ export const edit_message = async (req, res) => {
 
 export const delete_message = async (req, res) => {
   try {
-    const { conversationId, messageId } = req.params;
-    const userId = req.user._id;
-    const conv = await Conversation.findById(conversationId);
-    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
-      return res.status(404).json({ message: "Sohbet bulunamadı." });
-    }
-    const msg = await Message.findById(messageId);
-    if (!msg) return res.status(404).json({ message: "Mesaj bulunamadı." });
-    if (msg.conversation.toString() !== conversationId) {
-      return res.status(400).json({ message: "Mesaj bu sohbete ait değil." });
-    }
-    if (msg.sender.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Bu mesajı silemezsiniz." });
-    }
-    await Message.deleteOne({ _id: messageId });
-    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
-    const payload = {
-      conversationId: String(conversationId),
-      messageIds: [String(messageId)],
-    };
-    if (peerId) emitToUser(peerId.toString(), "message:deleted", payload);
-    emitToUser(userId.toString(), "message:deleted", payload);
-    res.status(200).json({ ok: true });
+    const result = await messageOps.deleteMessage({
+      userId: req.user._id,
+      conversationId: req.params.conversationId,
+      messageId: req.params.messageId,
+    });
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in delete_message", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -941,34 +145,12 @@ export const delete_message = async (req, res) => {
 
 export const delete_messages_bulk = async (req, res) => {
   try {
-    const { conversationId } = req.params;
-    const userId = req.user._id;
-    const b = normalizeRequestBody(req.body);
-    const raw = b.messageIds;
-    if (!Array.isArray(raw) || raw.length === 0) {
-      return res.status(400).json({ message: "messageIds gerekli." });
-    }
-    const ids = raw.map((x) => String(x).trim()).filter(Boolean);
-    if (ids.length === 0) {
-      return res.status(400).json({ message: "messageIds gerekli." });
-    }
-    const conv = await Conversation.findById(conversationId);
-    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
-      return res.status(404).json({ message: "Sohbet bulunamadı." });
-    }
-    await Message.deleteMany({
-      _id: { $in: ids },
-      conversation: conversationId,
-      sender: userId,
+    const result = await messageOps.deleteMessagesBulk({
+      userId: req.user._id,
+      conversationId: req.params.conversationId,
+      body: req.body,
     });
-    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
-    const payload = {
-      conversationId: String(conversationId),
-      messageIds: ids.map(String),
-    };
-    if (peerId) emitToUser(peerId.toString(), "message:deleted", payload);
-    emitToUser(userId.toString(), "message:deleted", payload);
-    res.status(200).json({ ok: true, messageIds: payload.messageIds });
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in delete_messages_bulk", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -977,21 +159,11 @@ export const delete_messages_bulk = async (req, res) => {
 
 export const clear_conversation_messages = async (req, res) => {
   try {
-    const { conversationId } = req.params;
-    const userId = req.user._id;
-    const conv = await Conversation.findById(conversationId);
-    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
-      return res.status(404).json({ message: "Sohbet bulunamadı." });
-    }
-    await Message.deleteMany({ conversation: conversationId });
-    conv.lastMessagePreview = "Sohbet temizlendi";
-    conv.lastMessageAt = new Date();
-    await conv.save();
-    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
-    const payload = { conversationId: String(conversationId) };
-    if (peerId) emitToUser(peerId.toString(), "conversation:cleared", payload);
-    emitToUser(userId.toString(), "conversation:cleared", payload);
-    res.status(200).json({ ok: true });
+    const result = await messageOps.clearConversationMessages({
+      userId: req.user._id,
+      conversationId: req.params.conversationId,
+    });
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in clear_conversation_messages", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
@@ -1000,30 +172,11 @@ export const clear_conversation_messages = async (req, res) => {
 
 export const decline_request = async (req, res) => {
   try {
-    const { requestId } = req.params;
-    const userId = req.user._id;
-
-    const reqDoc = await MessageRequest.findById(requestId);
-    if (!reqDoc || reqDoc.to.toString() !== userId.toString()) {
-      return res.status(404).json({ message: "İstek bulunamadı." });
-    }
-    if (reqDoc.status !== "pending") {
-      return res.status(400).json({ message: "Bu istek artık geçerli değil." });
-    }
-
-    reqDoc.status = "declined";
-    await reqDoc.save();
-
-    await Notification.deleteMany({
-      type: "message_request",
-      messageRequest: reqDoc._id,
+    const result = await messageOps.declineMessageRequest({
+      userId: req.user._id,
+      requestId: req.params.requestId,
     });
-
-    emitToUser(reqDoc.from.toString(), "message_request:declined", {
-      requestId: reqDoc._id.toString(),
-    });
-
-    res.status(200).json({ message: "İstek reddedildi." });
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in decline_request", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
