@@ -77,7 +77,7 @@ function AppContent() {
     <div className="w-full min-h-screen">
       <SplashLoading />
       {/* Desktop Layout: Sidebar | Content | RightPanel */}
-      <div className="hidden md:flex w-full max-w-6xl mx-auto">
+      <div className="hidden md:flex w-full max-w-7xl mx-auto">
         {isLoggedIn && isAccountVerified && <Sidebar />}
 
         {/* Middle Content - Scrollable */}

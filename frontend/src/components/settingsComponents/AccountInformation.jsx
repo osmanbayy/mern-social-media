@@ -9,7 +9,7 @@ const AccountInformation = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
+      <div className="flex min-h-[320px] items-center justify-center">
         <LoadingSpinner size="md" />
       </div>
     );
@@ -22,17 +22,17 @@ const AccountInformation = () => {
       icon: LuUser,
     },
     {
-      label: "Kullanıcı Adı",
+      label: "Kullanıcı adı",
       value: `@${authUser?.username || ""}`,
       icon: LuAtSign,
     },
     {
-      label: "E-Posta",
+      label: "E-posta",
       value: authUser?.email || "Belirtilmemiş",
       icon: LuMail,
     },
     {
-      label: "Hesap Durumu",
+      label: "Hesap durumu",
       value: authUser?.isAccountVerified ? "Doğrulanmış" : "Doğrulanmamış",
       icon: LuBadgeCheck,
       isVerified: authUser?.isAccountVerified,
@@ -40,41 +40,41 @@ const AccountInformation = () => {
   ];
 
   return (
-    <div className="w-full flex flex-col gap-6">
-      {/* Profile Card */}
-      <div className="p-6 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 shadow-lg">
-        <h3 className="text-lg font-semibold mb-6 text-base-content">
-          Hesap Bilgileri
-        </h3>
-        <div className="flex flex-col gap-4">
+    <div className="flex w-full flex-col gap-6">
+      <div className="rounded-3xl border border-base-300/55 bg-gradient-to-b from-base-100 to-base-200/25 p-6 shadow-xl ring-1 ring-black/5 dark:to-base-300/15 dark:ring-white/5 md:p-8">
+        <h3 className="mb-6 text-base font-bold text-base-content">Kayıtlı bilgiler</h3>
+        <div className="flex flex-col gap-3">
           {infoItems.map((item, index) => {
             const Icon = item.icon;
             return (
               <div
                 key={index}
-                className="flex items-center gap-4 p-4 rounded-xl bg-base-100/50 hover:bg-base-100/70 transition-colors border border-base-300/30"
+                className="flex items-center gap-4 rounded-2xl border border-base-300/40 bg-base-100/60 p-4 transition hover:border-accent/25 hover:bg-base-100"
               >
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Icon className="w-5 h-5 text-primary" />
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/12 text-accent">
+                  <Icon className="h-5 w-5" strokeWidth={2} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-base-content/60 mb-1">{item.label}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="mb-0.5 text-[11px] font-medium uppercase tracking-wide text-base-content/45">
+                    {item.label}
+                  </p>
                   <p
-                    className={`text-sm font-medium truncate ${
+                    className={`truncate text-sm font-semibold ${
                       item.isVerified
-                        ? "text-emerald-500"
+                        ? "text-success"
                         : item.isVerified === false
-                        ? "text-amber-500"
-                        : "text-base-content"
+                          ? "text-warning"
+                          : "text-base-content"
                     }`}
                   >
                     {item.value}
                   </p>
                 </div>
                 {item.isVerified && (
-                  <div className="flex-shrink-0">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  </div>
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-40" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" />
+                  </span>
                 )}
               </div>
             );
@@ -82,13 +82,13 @@ const AccountInformation = () => {
         </div>
       </div>
 
-      {/* Edit Profile Button */}
       <div className="flex justify-end">
         <button
-          className="btn btn-outline rounded-full btn-sm"
+          type="button"
+          className="btn btn-outline btn-accent rounded-full px-6 font-semibold shadow-sm"
           onClick={() => navigate("/edit-profile")}
         >
-          Bilgilerini Düzenle
+          Bilgilerini düzenle
         </button>
       </div>
     </div>
