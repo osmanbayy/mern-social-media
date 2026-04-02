@@ -14,7 +14,7 @@ import { useAutoAnimate } from '@formkit/auto-animate/react'
 import PasswordStrengthIndicator from "../../../components/auth/PasswordStrengthIndicator";
 import StatusNotice from "../../../components/common/StatusNotice";
 
-const SignUpPage = () => {
+function SignupPage() {
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -90,10 +90,10 @@ const SignUpPage = () => {
   }, [isPending]);
 
   return (
-    <div className="min-h-screen w-full bg-base-100">
+    <div className="min-h-screen w-full bg-gradient-to-b from-base-200/35 via-base-100 to-base-100 dark:from-base-300/15">
       <div className="grid min-h-screen w-full lg:grid-cols-2">
-        <div className="hidden h-full w-full lg:flex flex-col items-center justify-center gap-6 px-10">
-          <OSSvg forceDark className="w-full max-w-md" />
+        <div className="hidden h-full w-full lg:flex lg:flex-col lg:items-center lg:justify-center lg:gap-6 lg:px-10 lg:bg-gradient-to-br lg:from-base-200/45 lg:to-base-100 dark:lg:from-base-300/25 dark:lg:to-base-100">
+          <OSSvg className="w-full max-w-md" />
           <div className="max-w-md space-y-2 text-center">
             <h2 className="text-2xl font-bold">Yeni nesil sosyal deneyim</h2>
             <p className="text-base-content/70">
@@ -102,9 +102,9 @@ const SignUpPage = () => {
           </div>
         </div>
         <div className="flex h-full w-full items-center justify-center px-4 py-8 md:px-8">
-          <div className="w-full max-w-md rounded-3xl border border-base-300/60 bg-base-100 p-6 shadow-2xl md:p-8">
+          <div className="w-full max-w-md rounded-3xl border border-base-300/50 bg-base-100/95 p-6 shadow-xl ring-1 ring-black/[0.04] backdrop-blur-sm dark:border-base-300/50 dark:ring-white/[0.06] md:p-8">
             <div className="mb-6 flex flex-col items-center gap-3">
-              <OSSvg forceDark className="w-20 h-20 md:hidden flex-shrink-0" />
+              <OSSvg className="h-20 w-20 shrink-0 md:hidden" />
               <h1 className="text-3xl font-extrabold">Hesap oluştur</h1>
               <p className="text-center text-sm text-base-content/70">
                 Bilgilerini doldur, hemen başla.
@@ -245,5 +245,6 @@ const SignUpPage = () => {
       </div>
     </div>
   );
-};
-export default SignUpPage;
+}
+
+export default SignupPage;

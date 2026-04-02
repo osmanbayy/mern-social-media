@@ -190,10 +190,6 @@ const ProfilePage = () => {
     }
   }, [showShareModal]);
 
-  const dropdownPanelClass =
-    `dropdown-content z-[100] mt-2 min-w-[15rem] overflow-hidden rounded-2xl border border-base-300/50 bg-base-100/98 p-1.5 font-semibold shadow-2xl ring-1 backdrop-blur-xl transition-all duration-200 ease-out ` +
-    (theme === "dark" ? "shadow-black/40 ring-white/10" : "shadow-black/20 ring-black/5");
-
   return (
     <>
       <div className="min-h-screen w-full bg-gradient-to-b from-base-200/30 via-base-100 to-base-100 pb-24 dark:from-base-300/12 lg:pb-0">
@@ -326,44 +322,54 @@ const ProfilePage = () => {
                         </button>
                       ) : (
                         <>
-                          <div className="dropdown dropdown-end">
-                            <button
+                          <div className="dropdown dropdown-end shrink-0">
+                            <HiDotsHorizontal
                               ref={dropdownTriggerRef}
-                              type="button"
-                              className="btn btn-circle btn-ghost btn-sm border border-base-300/45"
+                              tabIndex={0}
+                              role="button"
+                              className="size-5 rounded-full hover:invert-50"
                               aria-label="Daha fazla"
+                            />
+                            <ul
+                              ref={dropdownMenuRef}
+                              tabIndex={0}
+                              className={`dropdown-content rounded-xl border border-base-300/50 menu bg-base-100/95 backdrop-blur-xl z-[100] font-semibold min-w-60 max-w-[min(15rem,calc(100vw-1rem))] p-2 shadow-2xl transition-all duration-200 ease-out ${
+                                theme === "dark"
+                                  ? "shadow-black/40 ring-1 ring-white/10"
+                                  : "shadow-black/20 ring-1 ring-black/5"
+                              }`}
+                              style={{
+                                boxShadow:
+                                  theme === "dark"
+                                    ? "0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1)"
+                                    : "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+                                animation: "dropdownFadeIn 0.2s ease-out",
+                              }}
                             >
-                              <HiDotsHorizontal
-                                tabIndex={0}
-                                role="button"
-                                className="size-5 cursor-pointer border-none outline-none"
-                              />
-                            </button>
-                            <ul ref={dropdownMenuRef} tabIndex={0} className={dropdownPanelClass}>
                               <li
-                                className="rounded-xl transition-colors hover:bg-base-200/50"
-                                onClick={handleBlockClick}
-                              >
-                                <a className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 whitespace-nowrap">
-                                  <GoBlocked className="shrink-0" /> <span>Engelle</span>
-                                </a>
-                              </li>
-                              <li className="rounded-xl transition-colors hover:bg-base-200/50">
-                                <a className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 whitespace-nowrap">
-                                  <GoMute className="shrink-0" /> <span>Sessize Al</span>
-                                </a>
-                              </li>
-                              <li
-                                className="rounded-xl transition-colors hover:bg-base-200/50"
+                                className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
                                 onClick={handleShareModalOpen}
                               >
-                                <a className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 whitespace-nowrap">
-                                  <LuShare2 className="shrink-0" /> <span>Profili Paylaş</span>
+                                <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+                                  <LuShare2 /> <span>Profili Paylaş</span>
                                 </a>
                               </li>
-                              <li className="rounded-xl transition-colors hover:bg-base-200/50">
-                                <a className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 whitespace-nowrap">
-                                  <CiFlag1 className="shrink-0" /> <span>Bildir</span>
+                              <li className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg">
+                                <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+                                  <GoMute /> <span>Sessize Al</span>
+                                </a>
+                              </li>
+                              <li
+                                className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
+                                onClick={handleBlockClick}
+                              >
+                                <a className="rounded-none flex whitespace-nowrap cursor-pointer">
+                                  <GoBlocked /> <span>Engelle</span>
+                                </a>
+                              </li>
+                              <li>
+                                <a href="" className="rounded-none whitespace-nowrap" onClick={(e) => e.preventDefault()}>
+                                  <CiFlag1 /> Bildir{" "}
                                 </a>
                               </li>
                             </ul>

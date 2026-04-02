@@ -5,6 +5,34 @@
   themes: nord --default, dark --prefersdark, dark;
 }
 
+/*
+  Açık tema (nord): varsayılan çok parlak; göz yorgunluğu ve düşük kontrast.
+  Yüzeyleri koyulaştırıp metin ve vurgu renklerini güçlendiriyoruz.
+*/
+[data-theme="nord"] {
+  color-scheme: light;
+  --color-base-100: oklch(89% 0.009 262);
+  --color-base-200: oklch(84% 0.011 262);
+  --color-base-300: oklch(74% 0.016 262);
+  --color-base-content: oklch(21% 0.032 264);
+  --color-primary: oklch(48% 0.11 254);
+  --color-primary-content: oklch(98% 0.01 254);
+  --color-secondary: oklch(58% 0.08 248);
+  --color-secondary-content: oklch(98% 0.015 248);
+  --color-accent: oklch(52% 0.14 250);
+  --color-accent-content: oklch(98% 0.02 250);
+  --color-neutral: oklch(36% 0.04 264);
+  --color-neutral-content: oklch(96% 0.012 262);
+  --color-info: oklch(52% 0.1 240);
+  --color-info-content: oklch(98% 0.02 240);
+  --color-success: oklch(42% 0.12 145);
+  --color-success-content: oklch(97% 0.02 145);
+  --color-warning: oklch(55% 0.14 75);
+  --color-warning-content: oklch(16% 0.04 75);
+  --color-error: oklch(48% 0.14 18);
+  --color-error-content: oklch(97% 0.02 18);
+}
+
 @font-face {
   font-family: billabong;
   src: url('../src/assets/fonts/Billabong.otf');
