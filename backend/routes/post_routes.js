@@ -1,5 +1,7 @@
 import express from "express";
 import { protect_route } from "../middlewares/protect_route.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
+import { postWriteLimiter } from "../middlewares/rateLimit.js";
 import {
   comment_on_post,
   create_post,
@@ -23,40 +25,106 @@ import {
   edit_comment,
   search_posts,
   retweet_post,
-  quote_retweet
+  quote_retweet,
 } from "../controllers/post_controller.js";
+import * as pv from "../validators/post.validators.js";
 
 const router = express.Router();
 
-// Specific routes first (before parameterized routes)
-router.get("/all", protect_route, get_all_posts);
-router.get("/following", protect_route, get_following_posts);
-router.get("/search", protect_route, search_posts);
-router.post("/create", protect_route, create_post);
+router.get(
+  "/all",
+  protect_route,
+  pv.paginationQueryValidators,
+  validateRequest,
+  get_all_posts
+);
+router.get(
+  "/following",
+  protect_route,
+  pv.paginationQueryValidators,
+  validateRequest,
+  get_following_posts
+);
+router.get("/search", protect_route, pv.searchPostsValidators, validateRequest, search_posts);
+router.post(
+  "/create",
+  protect_route,
+  postWriteLimiter,
+  pv.createPostValidators,
+  validateRequest,
+  pv.requirePostContent,
+  create_post
+);
 
-// Routes with specific paths before :id
-router.get("/likes/:id", protect_route, get_liked_posts);
-router.get("/user/:username", protect_route, get_user_posts);
-router.get("/saved/:id", get_saved_posts);
-router.get("/hidden/:id", protect_route, get_hidden_posts);
-router.post("/save/:id", protect_route, save_unsave_post);
-router.post("/hide/:id", protect_route, hide_post);
-router.post("/like/:id", protect_route, like_unlike_post);
-router.post("/comment/:id", protect_route, comment_on_post);
-router.post("/pin/:id", protect_route, pin_unpin_post);
-router.post("/retweet/:id", protect_route, retweet_post);
-router.post("/quote/:id", protect_route, quote_retweet);
-router.delete("/hide/:id", protect_route, unhide_post);
+router.get("/likes/:id", protect_route, pv.userProfileIdParam, validateRequest, get_liked_posts);
+router.get("/user/:username", protect_route, pv.usernameParam, validateRequest, get_user_posts);
+router.get("/saved/:id", pv.userProfileIdParam, validateRequest, get_saved_posts);
+router.get("/hidden/:id", protect_route, pv.userProfileIdParam, validateRequest, get_hidden_posts);
+router.post("/save/:id", protect_route, pv.postIdParam, validateRequest, save_unsave_post);
+router.post("/hide/:id", protect_route, pv.postIdParam, validateRequest, hide_post);
+router.post("/like/:id", protect_route, pv.postIdParam, validateRequest, like_unlike_post);
+router.post(
+  "/comment/:id",
+  protect_route,
+  postWriteLimiter,
+  pv.commentValidators,
+  validateRequest,
+  comment_on_post
+);
+router.post("/pin/:id", protect_route, pv.postIdParam, validateRequest, pin_unpin_post);
+router.post("/retweet/:id", protect_route, pv.postIdParam, validateRequest, retweet_post);
+router.post(
+  "/quote/:id",
+  protect_route,
+  postWriteLimiter,
+  pv.quoteRetweetValidators,
+  validateRequest,
+  pv.requirePostContent,
+  quote_retweet
+);
+router.delete("/hide/:id", protect_route, pv.postIdParam, validateRequest, unhide_post);
 
-// Comment routes
-router.post("/comment/:postId/:commentId/like", protect_route, like_unlike_comment);
-router.post("/comment/:postId/:commentId/reply", protect_route, reply_to_comment);
-router.delete("/comment/:postId/:commentId", protect_route, delete_comment);
-router.put("/comment/:postId/:commentId", protect_route, edit_comment);
+router.post(
+  "/comment/:postId/:commentId/like",
+  protect_route,
+  pv.commentNestedValidators,
+  validateRequest,
+  like_unlike_comment
+);
+router.post(
+  "/comment/:postId/:commentId/reply",
+  protect_route,
+  postWriteLimiter,
+  pv.replyValidators,
+  validateRequest,
+  reply_to_comment
+);
+router.delete(
+  "/comment/:postId/:commentId",
+  protect_route,
+  pv.commentNestedValidators,
+  validateRequest,
+  delete_comment
+);
+router.put(
+  "/comment/:postId/:commentId",
+  protect_route,
+  postWriteLimiter,
+  pv.editCommentValidators,
+  validateRequest,
+  edit_comment
+);
 
-// Parameterized routes last (/:id)
-router.get("/:id", protect_route, get_single_post);
-router.put("/:id", protect_route, edit_post);
-router.delete("/:id", protect_route, delete_post);
+router.get("/:id", protect_route, pv.postIdParam, validateRequest, get_single_post);
+router.put(
+  "/:id",
+  protect_route,
+  postWriteLimiter,
+  pv.editPostValidators,
+  validateRequest,
+  pv.requirePostContent,
+  edit_post
+);
+router.delete("/:id", protect_route, pv.postIdParam, validateRequest, delete_post);
 
 export default router;

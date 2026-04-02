@@ -13,6 +13,7 @@ import cookieParser from "cookie-parser";
 import connect_mongodb from "./database/connect_mongodb.js";
 import { v2 as cloudinary } from "cloudinary";
 import cors from "cors";
+import { globalApiLimiter } from "./middlewares/rateLimit.js";
 
 import "./models/message_request_model.js";
 import "./models/conversation_model.js";
@@ -83,6 +84,10 @@ app.use(
     credentials: true,
   })
 );
+
+/** X-Forwarded-For (Vercel/proxy) ile doğru IP; rate limit için gerekli */
+app.set("trust proxy", Number(process.env.TRUST_PROXY) || 1);
+app.use("/api", globalApiLimiter);
 
 app.get("/", (req, res) => {
   res.json({
