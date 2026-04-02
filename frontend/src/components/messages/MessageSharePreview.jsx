@@ -11,12 +11,12 @@ const MessageSharePreview = ({ share, mine, className = "" }) => {
   if (!share?.kind) return null;
 
   const shellMine =
-    "w-full text-left shadow-lg ring-1 transition duration-200 hover:brightness-[1.03] active:scale-[0.99] " +
+    "min-w-0 w-full max-w-full text-left shadow-lg ring-1 transition duration-200 hover:brightness-[1.03] active:scale-[0.99] " +
     "rounded-2xl overflow-hidden " +
     "border border-primary-content/20 bg-primary-content/[0.11] ring-primary-content/15";
 
   const shellTheirs =
-    "w-full text-left shadow-lg ring-1 transition duration-200 hover:bg-base-200/40 active:scale-[0.99] " +
+    "min-w-0 w-full max-w-full text-left shadow-lg ring-1 transition duration-200 hover:bg-base-200/40 active:scale-[0.99] " +
     "rounded-2xl overflow-hidden " +
     "border border-base-300/55 bg-base-100 ring-black/[0.04] dark:ring-white/[0.06]";
 
@@ -102,7 +102,7 @@ const MessageSharePreview = ({ share, mine, className = "" }) => {
 
           {(snippet || !hasImage) && (
             <p
-              className={`mt-3 line-clamp-5 text-left text-[14px] leading-relaxed ${
+              className={`mt-3 line-clamp-5 text-left text-[14px] leading-relaxed [overflow-wrap:anywhere] [word-break:break-word] ${
                 mine ? "text-primary-content/88" : "text-base-content/80"
               }`}
             >

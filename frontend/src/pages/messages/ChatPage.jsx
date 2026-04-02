@@ -254,10 +254,10 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-[100dvh] max-h-[100dvh] min-h-0 w-full flex-col bg-base-100">
+    <div className="flex h-[100dvh] max-h-[100dvh] min-h-0 w-full min-w-0 flex-col overflow-x-hidden bg-base-100">
       {/* Header */}
       <header className="sticky top-0 z-30 shrink-0 border-b border-base-300/60 bg-base-100/90 shadow-sm backdrop-blur-lg backdrop-saturate-150">
-        <div className="flex w-full items-center gap-1 px-1 py-2 sm:px-2 sm:py-2.5">
+        <div className="flex w-full min-w-0 max-w-full items-center gap-1 px-1 py-2 sm:px-2 sm:py-2.5">
           <button
             type="button"
             className="btn btn-ghost btn-sm btn-circle shrink-0"
@@ -268,7 +268,7 @@ const ChatPage = () => {
           </button>
           <button
             type="button"
-            className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-2 py-1.5 text-left transition-colors hover:bg-base-200/70"
+            className="flex min-w-0 max-w-full flex-1 items-center gap-3 rounded-2xl px-2 py-1.5 text-left transition-colors hover:bg-base-200/70"
             onClick={() => otherUser && navigate(`/profile/${otherUser.username}`)}
           >
             <div className="relative shrink-0">
@@ -297,7 +297,7 @@ const ChatPage = () => {
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="scrollbar-hide min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-base-200/25 via-base-100 to-base-100 px-1 py-4 sm:px-2"
+        className="scrollbar-hide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-base-200/25 via-base-100 to-base-100 px-3 py-4 sm:px-4"
       >
         {isLoading && (
           <div className="flex justify-center py-16">
@@ -318,7 +318,7 @@ const ChatPage = () => {
         )}
 
         {!isLoading && messages.length > 0 && (
-          <div className="flex w-full flex-col gap-1 pb-2">
+          <div className="flex w-full min-w-0 max-w-full flex-col gap-1 pb-2">
             {timeline.map((row) => {
               if (row.kind === "day") {
                 return (
@@ -363,33 +363,19 @@ const ChatPage = () => {
               return (
                 <div
                   key={m._id}
-                  className={`flex gap-2 ${mine ? "justify-end" : "justify-start"} ${
+                  className={`flex w-full min-w-0 max-w-full ${mine ? "justify-end" : "justify-start"} ${
                     clusterTop ? "mt-2" : "mt-0.5"
                   }`}
                 >
-                  {!mine && (
-                    <div className="w-8 shrink-0 self-end pb-1">
-                      {clusterTop ? (
-                        <img
-                          src={otherUser?.profileImage || defaultProfilePicture}
-                          alt=""
-                          className="h-8 w-8 rounded-full object-cover ring-1 ring-base-300/60"
-                        />
-                      ) : (
-                        <span className="block w-8" aria-hidden />
-                      )}
-                    </div>
-                  )}
-
                   <div
-                    className={`flex flex-col ${mine ? "items-end" : "items-start"} ${
+                    className={`flex min-w-0 max-w-full flex-col ${mine ? "items-end" : "items-start"} ${
                       m.share?.kind
-                        ? "w-full max-w-[min(96%,min(26rem,100vw))] sm:max-w-[min(96%,28rem)]"
-                        : "max-w-[min(85%,28rem)]"
+                        ? "w-full max-w-[min(96%,min(26rem,calc(100vw-1.5rem)))] sm:max-w-[min(96%,28rem)]"
+                        : "w-full max-w-[min(28rem,85%,calc(100vw-1.5rem))]"
                     }`}
                   >
                     <div
-                      className={`relative text-[15px] leading-relaxed shadow-sm ${bubbleRadius} ${
+                      className={`relative min-w-0 max-w-full text-[15px] leading-relaxed shadow-sm ${bubbleRadius} ${
                         m.share?.kind ? "px-2 py-2 sm:px-2.5 sm:py-2.5" : "px-3.5 py-2.5"
                       } ${
                         mine
@@ -402,7 +388,7 @@ const ChatPage = () => {
                       ) : null}
                       {visibleMessageText(m.text) ? (
                         <p
-                          className={`whitespace-pre-wrap break-words ${m.share?.kind ? "mt-2" : ""}`}
+                          className={`max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] ${m.share?.kind ? "mt-2" : ""}`}
                         >
                           {m.text}
                         </p>
@@ -431,8 +417,6 @@ const ChatPage = () => {
                       </span>
                     )}
                   </div>
-
-                  {mine && <div className="w-8 shrink-0" aria-hidden />}
                 </div>
               );
             })}
@@ -442,15 +426,15 @@ const ChatPage = () => {
       </div>
 
       {/* Composer */}
-      <div className="shrink-0 border-t border-base-300/60 bg-base-100/95 px-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md sm:px-2">
+      <div className="min-w-0 shrink-0 border-t border-base-300/60 bg-base-100/95 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md sm:px-3">
         <form
-          className="flex w-full items-end gap-2"
+          className="flex w-full min-w-0 max-w-full items-end gap-2"
           onSubmit={handleSubmit}
         >
-          <label className="relative min-h-[48px] flex-1">
+          <label className="relative min-h-[48px] min-w-0 flex-1">
             <textarea
               ref={textareaRef}
-              className="textarea w-full resize-none border border-base-300/70 bg-base-200/40 py-3 pl-4 pr-3 text-sm leading-normal text-base-content placeholder:text-base-content/40 focus:border-primary/40 focus:bg-base-100 focus:outline-none focus:ring-2 focus:ring-primary/15 rounded-2xl min-h-[48px] max-h-[120px]"
+              className="textarea w-full min-w-0 max-w-full resize-none border border-base-300/70 bg-base-200/40 py-3 pl-4 pr-3 text-sm leading-normal text-base-content placeholder:text-base-content/40 focus:border-primary/40 focus:bg-base-100 focus:outline-none focus:ring-2 focus:ring-primary/15 rounded-2xl min-h-[48px] max-h-[120px] [overflow-wrap:anywhere]"
               placeholder="Mesaj yazın…"
               rows={1}
               value={text}
