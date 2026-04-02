@@ -33,8 +33,42 @@ const PORT = process.env.PORT || 8000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use(express.json({ limit: "10mb" }));
+app.use(
+  express.json({
+    limit: "10mb",
+    verify: (req, res, buf) => {
+      if (buf?.length) req.rawBody = buf;
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true }));
+
+/** Bazı proxy’ler (ör. Vite dev) gövdeyi express.json’a ulaştırmaz; ham buffer’dan tekrar dene */
+app.use((req, res, next) => {
+  const b = req.body;
+  const emptyObject = b && typeof b === "object" && !Array.isArray(b) && Object.keys(b).length === 0;
+  const missing = b === undefined || b === null;
+  if (
+    req.method !== "GET" &&
+    req.method !== "HEAD" &&
+    (missing || emptyObject) &&
+    req.rawBody &&
+    Buffer.byteLength(req.rawBody) > 0
+  ) {
+    const ct = (req.headers["content-type"] || "").toLowerCase();
+    if (ct.includes("application/json")) {
+      try {
+        const parsed = JSON.parse(req.rawBody.toString("utf8"));
+        if (parsed && typeof parsed === "object") {
+          req.body = parsed;
+        }
+      } catch {
+        /* bırak */
+      }
+    }
+  }
+  next();
+});
 
 app.use(cookieParser());
 

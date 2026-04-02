@@ -15,9 +15,24 @@ const messageSchema = new mongoose.Schema(
     },
     text: {
       type: String,
-      required: true,
       maxlength: 4000,
       trim: true,
+      default: "",
+    },
+    /** Gönderi veya profil kartı */
+    share: {
+      kind: {
+        type: String,
+        enum: ["post", "profile"],
+      },
+      post: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+      },
+      profileUser: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
     },
     /** Karşı taraf okudu mu (görüldü). `read` Mongoose ile çakışabildiği için readReceipt */
     readReceipt: {
@@ -29,6 +44,20 @@ const messageSchema = new mongoose.Schema(
 );
 
 messageSchema.index({ conversation: 1, createdAt: -1 });
+
+messageSchema.pre("validate", function (next) {
+  const hasShare = this.share && this.share.kind;
+  if (!hasShare && (!this.text || !String(this.text).trim())) {
+    return next(new Error("Mesaj boş olamaz."));
+  }
+  if (hasShare && this.share.kind === "post" && !this.share.post) {
+    return next(new Error("Paylaşılan gönderi gerekli."));
+  }
+  if (hasShare && this.share.kind === "profile" && !this.share.profileUser) {
+    return next(new Error("Paylaşılan profil gerekli."));
+  }
+  next();
+});
 
 const Message = mongoose.model("Message", messageSchema);
 export default Message;

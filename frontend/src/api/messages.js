@@ -24,16 +24,92 @@ const handleResponse = async (response) => {
   return data;
 };
 
-export const sendMessage = async (toUserId, text) => {
+const normalizeShareForApi = (s) => {
+  if (!s || typeof s !== "object" || Array.isArray(s)) return null;
+  let kind = s.kind;
+  if (kind == null || kind === "") {
+    if (s.postId != null && String(s.postId).trim() !== "") {
+      kind = "post";
+    } else if (
+      (s.userId != null && String(s.userId).trim() !== "") ||
+      (s.profileUser != null && String(s.profileUser).trim() !== "")
+    ) {
+      kind = "profile";
+    }
+  }
+  if (kind == null || kind === "") return null;
+  kind = String(kind).toLowerCase().trim();
+  if (kind === "post") {
+    const postId =
+      s.postId != null && s.postId !== ""
+        ? String(s.postId)
+        : s.post != null && s.post !== ""
+          ? String(s.post)
+          : "";
+    if (!postId) return null;
+    return { kind: "post", postId };
+  }
+  if (kind === "profile") {
+    const userId =
+      s.userId != null && s.userId !== ""
+        ? String(s.userId)
+        : s.profileUser != null && s.profileUser !== ""
+          ? String(s.profileUser)
+          : "";
+    if (!userId) return null;
+    return { kind: "profile", userId };
+  }
+  return null;
+};
+
+/**
+ * @param {string} toUserId
+ * @param {string | { text?: string; share?: { kind: 'post' | 'profile'; postId?: string; userId?: string; post?: string; profileUser?: string } }} payload
+ */
+export const sendMessage = async (toUserId, payload = {}) => {
   const id = toUserId != null ? String(toUserId).trim() : "";
   if (!id || id === "undefined") {
     throw new Error("Alıcı bulunamadı. Sayfayı yenileyip tekrar deneyin.");
   }
+
+  const opts =
+    typeof payload === "string"
+      ? { text: payload }
+      : payload && typeof payload === "object"
+        ? payload
+        : {};
+
+  const text = opts.text != null ? String(opts.text) : "";
+  let rawShare = opts.share;
+  if (rawShare != null && typeof rawShare === "object") {
+    try {
+      rawShare = JSON.parse(JSON.stringify(rawShare));
+    } catch {
+      /* yut */
+    }
+  }
+  const share = normalizeShareForApi(rawShare);
+
+  const hasShareObject = rawShare != null && typeof rawShare === "object";
+  if (hasShareObject && !share) {
+    throw new Error("Paylaşım bilgisi eksik veya geçersiz.");
+  }
+  if (!share && !text.trim()) {
+    throw new Error("Mesaj boş olamaz.");
+  }
+
+  /** Sunucu paylaşımda boş metin için \u2060 kullanır; isteğe text göndermeyebiliriz */
+  const body = share
+    ? text.trim()
+      ? { share, text }
+      : { share }
+    : { text };
+
   const response = await fetch(`${API_BASE}/send/${encodeURIComponent(id)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(body),
   });
   return handleResponse(response);
 };

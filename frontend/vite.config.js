@@ -18,12 +18,21 @@ function readBackendPortFromRootEnv() {
   }
 }
 
+/** /api ile biten hedef çift /api/api/messages üretir; proxy kırılır */
+function normalizeProxyTarget(url) {
+  if (!url) return null;
+  let u = String(url).replace(/\/+$/, "");
+  if (u.endsWith("/api")) u = u.slice(0, -4);
+  return u;
+}
+
 // https://vite.dev/config/
 export default defineConfig(() => {
   const portFromRoot = readBackendPortFromRootEnv();
-  const proxyTarget =
+  const rawTarget =
     process.env.VITE_API_BASE_URL ||
     `http://localhost:${portFromRoot || process.env.PORT || "8000"}`;
+  const proxyTarget = normalizeProxyTarget(rawTarget) || rawTarget;
 
   return {
     plugins: [

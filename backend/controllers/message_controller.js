@@ -3,7 +3,84 @@ import Message from "../models/message_model.js";
 import MessageRequest from "../models/message_request_model.js";
 import User from "../models/user_model.js";
 import Notification from "../models/notification_model.js";
+import Post from "../models/post_model.js";
 import { emitToUser } from "../lib/socket_emit.js";
+
+const SHARE_PREVIEW = {
+  post: "Bir gönderi paylaştı",
+  profile: "Bir profil paylaştı",
+};
+
+const lastPreviewForMessage = (text, shareDoc) => {
+  if (shareDoc?.kind === "post") return SHARE_PREVIEW.post;
+  if (shareDoc?.kind === "profile") return SHARE_PREVIEW.profile;
+  return String(text || "").slice(0, 120);
+};
+
+/** İstemciden gelen share gövdesini doğrula; yoksa share: null */
+const validateSharePayload = async (raw) => {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { ok: true, share: null };
+  }
+  let kind = raw.kind;
+  if (kind == null || kind === "") {
+    if (raw.postId != null && String(raw.postId).trim() !== "") {
+      kind = "post";
+    } else if (
+      (raw.userId != null && String(raw.userId).trim() !== "") ||
+      (raw.profileUser != null && String(raw.profileUser).trim() !== "")
+    ) {
+      kind = "profile";
+    }
+  }
+  if (kind == null || kind === "") {
+    return { ok: true, share: null };
+  }
+  kind = String(kind).toLowerCase().trim();
+  if (kind === "post") {
+    const postId = raw.postId ?? raw.post;
+    if (postId == null || String(postId).trim() === "") {
+      return { ok: false, status: 400, message: "Geçersiz gönderi." };
+    }
+    const post = await Post.findById(String(postId)).lean();
+    if (!post) return { ok: false, status: 404, message: "Gönderi bulunamadı." };
+    return { ok: true, share: { kind: "post", post: post._id } };
+  }
+  if (kind === "profile") {
+    const profileUserId = raw.userId ?? raw.profileUser;
+    if (profileUserId == null || String(profileUserId).trim() === "") {
+      return { ok: false, status: 400, message: "Geçersiz profil." };
+    }
+    const u = await User.findById(String(profileUserId)).select("_id").lean();
+    if (!u) return { ok: false, status: 404, message: "Kullanıcı bulunamadı." };
+    return { ok: true, share: { kind: "profile", profileUser: u._id } };
+  }
+  return { ok: false, status: 400, message: "Geçersiz paylaşım." };
+};
+
+const populateMessageOutgoing = async (msgId) => {
+  const populated = await Message.findById(msgId)
+    .populate("sender", "username profileImage fullname")
+    .populate({
+      path: "share.post",
+      select: "text img user createdAt",
+      populate: { path: "user", select: "username profileImage fullname" },
+    })
+    .populate("share.profileUser", "username profileImage fullname bio")
+    .lean();
+  if (!populated) return null;
+  return { ...populated, read: populated.readReceipt === true };
+};
+
+const messageQueryPopulate = [
+  { path: "sender", select: "username profileImage fullname" },
+  {
+    path: "share.post",
+    select: "text img user createdAt",
+    populate: { path: "user", select: "username profileImage fullname" },
+  },
+  { path: "share.profileUser", select: "username profileImage fullname bio" },
+];
 
 const sortParticipantIds = (a, b) => {
   const sa = a.toString();
@@ -39,22 +116,103 @@ const isEitherBlocked = (fromUser, toUser) => {
   return false;
 };
 
+/** Vercel / proxy bazen body'yi string veya Buffer verir; share düz kökte de gelebilir */
+const normalizeRequestBody = (raw) => {
+  if (raw == null) return {};
+  if (Buffer.isBuffer(raw)) {
+    try {
+      const o = JSON.parse(raw.toString("utf8"));
+      return o && typeof o === "object" && !Array.isArray(o) ? o : {};
+    } catch {
+      return {};
+    }
+  }
+  if (typeof raw === "string") {
+    try {
+      const o = JSON.parse(raw);
+      return o && typeof o === "object" && !Array.isArray(o) ? o : {};
+    } catch {
+      return {};
+    }
+  }
+  if (typeof raw === "object" && !Array.isArray(raw)) return raw;
+  return {};
+};
+
+const pickShareInput = (body) => {
+  const b = normalizeRequestBody(body);
+  const nested = b.share ?? b.Share;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) return nested;
+  if (b.postId != null && String(b.postId).trim() !== "") {
+    return {
+      kind:
+        b.kind != null && String(b.kind).trim() !== ""
+          ? String(b.kind).toLowerCase().trim()
+          : "post",
+      postId: b.postId,
+    };
+  }
+  return undefined;
+};
+
 export const send_message = async (req, res) => {
   try {
-    const { text } = req.body;
+    let incoming = normalizeRequestBody(req.body);
+    if (
+      Object.keys(incoming).length === 0 &&
+      req.rawBody &&
+      Buffer.byteLength(req.rawBody) > 0
+    ) {
+      incoming = normalizeRequestBody(req.rawBody);
+    }
+    const shareInput = pickShareInput(incoming);
+    const text = incoming.text;
     const toUserId = req.params.toUserId;
     const fromUserId = req.user._id;
 
     if (!toUserId || toUserId === "undefined") {
       return res.status(400).json({ message: "Geçersiz alıcı." });
     }
-
-    if (!text || !String(text).trim()) {
-      return res.status(400).json({ message: "Mesaj boş olamaz." });
-    }
     if (toUserId === fromUserId.toString()) {
       return res.status(400).json({ message: "Kendinize mesaj gönderemezsiniz." });
     }
+
+    const shareResult = await validateSharePayload(shareInput);
+    if (!shareResult.ok) {
+      return res.status(shareResult.status).json({ message: shareResult.message });
+    }
+    const shareDoc = shareResult.share;
+
+    const trimmed = text != null ? String(text).trim() : "";
+    const hadShareIntent =
+      (shareInput &&
+        typeof shareInput === "object" &&
+        !Array.isArray(shareInput) &&
+        (shareInput.kind != null ||
+          shareInput.postId != null ||
+          shareInput.post != null ||
+          shareInput.userId != null ||
+          shareInput.profileUser != null)) ||
+      (incoming.postId != null && String(incoming.postId).trim() !== "");
+
+    if (!trimmed && !shareDoc) {
+      if (hadShareIntent) {
+        return res.status(400).json({ message: "Paylaşım doğrulanamadı." });
+      }
+      const emptyPayload = Object.keys(incoming).length === 0;
+      return res.status(400).json({
+        message: "Mesaj boş olamaz.",
+        ...(emptyPayload && {
+          hint:
+            "Sunucu gövdeyi alamadı. POST ile Content-Type: application/json kullanın; örnek: {\"share\":{\"kind\":\"post\",\"postId\":\"...\"}}",
+        }),
+      });
+    }
+
+    /** Paylaşım + boş metin: şema/önizleme için görünmez işaret (UI'da gösterilmez) */
+    const SHARE_TEXT_PLACEHOLDER = "\u2060";
+    const messageText =
+      shareDoc && !trimmed ? SHARE_TEXT_PLACEHOLDER : trimmed.slice(0, 4000);
 
     const [toUser, fromUser] = await Promise.all([
       User.findById(toUserId),
@@ -69,42 +227,45 @@ export const send_message = async (req, res) => {
       return res.status(403).json({ message: "Bu kullanıcıya mesaj gönderemezsiniz." });
     }
 
-    const body = String(text).trim().slice(0, 4000);
+    const preview = lastPreviewForMessage(trimmed, shareDoc);
 
     const key = participantKey(fromUserId, toUserId);
     let conv = await Conversation.findOne({ participantKey: key });
 
+    const createMessageDoc = async (convId) =>
+      Message.create({
+        conversation: convId,
+        sender: fromUserId,
+        text: messageText,
+        ...(shareDoc ? { share: shareDoc } : {}),
+      });
+
+    const respondWithMessage = async (convLocal, msgDoc) => {
+      const msgOut = await populateMessageOutgoing(msgDoc._id);
+      if (!msgOut) {
+        return res.status(500).json({ message: "Mesaj oluşturulamadı." });
+      }
+      const payload = {
+        conversationId: convLocal._id.toString(),
+        message: msgOut,
+      };
+      emitToUser(toUserId, "message:new", payload);
+      emitToUser(fromUserId.toString(), "message:new", payload);
+      emitToUser(toUserId, "conversations:updated", { conversationId: convLocal._id.toString() });
+      emitToUser(fromUserId.toString(), "conversations:updated", {
+        conversationId: convLocal._id.toString(),
+      });
+      return res.status(201).json({ ...msgOut, conversationId: convLocal._id });
+    };
+
     // 1) Zaten açık sohbet varsa (ör. istek kabul edildikten sonra) karşılıklı takip olmasa da mesaj buraya gider
     if (conv) {
       conv.lastMessageAt = new Date();
-      conv.lastMessagePreview = body.slice(0, 120);
+      conv.lastMessagePreview = preview;
       await conv.save();
 
-      const msg = await Message.create({
-        conversation: conv._id,
-        sender: fromUserId,
-        text: body,
-      });
-
-      const populated = await Message.findById(msg._id)
-        .populate("sender", "username profileImage fullname")
-        .lean();
-
-      const msgOut = { ...populated, read: populated.readReceipt === true };
-
-      const payload = {
-        conversationId: conv._id.toString(),
-        message: msgOut,
-      };
-
-      emitToUser(toUserId, "message:new", payload);
-      emitToUser(fromUserId.toString(), "message:new", payload);
-      emitToUser(toUserId, "conversations:updated", { conversationId: conv._id.toString() });
-      emitToUser(fromUserId.toString(), "conversations:updated", {
-        conversationId: conv._id.toString(),
-      });
-
-      return res.status(201).json({ ...msgOut, conversationId: conv._id });
+      const msg = await createMessageDoc(conv._id);
+      return respondWithMessage(conv, msg);
     }
 
     // 2) Henüz sohbet yok; karşılıklı takipte yeni sohbet açılır
@@ -115,34 +276,11 @@ export const send_message = async (req, res) => {
         participantKey: key,
         participants: ids,
         lastMessageAt: new Date(),
-        lastMessagePreview: body.slice(0, 120),
+        lastMessagePreview: preview,
       });
 
-      const msg = await Message.create({
-        conversation: conv._id,
-        sender: fromUserId,
-        text: body,
-      });
-
-      const populated = await Message.findById(msg._id)
-        .populate("sender", "username profileImage fullname")
-        .lean();
-
-      const msgOut = { ...populated, read: populated.readReceipt === true };
-
-      const payload = {
-        conversationId: conv._id.toString(),
-        message: msgOut,
-      };
-
-      emitToUser(toUserId, "message:new", payload);
-      emitToUser(fromUserId.toString(), "message:new", payload);
-      emitToUser(toUserId, "conversations:updated", { conversationId: conv._id.toString() });
-      emitToUser(fromUserId.toString(), "conversations:updated", {
-        conversationId: conv._id.toString(),
-      });
-
-      return res.status(201).json({ ...msgOut, conversationId: conv._id });
+      const msg = await createMessageDoc(conv._id);
+      return respondWithMessage(conv, msg);
     }
 
     // 3) Sohbet yok ve karşılıklı takip yok → mesaj isteği
@@ -160,7 +298,8 @@ export const send_message = async (req, res) => {
     const reqDoc = await MessageRequest.create({
       from: fromUserId,
       to: toUserId,
-      text: body,
+      text: messageText,
+      ...(shareDoc ? { share: shareDoc } : {}),
     });
 
     await Notification.create({
@@ -172,6 +311,12 @@ export const send_message = async (req, res) => {
 
     const populatedReq = await MessageRequest.findById(reqDoc._id)
       .populate("from", "username profileImage fullname")
+      .populate({
+        path: "share.post",
+        select: "text img user createdAt",
+        populate: { path: "user", select: "username profileImage fullname" },
+      })
+      .populate("share.profileUser", "username profileImage fullname bio")
       .lean();
 
     emitToUser(toUserId, "message_request:new", { request: populatedReq });
@@ -230,7 +375,7 @@ export const get_messages = async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate("sender", "username profileImage fullname")
+        .populate(messageQueryPopulate)
         .lean(),
       Message.countDocuments({ conversation: conversationId }),
     ]);
@@ -308,6 +453,12 @@ export const get_incoming_requests = async (req, res) => {
     })
       .sort({ createdAt: -1 })
       .populate("from", "username profileImage fullname")
+      .populate({
+        path: "share.post",
+        select: "text img user createdAt",
+        populate: { path: "user", select: "username profileImage fullname" },
+      })
+      .populate("share.profileUser", "username profileImage fullname bio")
       .lean();
 
     res.status(200).json(requests);
@@ -334,16 +485,18 @@ export const accept_request = async (req, res) => {
     let conv = await Conversation.findOne({ participantKey: key });
     const ids = [reqDoc.from, reqDoc.to].sort(sortParticipantIds);
 
+    const preview = lastPreviewForMessage(reqDoc.text, reqDoc.share);
+
     if (!conv) {
       conv = await Conversation.create({
         participantKey: key,
         participants: ids,
         lastMessageAt: new Date(),
-        lastMessagePreview: reqDoc.text.slice(0, 120),
+        lastMessagePreview: preview,
       });
     } else {
       conv.lastMessageAt = new Date();
-      conv.lastMessagePreview = reqDoc.text.slice(0, 120);
+      conv.lastMessagePreview = preview;
       await conv.save();
     }
 
@@ -351,6 +504,15 @@ export const accept_request = async (req, res) => {
       conversation: conv._id,
       sender: reqDoc.from,
       text: reqDoc.text,
+      ...(reqDoc.share && reqDoc.share.kind
+        ? {
+            share: {
+              kind: reqDoc.share.kind,
+              post: reqDoc.share.post || undefined,
+              profileUser: reqDoc.share.profileUser || undefined,
+            },
+          }
+        : {}),
     });
 
     reqDoc.status = "accepted";
@@ -361,11 +523,10 @@ export const accept_request = async (req, res) => {
       messageRequest: reqDoc._id,
     });
 
-    const populated = await Message.findById(msg._id)
-      .populate("sender", "username profileImage fullname")
-      .lean();
-
-    const msgOut = { ...populated, read: populated.readReceipt === true };
+    const msgOut = await populateMessageOutgoing(msg._id);
+    if (!msgOut) {
+      return res.status(500).json({ message: "Mesaj oluşturulamadı." });
+    }
 
     const payload = {
       conversationId: conv._id.toString(),

@@ -6,6 +6,7 @@ import {
   declineMessageRequest,
 } from "../../api/messages";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
+import MessageSharePreview from "../../components/messages/MessageSharePreview";
 import { FaArrowLeft } from "react-icons/fa6";
 import { LuBell, LuUserPlus } from "react-icons/lu";
 import toast from "react-hot-toast";
@@ -133,9 +134,17 @@ const MessageRequestsPage = () => {
                     >
                       {r.from?.fullname || r.from?.username}
                     </Link>
-                    <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-base-content/75">
-                      {r.text}
-                    </p>
+                    {r.share?.kind ? (
+                      <MessageSharePreview share={r.share} mine={false} className="mt-2" />
+                    ) : null}
+                    {r.text != null &&
+                    String(r.text).replace(/\u2060/g, "").trim() ? (
+                      <p
+                        className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-base-content/75 ${r.share?.kind ? "mt-3" : "mt-2"}`}
+                      >
+                        {r.text}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-base-300/35 pt-4">

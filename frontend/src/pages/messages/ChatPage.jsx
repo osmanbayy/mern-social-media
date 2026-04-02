@@ -14,6 +14,7 @@ import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { FaArrowLeft } from "react-icons/fa6";
 import { LuSendHorizontal, LuCheck, LuCheckCheck } from "react-icons/lu";
 import toast from "react-hot-toast";
+import MessageSharePreview from "../../components/messages/MessageSharePreview";
 
 const formatMsgTime = (iso) => {
   if (!iso) return "";
@@ -43,6 +44,12 @@ const senderId = (m) =>
 
 /** API `read` + şema `readReceipt` (geriye uyum) */
 const messageIsRead = (m) => m.read === true || m.readReceipt === true;
+
+/** Sunucunun paylaşım-only mesajlarda kullandığı görünmez işaret (Word Joiner) */
+const visibleMessageText = (t) => {
+  if (t == null) return "";
+  return String(t).replace(/\u2060/g, "").trim();
+};
 
 const ChatPage = () => {
   const { conversationId, userId: composePeerId } = useParams();
@@ -156,7 +163,7 @@ const ChatPage = () => {
   }, [conversationId, isCompose, isLoading, messages.length]);
 
   const { mutate: send, isPending } = useMutation({
-    mutationFn: () => sendMessage(peerId, text),
+    mutationFn: () => sendMessage(peerId, { text }),
     onSuccess: (data) => {
       setText("");
       if (data?.pending || data?.request) {
@@ -375,16 +382,31 @@ const ChatPage = () => {
                   )}
 
                   <div
-                    className={`flex max-w-[min(85%,28rem)] flex-col ${mine ? "items-end" : "items-start"}`}
+                    className={`flex flex-col ${mine ? "items-end" : "items-start"} ${
+                      m.share?.kind
+                        ? "w-full max-w-[min(96%,min(26rem,100vw))] sm:max-w-[min(96%,28rem)]"
+                        : "max-w-[min(85%,28rem)]"
+                    }`}
                   >
                     <div
-                      className={`relative px-3.5 py-2.5 text-[15px] leading-relaxed shadow-sm ${bubbleRadius} ${
+                      className={`relative text-[15px] leading-relaxed shadow-sm ${bubbleRadius} ${
+                        m.share?.kind ? "px-2 py-2 sm:px-2.5 sm:py-2.5" : "px-3.5 py-2.5"
+                      } ${
                         mine
                           ? "bg-primary text-primary-content"
                           : "border border-base-300/40 bg-base-100 text-base-content"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                      {m.share?.kind ? (
+                        <MessageSharePreview share={m.share} mine={mine} />
+                      ) : null}
+                      {visibleMessageText(m.text) ? (
+                        <p
+                          className={`whitespace-pre-wrap break-words ${m.share?.kind ? "mt-2" : ""}`}
+                        >
+                          {m.text}
+                        </p>
+                      ) : null}
                     </div>
                     {clusterBottom && (
                       <span
