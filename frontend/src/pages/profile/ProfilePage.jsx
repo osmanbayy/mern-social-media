@@ -15,7 +15,7 @@ import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { HiDotsHorizontal } from "react-icons/hi";
 import { GoBlocked, GoMute } from "react-icons/go";
-import { LuShare2, LuMessageSquare } from "react-icons/lu";
+import { LuShare2, LuMessageSquare, LuUser } from "react-icons/lu";
 import { CiFlag1 } from "react-icons/ci";
 import { getUserProfile, blockUser } from "../../api/users";
 import { getConversations } from "../../api/messages";
@@ -46,16 +46,11 @@ const ProfilePage = () => {
 
   const { authUser, isAccountVerified } = useAuth();
 
-  const {
-    data: user,
-    isLoading,
-    refetch: refetchUser,
-    isRefetching,
-  } = useQuery({
+  const { data: user, isLoading, isRefetching } = useQuery({
     queryKey: ["user", username],
     queryFn: () => getUserProfile(username),
-    staleTime: 30000, // 30 seconds - cache data for 30 seconds to prevent unnecessary refetches
-    refetchOnMount: true, // Only refetch if data is stale
+    staleTime: 30000,
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
 
@@ -83,11 +78,7 @@ const ProfilePage = () => {
   const { data: conversations, isLoading: loadingConversations } = useQuery({
     queryKey: ["conversations"],
     queryFn: getConversations,
-    enabled:
-      !!authUser &&
-      !!isAccountVerified &&
-      !isMyProfile &&
-      !!user?._id,
+    enabled: !!authUser && !!isAccountVerified && !isMyProfile && !!user?._id,
   });
 
   const conversationWithProfileUser = useMemo(() => {
@@ -135,7 +126,6 @@ const ProfilePage = () => {
   const handleUpdateProfile = async () => {
     await updateProfile({ coverImg, profileImage });
     resetImages();
-    // refetchUser() is not needed - updateProfile already invalidates queries
   };
 
   const handleBlockUser = async () => {
@@ -149,7 +139,6 @@ const ProfilePage = () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       setShowBlockDialog(false);
     } catch (error) {
-      // Error is handled by the API layer and toast
       if (process.env.NODE_ENV === "development") {
         console.error("Error blocking user:", error);
       }
@@ -164,372 +153,359 @@ const ProfilePage = () => {
     setShowBlockDialog(true);
   };
 
-  const getTabClassName = (tabType) => {
-    const baseClasses =
-      "flex-1 py-3 text-sm font-medium hover:bg-base-200 transition-colors";
-    const activeClasses =
-      "border-b-2 border-primary text-primary font-semibold";
-    const inactiveClasses = "text-base-content/70";
-
-    return `${baseClasses} ${feedType === tabType ? activeClasses : inactiveClasses}`;
+  const tabClass = (tabType) => {
+    const on = feedType === tabType;
+    return `min-w-0 flex-1 rounded-lg px-2 py-2.5 text-center text-sm font-semibold transition-all duration-200 ${
+      on
+        ? "bg-base-100 text-accent shadow-sm ring-1 ring-base-300/40 dark:bg-base-200/90"
+        : "text-base-content/55 hover:bg-base-100/60 hover:text-base-content"
+    }`;
   };
 
   const handleShareModalOpen = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    // Close dropdown immediately
     if (dropdownMenuRef.current) {
       dropdownMenuRef.current.blur();
     }
     if (dropdownTriggerRef.current) {
       dropdownTriggerRef.current.blur();
     }
-    // Force close by removing focus
     if (document.activeElement) {
       document.activeElement.blur();
     }
 
-    // Small delay to ensure dropdown closes before modal opens
     setTimeout(() => {
       setShowShareModal(true);
     }, 100);
   };
 
-  // Close dropdown when share modal opens
   useEffect(() => {
     if (showShareModal && dropdownTriggerRef.current) {
       dropdownTriggerRef.current.blur();
-      // Force close by removing focus
       if (document.activeElement) {
         document.activeElement.blur();
       }
     }
   }, [showShareModal]);
 
+  const dropdownPanelClass =
+    `dropdown-content z-[100] mt-2 min-w-[15rem] overflow-hidden rounded-2xl border border-base-300/50 bg-base-100/98 p-1.5 font-semibold shadow-2xl ring-1 backdrop-blur-xl transition-all duration-200 ease-out ` +
+    (theme === "dark" ? "shadow-black/40 ring-white/10" : "shadow-black/20 ring-black/5");
+
   return (
     <>
-      <div className="w-full min-h-screen pb-20 lg:pb-0">
+      <div className="min-h-screen w-full bg-gradient-to-b from-base-200/30 via-base-100 to-base-100 pb-24 dark:from-base-300/12 lg:pb-0">
         {(isLoading || isRefetching) && <ProfileHeaderSkeleton />}
+
         {!isLoading && !isRefetching && !user && (
-          <p className="text-center text-lg mt-4">Kullanıcı bulunamadı.</p>
+          <div className="flex min-h-[55vh] flex-col items-center justify-center px-6 py-16 text-center">
+            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 text-accent ring-1 ring-accent/20">
+              <LuUser className="h-8 w-8" strokeWidth={2} />
+            </div>
+            <h2 className="text-lg font-bold tracking-tight text-base-content">Kullanıcı bulunamadı</h2>
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-base-content/60">
+              Bu profil mevcut değil veya kaldırılmış olabilir.
+            </p>
+            <button
+              type="button"
+              className="btn btn-sm mt-8 rounded-xl px-6"
+              onClick={() => navigate(-1)}
+            >
+              Geri dön
+            </button>
+          </div>
         )}
 
         {!isLoading && !isRefetching && user && (
           <>
-            {/* Share Modal */}
             <ShareModal
               user={user}
               isOpen={showShareModal}
               onClose={() => setShowShareModal(false)}
             />
 
-            {/* Üst başlık - Twitter benzeri */}
-            <div className="sticky top-0 z-20 flex items-center gap-4 px-4 py-2 border-b border-base-300 bg-base-100/95 backdrop-blur-md">
-              <button
-                type="button"
-                className="p-2 rounded-full hover:bg-base-200 transition-colors"
-                onClick={() => navigate(-1)}
-              >
-                <FaArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex flex-col">
-                <span className="font-bold text-lg leading-tight">
-                  {user?.fullname}
-                </span>
-                <span className="text-xs text-base-content/60">
-                  {user?.postCount || 0} gönderi
-                </span>
-              </div>
-            </div>
-
-            {/* Kapak resmi */}
-            <div className="relative">
-              <div className="h-52 w-full bg-base-200">
-                <img
-                  src={coverImg || user?.coverImg || defaultCoverPicture}
-                  className="h-full w-full object-cover"
-                  alt="cover"
-                  onClick={handleCoverImageClick}
-                />
-              </div>
-
-              {isMyProfile && (
+            <header className="sticky top-0 z-30 border-b border-base-300/60 bg-base-100/90 shadow-sm backdrop-blur-xl">
+              <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5 sm:px-5">
                 <button
                   type="button"
-                  className="absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs border border-base-300 bg-base-100/90 hover:bg-base-200 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    coverImgRef.current?.click();
-                  }}
+                  className="btn btn-circle btn-ghost btn-sm shrink-0"
+                  aria-label="Geri"
+                  onClick={() => navigate(-1)}
                 >
-                  Kapak fotoğrafını düzenle
+                  <FaArrowLeft className="h-5 w-5" />
                 </button>
-              )}
+                <div className="min-w-0 flex-1">
+                  <h1 className="truncate text-lg font-bold leading-tight tracking-tight">{user?.fullname}</h1>
+                  <p className="text-xs text-base-content/55 sm:text-[13px]">{user?.postCount || 0} gönderi</p>
+                </div>
+              </div>
+            </header>
 
-              <input
-                type="file"
-                hidden
-                accept="image/*"
-                ref={coverImgRef}
-                onChange={(e) => handleImgChange(e, "coverImg")}
-              />
-              <input
-                type="file"
-                hidden
-                accept="image/*"
-                ref={profileImgRef}
-                onChange={(e) => handleImgChange(e, "profileImage")}
-              />
+            <main className="mx-auto w-full max-w-3xl px-4 pb-8 pt-4 sm:px-5">
+              {/* Tek kart: kapak üstte kırpımlı; kart overflow-visible — avatar kesilmez */}
+              <section className="overflow-visible rounded-2xl border border-base-300/45 bg-base-100/90 shadow-md ring-1 ring-black/[0.03] backdrop-blur-sm dark:border-base-300/35 dark:bg-base-200/25 dark:ring-white/[0.04]">
+                <div className="relative h-40 overflow-hidden rounded-t-2xl bg-base-200 sm:h-44">
+                  <img
+                    src={coverImg || user?.coverImg || defaultCoverPicture}
+                    className="h-full w-full cursor-pointer object-cover"
+                    alt=""
+                    onClick={handleCoverImageClick}
+                  />
+                  <div
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-base-100/85 via-base-100/10 to-transparent dark:from-base-300/60"
+                    aria-hidden
+                  />
 
-              {/* Profile Picture */}
-              <div className="absolute -bottom-16 left-4">
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-full border-4 border-base-100 bg-base-100 overflow-hidden">
-                    <img
-                      src={
-                        profileImage ||
-                        user?.profileImage ||
-                        defaultProfilePicture
-                      }
-                      alt={user?.fullname}
-                      className="w-full h-full object-cover cursor-pointer"
-                      onClick={handleProfileImageClick}
-                    />
-                  </div>
                   {isMyProfile && (
                     <button
                       type="button"
-                      className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-base-100 border border-base-300 flex items-center justify-center text-xs"
+                      className="absolute right-3 top-3 rounded-full border border-white/20 bg-base-100/90 px-3 py-1.5 text-xs font-semibold text-base-content shadow-md backdrop-blur-md transition hover:bg-base-100"
                       onClick={(e) => {
                         e.stopPropagation();
-                        profileImgRef.current?.click();
+                        coverImgRef.current?.click();
                       }}
                     >
-                      <MdEdit className="w-4 h-4" />
+                      Kapak düzenle
                     </button>
                   )}
                 </div>
-              </div>
-            </div>
 
-            {/* padding between cover and content */}
-            <div className="h-16" />
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  ref={coverImgRef}
+                  onChange={(e) => handleImgChange(e, "coverImg")}
+                />
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  ref={profileImgRef}
+                  onChange={(e) => handleImgChange(e, "profileImage")}
+                />
 
-            {/* Profile Actions (Follow / Edit Profile / Update) */}
-            <div className="flex justify-end items-center px-4 mb-3 gap-2">
-              {isMyProfile ? (
-                <button
-                  className="btn btn-outline rounded-full btn-sm"
-                  onClick={() => navigate("/edit-profile")}
-                >
-                  Bilgilerini Düzenle
-                </button>
-              ) : (
-                <>
-                  {/* Ellipsis Dropdown */}
-                  <div className="dropdown dropdown-left">
-                    <button
-                      ref={dropdownTriggerRef}
-                      type="button"
-                      className="btn btn-sm rounded-full p-2 h-8 w-8 min-h-8 flex items-center justify-center outline-none"
-                    >
-                      <HiDotsHorizontal
-                        tabIndex={0}
-                        role="button"
-                        className="size-5 cursor-pointer border-none outline-none"
-                      />
-                    </button>
-                    <ul
-                      ref={dropdownMenuRef}
-                      tabIndex={0}
-                      className={`dropdown-content rounded-xl border border-base-300/50 menu bg-base-100/95 backdrop-blur-xl z-[100] font-semibold min-w-60 p-2 shadow-2xl transition-all duration-200 ease-out ${
-                        theme === "dark" 
-                          ? "shadow-black/40 ring-1 ring-white/10" 
-                          : "shadow-black/20 ring-1 ring-black/5"
-                      }`}
-                    >
-                      <li
-                        className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
-                        onClick={handleBlockClick}
-                      >
-                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
-                          <GoBlocked /> <span>Engelle</span>
-                        </a>
-                      </li>
-                      <li className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg">
-                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
-                          <GoMute /> <span>Sessize Al</span>
-                        </a>
-                      </li>
-                      <li
-                        className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
-                        onClick={handleShareModalOpen}
-                      >
-                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
-                          <LuShare2 /> <span>Profili Paylaş</span>
-                        </a>
-                      </li>
-                      <li className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg">
-                        <a className="rounded-none flex whitespace-nowrap cursor-pointer">
-                          <CiFlag1 /> <span>Bildir</span>
-                        </a>
-                      </li>
-                    </ul>
+                <div className="relative px-4 pb-5 pt-0 sm:px-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+                    <div className="-mt-12 flex shrink-0 sm:-mt-14">
+                      <div className="relative">
+                        <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-base-100 bg-base-100 shadow-lg ring-1 ring-base-300/25 dark:border-base-200 dark:ring-base-300/20 sm:h-28 sm:w-28">
+                          <img
+                            src={profileImage || user?.profileImage || defaultProfilePicture}
+                            alt={user?.fullname}
+                            className="h-full w-full cursor-pointer object-cover"
+                            onClick={handleProfileImageClick}
+                          />
+                        </div>
+                        {isMyProfile && (
+                          <button
+                            type="button"
+                            className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border border-base-300/70 bg-base-100 text-base-content shadow-md transition hover:bg-base-200 dark:border-base-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              profileImgRef.current?.click();
+                            }}
+                            aria-label="Profil fotoğrafını düzenle"
+                          >
+                            <MdEdit className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-end gap-2 sm:pb-0.5">
+                      {isMyProfile ? (
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm rounded-xl border-base-300/60 px-4 font-semibold hover:border-accent/50 hover:bg-accent/5"
+                          onClick={() => navigate("/edit-profile")}
+                        >
+                          Profili düzenle
+                        </button>
+                      ) : (
+                        <>
+                          <div className="dropdown dropdown-end">
+                            <button
+                              ref={dropdownTriggerRef}
+                              type="button"
+                              className="btn btn-circle btn-ghost btn-sm border border-base-300/45"
+                              aria-label="Daha fazla"
+                            >
+                              <HiDotsHorizontal
+                                tabIndex={0}
+                                role="button"
+                                className="size-5 cursor-pointer border-none outline-none"
+                              />
+                            </button>
+                            <ul ref={dropdownMenuRef} tabIndex={0} className={dropdownPanelClass}>
+                              <li
+                                className="rounded-xl transition-colors hover:bg-base-200/50"
+                                onClick={handleBlockClick}
+                              >
+                                <a className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 whitespace-nowrap">
+                                  <GoBlocked className="shrink-0" /> <span>Engelle</span>
+                                </a>
+                              </li>
+                              <li className="rounded-xl transition-colors hover:bg-base-200/50">
+                                <a className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 whitespace-nowrap">
+                                  <GoMute className="shrink-0" /> <span>Sessize Al</span>
+                                </a>
+                              </li>
+                              <li
+                                className="rounded-xl transition-colors hover:bg-base-200/50"
+                                onClick={handleShareModalOpen}
+                              >
+                                <a className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 whitespace-nowrap">
+                                  <LuShare2 className="shrink-0" /> <span>Profili Paylaş</span>
+                                </a>
+                              </li>
+                              <li className="rounded-xl transition-colors hover:bg-base-200/50">
+                                <a className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 whitespace-nowrap">
+                                  <CiFlag1 className="shrink-0" /> <span>Bildir</span>
+                                </a>
+                              </li>
+                            </ul>
+                          </div>
+
+                          {loadingConversations ? (
+                            <span
+                              className="btn btn-sm btn-disabled pointer-events-none rounded-xl px-4"
+                              title="Yükleniyor…"
+                            >
+                              <LoadingSpinner size="sm" />
+                            </span>
+                          ) : (
+                            <Link
+                              to={messageLinkTo}
+                              state={
+                                !conversationWithProfileUser && user
+                                  ? {
+                                      messagePeer: {
+                                        _id: user._id,
+                                        username: user.username,
+                                        fullname: user.fullname,
+                                        profileImage: user.profileImage,
+                                      },
+                                    }
+                                  : undefined
+                              }
+                              className="btn btn-outline btn-sm rounded-xl border-base-300/60 px-4 font-semibold hover:border-accent/50"
+                              title={conversationWithProfileUser ? "Sohbete devam et" : "Mesaj gönder"}
+                            >
+                              <LuMessageSquare className="size-4" />
+                              <span className="hidden sm:inline">Mesaj</span>
+                            </Link>
+                          )}
+                          <button
+                            type="button"
+                            className={`btn btn-sm rounded-xl px-5 font-semibold ${
+                              amIFollowing
+                                ? "btn-outline border-base-300/60 hover:border-error/50 hover:bg-error/5 hover:text-error"
+                                : "btn-primary"
+                            }`}
+                            onClick={() => follow(user?._id)}
+                            disabled={isPending}
+                          >
+                            {isPending && <LoadingSpinner size="sm" />}
+                            {!isPending && amIFollowing && (
+                              <span className="flex items-center gap-2">
+                                <SlUserUnfollow className="size-3.5" /> Takibi Bırak
+                              </span>
+                            )}
+                            {!isPending && !amIFollowing && (
+                              <span className="flex items-center gap-2">
+                                <SlUserFollow className="size-3.5" /> Takip Et
+                              </span>
+                            )}
+                          </button>
+                        </>
+                      )}
+
+                      {(coverImg || profileImage) && (
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm rounded-xl px-5 font-semibold"
+                          onClick={handleUpdateProfile}
+                          disabled={isUpdatingProfile}
+                        >
+                          {isUpdatingProfile ? <LoadingSpinner size="sm" /> : "Güncelle"}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {loadingConversations ? (
-                    <span
-                      className="btn btn-sm rounded-full btn-outline px-3 btn-disabled pointer-events-none flex items-center justify-center gap-1"
-                      title="Yükleniyor…"
-                    >
-                      <LoadingSpinner size="sm" />
-                    </span>
-                  ) : (
-                    <Link
-                      to={messageLinkTo}
-                      state={
-                        !conversationWithProfileUser && user
-                          ? {
-                              messagePeer: {
-                                _id: user._id,
-                                username: user.username,
-                                fullname: user.fullname,
-                                profileImage: user.profileImage,
-                              },
-                            }
-                          : undefined
-                      }
-                      className="btn btn-sm rounded-full btn-outline px-3 flex items-center justify-center gap-1"
-                      title={
-                        conversationWithProfileUser
-                          ? "Sohbete devam et"
-                          : "Mesaj gönder"
-                      }
-                    >
-                      <LuMessageSquare className="size-4" />
-                      <span className="hidden sm:inline">Mesaj</span>
-                    </Link>
-                  )}
-                  <button
-                    className={`btn btn-sm rounded-full btn-neutral px-4 flex items-center justify-center gap-2 `}
-                    onClick={() => follow(user?._id)}
-                    disabled={isPending}
-                  >
-                    {isPending && <LoadingSpinner size="sm" />}
-                    {!isPending && amIFollowing && (
-                      <div className="flex gap-2 items-center">
-                        <SlUserUnfollow className="size-3" /> Takibi Bırak{" "}
-                      </div>
+                  <div className="mt-5 space-y-3 border-t border-base-300/35 pt-5">
+                    <div>
+                      <h2 className="text-xl font-bold tracking-tight text-base-content sm:text-[1.35rem]">{user?.fullname}</h2>
+                      <p className="mt-0.5 text-[15px] text-base-content/55">@{user?.username}</p>
+                    </div>
+
+                    {user?.bio && (
+                      <p className="text-[15px] leading-relaxed text-base-content/90">{user?.bio}</p>
                     )}
-                    {!isPending && !amIFollowing && (
-                      <div className="flex gap-2 items-center">
-                        <SlUserFollow className="size-3" /> Takip Et{" "}
-                      </div>
-                    )}
+
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-base-content/55">
+                      {user?.link && (
+                        <a
+                          href={user?.link}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex max-w-full items-center gap-1.5 font-medium text-accent hover:underline"
+                        >
+                          <FaLink className="h-3.5 w-3.5 shrink-0 opacity-80" />
+                          <span className="truncate">{user?.link.replace(/^https?:\/\//, "")}</span>
+                        </a>
+                      )}
+                      <span className="inline-flex items-center gap-1.5">
+                        <IoCalendarOutline className="h-4 w-4 shrink-0 opacity-80" />
+                        {memberSinceDate}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-5 pt-1 text-sm">
+                      <button
+                        type="button"
+                        className="rounded-lg px-1 py-0.5 transition hover:bg-base-200/60"
+                        onClick={handleFollowingClick}
+                      >
+                        <span className="font-bold tabular-nums text-base-content">{user?.following?.length || 0}</span>
+                        <span className="text-base-content/55"> Takip</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-lg px-1 py-0.5 transition hover:bg-base-200/60"
+                        onClick={handleFollowersClick}
+                      >
+                        <span className="font-bold tabular-nums text-base-content">{user?.followers?.length || 0}</span>
+                        <span className="text-base-content/55"> Takipçi</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Sekmeler — kartın dışında, gönderi akışıyla hizalı */}
+              <div className="mt-5 rounded-xl bg-base-200/45 p-1 ring-1 ring-base-300/35 dark:bg-base-300/20">
+                <div className="flex gap-1">
+                  <button type="button" className={tabClass(FEED_TYPES.POSTS)} onClick={() => setFeedType(FEED_TYPES.POSTS)}>
+                    Gönderiler
                   </button>
-                </>
-              )}
-
-              {(coverImg || profileImage) && (
-                <button
-                  className="btn btn-sm rounded-full px-4"
-                  onClick={handleUpdateProfile}
-                  disabled={isUpdatingProfile}
-                >
-                  {isUpdatingProfile ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    "Güncelle"
-                  )}
-                </button>
-              )}
-            </div>
-
-            {/* Profil bilgileri */}
-            <div className="px-4 flex flex-col gap-3">
-              <div className="flex flex-col gap-1">
-                <span className="font-bold text-lg">{user?.fullname}</span>
-                <span className="text-sm text-base-content/60">
-                  @{user?.username}
-                </span>
-              </div>
-
-              {user?.bio && (
-                <p className="text-sm leading-relaxed">{user?.bio}</p>
-              )}
-
-              <div className="flex flex-wrap items-center gap-4 text-sm text-base-content/60">
-                {user?.link && (
-                  <a
-                    href={user?.link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1 hover:underline"
-                  >
-                    <FaLink className="w-4 h-4" />
-                    <span>{user?.link.replace(/^https?:\/\//, "")}</span>
-                  </a>
-                )}
-                <div className="flex items-center gap-1">
-                  <IoCalendarOutline className="w-4 h-4" />
-                  <span>{memberSinceDate}</span>
+                  <button type="button" className={tabClass(FEED_TYPES.LIKES)} onClick={() => setFeedType(FEED_TYPES.LIKES)}>
+                    Beğeniler
+                  </button>
                 </div>
               </div>
 
-              <div className="flex gap-4 text-sm">
-                <button
-                  type="button"
-                  className="flex items-center gap-1 hover:underline"
-                  onClick={handleFollowingClick}
-                >
-                  <span className="font-bold">
-                    {user?.following?.length || 0}
-                  </span>
-                  <span className="text-base-content/60">Takip</span>
-                </button>
-                <button
-                  type="button"
-                  className="flex items-center gap-1 hover:underline"
-                  onClick={handleFollowersClick}
-                >
-                  <span className="font-bold">
-                    {user?.followers?.length || 0}
-                  </span>
-                  <span className="text-base-content/60">Takipçi</span>
-                </button>
+              <div className="mt-3">
+                <Posts feedType={feedType} username={username} userId={user?._id} />
               </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="mt-4 border-b border-base-300 flex">
-              <button
-                className={getTabClassName(FEED_TYPES.POSTS)}
-                onClick={() => setFeedType(FEED_TYPES.POSTS)}
-              >
-                Gönderiler
-              </button>
-              <button
-                className={getTabClassName(FEED_TYPES.LIKES)}
-                onClick={() => setFeedType(FEED_TYPES.LIKES)}
-              >
-                Beğeniler
-              </button>
-            </div>
-
-            {/* Orta içerik: gönderiler */}
-            <div className="px-0">
-              <Posts
-                feedType={feedType}
-                username={username}
-                userId={user?._id}
-              />
-            </div>
+            </main>
           </>
         )}
       </div>
 
-      {/* Profile Image Modal */}
       {user && (
         <ProfileImageModal
           user={user}
@@ -541,7 +517,6 @@ const ProfilePage = () => {
         />
       )}
 
-      {/* Cover Image Modal */}
       {user && (
         <CoverImageModal
           user={user}
@@ -553,8 +528,7 @@ const ProfilePage = () => {
         />
       )}
 
-      {/* Block User Dialog */}
-      {!isMyProfile && (
+      {user && !isMyProfile && (
         <BlockUserDialog
           isOpen={showBlockDialog}
           onClose={() => setShowBlockDialog(false)}
@@ -564,7 +538,6 @@ const ProfilePage = () => {
         />
       )}
 
-      {/* Image Crop Modal */}
       <ImageCropModal
         imageSrc={cropImageSrc}
         isOpen={showCropModal}
@@ -576,4 +549,5 @@ const ProfilePage = () => {
     </>
   );
 };
+
 export default ProfilePage;
