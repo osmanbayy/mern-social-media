@@ -14,7 +14,7 @@ export const gel_all_notifications = async (req, res) => {
 export const delete_all_notifications = async (req, res) => {
   try {
     const result = await notificationOps.deleteAllNotifications(req.user._id);
-    return sendJson(res, result);
+    return sendServiceResult(res, result);
   } catch (error) {
     console.log("Error in delete all notifications controller", error.message);
     res.status(500).json({ message: "Sunucu hatası" });
