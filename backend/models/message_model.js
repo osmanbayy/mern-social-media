@@ -60,6 +60,20 @@ const messageSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    /** Yüklenen resim / dosya ekleri (Cloudinary URL) */
+    attachments: [
+      {
+        url: { type: String, required: true },
+        mimeType: { type: String, default: "" },
+        originalName: { type: String, default: "" },
+        size: { type: Number, default: 0 },
+        kind: {
+          type: String,
+          enum: ["image", "file"],
+          required: true,
+        },
+      },
+    ],
     /** Kullanıcı başına tek emoji (yenisi eskisinin yerine geçer) */
     reactions: [
       {
@@ -83,7 +97,8 @@ messageSchema.index({ conversation: 1, createdAt: -1 });
 
 messageSchema.pre("validate", function (next) {
   const hasShare = this.share && this.share.kind;
-  if (!hasShare && (!this.text || !String(this.text).trim())) {
+  const hasAttachments = Array.isArray(this.attachments) && this.attachments.length > 0;
+  if (!hasShare && !hasAttachments && (!this.text || !String(this.text).trim())) {
     return next(new Error("Mesaj boş olamaz."));
   }
   if (hasShare && this.share.kind === "post" && !this.share.post) {

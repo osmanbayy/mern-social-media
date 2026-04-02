@@ -94,7 +94,11 @@ export const sendMessage = async (toUserId, payload = {}) => {
   if (hasShareObject && !share) {
     throw new Error("Paylaşım bilgisi eksik veya geçersiz.");
   }
-  if (!share && !text.trim()) {
+  const attachments = Array.isArray(opts.attachments)
+    ? opts.attachments.filter((a) => a && typeof a === "object" && String(a.url || "").trim())
+    : [];
+
+  if (!share && !text.trim() && attachments.length === 0) {
     throw new Error("Mesaj boş olamaz.");
   }
 
@@ -108,7 +112,11 @@ export const sendMessage = async (toUserId, payload = {}) => {
     ? text.trim()
       ? { share, text, ...replyFields }
       : { share, ...replyFields }
-    : { text, ...replyFields };
+    : {
+        ...replyFields,
+        ...(text.trim() ? { text } : {}),
+        ...(attachments.length ? { attachments } : {}),
+      };
 
   const response = await fetch(`${API_BASE}/send/${encodeURIComponent(id)}`, {
     method: "POST",
@@ -217,5 +225,43 @@ export const declineMessageRequest = async (requestId) => {
     method: "POST",
     credentials: "include",
   });
+  return handleResponse(response);
+};
+
+export const deleteMessage = async (conversationId, messageId) => {
+  const cid = conversationId != null ? String(conversationId).trim() : "";
+  const mid = messageId != null ? String(messageId).trim() : "";
+  if (!cid || !mid) throw new Error("Geçersiz mesaj.");
+  const response = await fetch(
+    `${API_BASE}/conversations/${encodeURIComponent(cid)}/messages/${encodeURIComponent(mid)}`,
+    { method: "DELETE", credentials: "include" }
+  );
+  return handleResponse(response);
+};
+
+export const deleteMessagesBulk = async (conversationId, messageIds) => {
+  const cid = conversationId != null ? String(conversationId).trim() : "";
+  if (!cid || !Array.isArray(messageIds) || messageIds.length === 0) {
+    throw new Error("Geçersiz istek.");
+  }
+  const response = await fetch(
+    `${API_BASE}/conversations/${encodeURIComponent(cid)}/messages/delete-many`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ messageIds }),
+    }
+  );
+  return handleResponse(response);
+};
+
+export const clearConversationMessages = async (conversationId) => {
+  const cid = conversationId != null ? String(conversationId).trim() : "";
+  if (!cid) throw new Error("Geçersiz sohbet.");
+  const response = await fetch(
+    `${API_BASE}/conversations/${encodeURIComponent(cid)}/messages`,
+    { method: "DELETE", credentials: "include" }
+  );
   return handleResponse(response);
 };

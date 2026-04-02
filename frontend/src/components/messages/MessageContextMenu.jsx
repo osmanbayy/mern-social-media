@@ -5,6 +5,7 @@ import {
   LuCopy,
   LuQuote,
   LuForward,
+  LuTrash2,
 } from "react-icons/lu";
 
 /**
@@ -62,7 +63,7 @@ export default function MessageContextMenu({
   const vh = typeof window !== "undefined" ? window.innerHeight : 600;
   const showReactions = Array.isArray(reactionEmojis) && reactionEmojis.length > 0 && typeof onReaction === "function";
   const menuW = showReactions ? Math.min(320, vw - 16) : 200;
-  const menuH = showReactions ? 300 : 220;
+  const menuH = showReactions ? 300 : canDelete && onDelete ? 260 : 220;
   const left = Math.min(Math.max(8, x), vw - menuW - 8);
   const top = Math.min(Math.max(8, y), vh - menuH - 8);
 
@@ -145,6 +146,20 @@ export default function MessageContextMenu({
         <LuForward className="h-4 w-4 shrink-0 opacity-70" />
         İlet
       </button>
+      {canDelete && onDelete && (
+        <button
+          type="button"
+          role="menuitem"
+          className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-error hover:bg-error/10"
+          onClick={() => {
+            onDelete();
+            onClose();
+          }}
+        >
+          <LuTrash2 className="h-4 w-4 shrink-0 opacity-90" />
+          Sil
+        </button>
+      )}
     </div>,
     document.body
   );

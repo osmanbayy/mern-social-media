@@ -73,6 +73,18 @@ export function getReplyPreviewText(message) {
   if (!message || typeof message !== "object") return "Mesaj";
   if (message.share?.kind === "post") return "Gönderi paylaşımı";
   if (message.share?.kind === "profile") return "Profil paylaşımı";
+  if (Array.isArray(message.attachments) && message.attachments.length > 0) {
+    const list = message.attachments;
+    const hasVid = list.some((a) => String(a?.mimeType || "").startsWith("video/"));
+    const hasImg = list.some(
+      (a) =>
+        a?.kind === "image" && !String(a?.mimeType || "").startsWith("video/")
+    );
+    const hasImageMime = list.some((a) => String(a?.mimeType || "").startsWith("image/"));
+    if (hasVid) return "🎬 Video";
+    if (hasImg || hasImageMime) return "🖼️ Fotoğraf";
+    return "📎 Dosya";
+  }
   const t = String(message.text ?? "")
     .replace(/\u2060/g, "")
     .trim();

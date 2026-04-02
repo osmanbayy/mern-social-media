@@ -64,6 +64,20 @@ export const SocketProvider = ({ children }) => {
       if (!conversationId) return;
       queryClient.invalidateQueries({ queryKey: ["messages", String(conversationId)] });
     });
+    s.on("message:deleted", (payload) => {
+      const cid = payload?.conversationId;
+      if (cid) {
+        queryClient.invalidateQueries({ queryKey: ["messages", String(cid)] });
+      }
+      invalidate([["conversations"]]);
+    });
+    s.on("conversation:cleared", (payload) => {
+      const cid = payload?.conversationId;
+      if (cid) {
+        queryClient.invalidateQueries({ queryKey: ["messages", String(cid)] });
+      }
+      invalidate([["conversations"]]);
+    });
     s.on("conversations:updated", () => {
       invalidate([["conversations"]]);
     });

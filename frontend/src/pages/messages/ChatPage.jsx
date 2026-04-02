@@ -9,7 +9,11 @@ import {
   markConversationRead,
   ackMessagesDelivered,
   toggleMessageReaction,
+  deleteMessage,
+  deleteMessagesBulk,
+  clearConversationMessages,
 } from "../../api/messages";
+import { uploadChatFile } from "../../api/upload";
 import { getUserByIdSummary } from "../../api/users";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSocket } from "../../contexts/SocketContext";
@@ -22,6 +26,9 @@ import {
   LuCheckCheck,
   LuEllipsisVertical,
   LuChevronsDown,
+  LuPaperclip,
+  LuX,
+  LuFileText,
 } from "react-icons/lu";
 import toast from "react-hot-toast";
 import MessageSharePreview from "../../components/messages/MessageSharePreview";
@@ -36,6 +43,7 @@ import { useChatAppearance } from "../../contexts/ChatAppearanceContext";
 import ChatSettingsModal from "../../components/chat/ChatSettingsModal";
 import SwipeableMessageRow from "../../components/messages/SwipeableMessageRow";
 import MessageContextMenu from "../../components/messages/MessageContextMenu";
+import MessageAttachments from "../../components/messages/MessageAttachments";
 import ForwardMessageModal from "../../components/messages/ForwardMessageModal";
 import {
   getMessageDocId,
@@ -132,6 +140,9 @@ const ChatPage = () => {
   const [forwardOpen, setForwardOpen] = useState(false);
   const [forwardTargetMessage, setForwardTargetMessage] = useState(null);
   const [chatSettingsOpen, setChatSettingsOpen] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState([]);
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
@@ -150,6 +161,17 @@ const ChatPage = () => {
   const bottomRef = useRef(null);
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const pendingAttachmentsRef = useRef(pendingAttachments);
+  pendingAttachmentsRef.current = pendingAttachments;
+
+  useEffect(() => {
+    return () => {
+      pendingAttachmentsRef.current.forEach((p) => {
+        if (p.localPreviewUrl) URL.revokeObjectURL(p.localPreviewUrl);
+      });
+    };
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     const el = scrollRef.current;
@@ -211,16 +233,29 @@ const ChatPage = () => {
     }
   };
 
+  const exitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedMessageIds([]);
+  }, []);
+
+  const toggleMessageSelect = useCallback((id) => {
+    if (!id) return;
+    setSelectedMessageIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }, []);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") {
         setActionMenu(null);
         clearReplyTarget();
+        exitSelectionMode();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [clearReplyTarget]);
+  }, [clearReplyTarget, exitSelectionMode]);
 
   const isCompose = Boolean(composePeerId);
   const myId = authUser?._id?.toString();
@@ -389,13 +424,20 @@ const ChatPage = () => {
   }, [socket, conversationId, peerId]);
 
   const { mutate: send, isPending } = useMutation({
-    mutationFn: ({ text: t, replyToId }) =>
+    mutationFn: ({ text: t, replyToId, attachments }) =>
       sendMessage(peerId, {
         text: t,
         ...(replyToId ? { replyTo: String(replyToId) } : {}),
+        ...(Array.isArray(attachments) && attachments.length ? { attachments } : {}),
       }),
     onSuccess: (data) => {
       setText("");
+      setPendingAttachments((prev) => {
+        prev.forEach((p) => {
+          if (p.localPreviewUrl) URL.revokeObjectURL(p.localPreviewUrl);
+        });
+        return [];
+      });
       clearReplyTarget();
       if (socket && conversationId) {
         socket.emit("chat:typing_stop", { conversationId });
@@ -490,6 +532,119 @@ const ChatPage = () => {
     onError: (e) => toast.error(e.message),
   });
 
+  const { mutate: removeMessage } = useMutation({
+    mutationFn: (messageId) => {
+      if (!conversationId) return Promise.reject(new Error("Sohbet yok."));
+      return deleteMessage(conversationId, messageId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      toast.success("Mesaj silindi");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const { mutate: removeMessagesBulk, isPending: isBulkDeleting } = useMutation({
+    mutationFn: (ids) => {
+      if (!conversationId) return Promise.reject(new Error("Sohbet yok."));
+      return deleteMessagesBulk(conversationId, ids);
+    },
+    onSuccess: (_, ids) => {
+      exitSelectionMode();
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      toast.success(`${ids.length} mesaj silindi`);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const { mutate: clearChat, isPending: isClearing } = useMutation({
+    mutationFn: () => {
+      if (!conversationId) return Promise.reject(new Error("Sohbet yok."));
+      return clearConversationMessages(conversationId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      toast.success("Sohbet temizlendi");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const removePendingAttachment = useCallback((clientId) => {
+    setPendingAttachments((prev) => {
+      const item = prev.find((x) => x.clientId === clientId);
+      if (item?.localPreviewUrl) URL.revokeObjectURL(item.localPreviewUrl);
+      return prev.filter((x) => x.clientId !== clientId);
+    });
+  }, []);
+
+  const handleChatFiles = useCallback(async (e) => {
+    const input = e.target;
+    const files = Array.from(input.files || []);
+    input.value = "";
+    if (!files.length) return;
+
+    for (const file of files) {
+      const clientId = `c-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+      const isVisual =
+        file.type.startsWith("image/") || file.type.startsWith("video/");
+      const localPreviewUrl = isVisual ? URL.createObjectURL(file) : null;
+
+      let added = false;
+      setPendingAttachments((prev) => {
+        if (prev.length >= 5) return prev;
+        added = true;
+        return [
+          ...prev,
+          {
+            clientId,
+            status: "uploading",
+            localPreviewUrl,
+            originalName: file.name,
+            mimeType: file.type || "",
+          },
+        ];
+      });
+
+      if (!added) {
+        if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+        break;
+      }
+
+      try {
+        const u = await uploadChatFile(file);
+        setPendingAttachments((prev) =>
+          prev.map((item) =>
+            item.clientId === clientId && item.status === "uploading"
+              ? { clientId, status: "ready", ...u }
+              : item
+          )
+        );
+        if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      } catch (err) {
+        toast.error(err?.message || "Yüklenemedi");
+        if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+        setPendingAttachments((prev) =>
+          prev.filter((item) => item.clientId !== clientId)
+        );
+      }
+    }
+  }, []);
+
+  const handleBulkDelete = useCallback(() => {
+    if (selectedMessageIds.length === 0) return;
+    if (
+      !window.confirm(
+        `${selectedMessageIds.length} mesaj kalıcı olarak silinecek. Devam edilsin mi?`
+      )
+    ) {
+      return;
+    }
+    removeMessagesBulk(selectedMessageIds);
+  }, [selectedMessageIds, removeMessagesBulk]);
+
   if (!conversationId && !composePeerId) {
     return null;
   }
@@ -532,17 +687,42 @@ const ChatPage = () => {
       saveEdit();
       return;
     }
-    if (!text.trim() || !peerId || isPending) return;
+    if (!peerId || isPending) return;
+    const readyAttachments = pendingAttachments
+      .filter((x) => x.status === "ready")
+      .map((x) => ({
+        url: x.url,
+        mimeType: x.mimeType,
+        originalName: x.originalName,
+        size: x.size,
+        kind: x.kind,
+      }));
+    if (pendingAttachments.some((x) => x.status === "uploading")) {
+      toast.error("Dosyalar hâlâ yükleniyor.");
+      return;
+    }
+    if (!text.trim() && readyAttachments.length === 0) return;
     const replyToId =
       getMessageDocId(replyingTo) ?? getMessageDocId(replyingToRef.current);
-    send({ text: text.trim(), replyToId });
+    send({
+      text: text.trim(),
+      replyToId,
+      attachments: readyAttachments,
+    });
     /** İlk mesajın onSuccess’i gelmeden ikinci gönderimde eski alıntı id’si gitmesin */
     clearReplyTarget();
   };
 
+  const pendingHasUploading = pendingAttachments.some((x) => x.status === "uploading");
+  const pendingReadyCount = pendingAttachments.filter((x) => x.status === "ready").length;
+
   const canSubmit = editingMessage
     ? Boolean(text.trim()) && !isEditPending
-    : Boolean(text.trim() && peerId) && !isPending;
+    : Boolean(
+        (text.trim() || pendingReadyCount > 0) &&
+          peerId &&
+          !pendingHasUploading
+      ) && !isPending;
 
   const startEdit = (m) => {
     if (m.share?.kind) return;
@@ -567,68 +747,130 @@ const ChatPage = () => {
           <button
             type="button"
             className="btn btn-ghost btn-sm btn-circle shrink-0"
-            aria-label="Geri"
-            onClick={() => navigate("/messages", { replace: true })}
+            aria-label={selectionMode ? "İptal" : "Geri"}
+            onClick={() => {
+              if (selectionMode) exitSelectionMode();
+              else navigate("/messages", { replace: true });
+            }}
           >
             <FaArrowLeft className="h-5 w-5" />
           </button>
-          <button
-            type="button"
-            className="flex min-w-0 max-w-full flex-1 items-center gap-3 rounded-2xl px-2 py-1.5 text-left transition-colors hover:bg-base-200/70"
-            onClick={() => otherUser && navigate(`/profile/${otherUser.username}`)}
-          >
-            <div className="relative shrink-0">
-              <div className="avatar">
-                <div className="w-11 h-11 rounded-full ring-2 ring-base-300/80 ring-offset-2 ring-offset-base-100">
-                  <img
-                    src={otherUser?.profileImage || defaultProfilePicture}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
+          {selectionMode ? (
+            <>
+              <p className="min-w-0 flex-1 truncate text-center text-sm font-semibold text-base-content">
+                Mesaj seç
+              </p>
+              <button
+                type="button"
+                className="btn btn-error btn-sm shrink-0 rounded-xl px-3 font-semibold"
+                disabled={selectedMessageIds.length === 0 || isBulkDeleting}
+                onClick={handleBulkDelete}
+              >
+                {isBulkDeleting ? (
+                  <span className="loading loading-spinner loading-xs" />
+                ) : (
+                  `Sil (${selectedMessageIds.length})`
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="flex min-w-0 max-w-full flex-1 items-center gap-3 rounded-2xl px-2 py-1.5 text-left transition-colors hover:bg-base-200/70"
+                onClick={() => otherUser && navigate(`/profile/${otherUser.username}`)}
+              >
+                <div className="relative shrink-0">
+                  <div className="avatar">
+                    <div className="w-11 h-11 rounded-full ring-2 ring-base-300/80 ring-offset-2 ring-offset-base-100">
+                      <img
+                        src={otherUser?.profileImage || defaultProfilePicture}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold leading-tight text-base-content">
-                {otherUser?.fullname || otherUser?.username || "…"}
-              </p>
-              <p className="truncate text-xs text-base-content/50">@{otherUser?.username}</p>
-              <p className="truncate text-[11px] font-medium leading-tight text-primary/90">
-                {otherUser?.online
-                  ? "Çevrimiçi"
-                  : otherUser?.lastSeen
-                    ? `Son görülme: ${formatLastSeen(otherUser.lastSeen)}`
-                    : "Çevrimdışı"}
-              </p>
-            </div>
-          </button>
-          <div className="dropdown dropdown-end shrink-0">
-            <button
-              type="button"
-              tabIndex={0}
-              className="btn btn-ghost btn-sm btn-circle"
-              aria-label="Sohbet menüsü"
-              aria-haspopup="menu"
-            >
-              <LuEllipsisVertical className="h-5 w-5" />
-            </button>
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu z-40 mt-1 w-52 rounded-2xl border border-base-300/50 bg-base-100 p-2 shadow-lg"
-              role="menu"
-            >
-              <li>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold leading-tight text-base-content">
+                    {otherUser?.fullname || otherUser?.username || "…"}
+                  </p>
+                  <p className="truncate text-xs text-base-content/50">@{otherUser?.username}</p>
+                  <p className="truncate text-[11px] font-medium leading-tight text-primary/90">
+                    {otherUser?.online
+                      ? "Çevrimiçi"
+                      : otherUser?.lastSeen
+                        ? `Son görülme: ${formatLastSeen(otherUser.lastSeen)}`
+                        : "Çevrimdışı"}
+                  </p>
+                </div>
+              </button>
+              <div className="dropdown dropdown-end shrink-0">
                 <button
                   type="button"
-                  className="rounded-xl text-left font-medium"
-                  role="menuitem"
-                  onClick={() => setChatSettingsOpen(true)}
+                  tabIndex={0}
+                  className="btn btn-ghost btn-sm btn-circle"
+                  aria-label="Sohbet menüsü"
+                  aria-haspopup="menu"
                 >
-                  Sohbet ayarları
+                  <LuEllipsisVertical className="h-5 w-5" />
                 </button>
-              </li>
-            </ul>
-          </div>
+                <ul
+                  tabIndex={0}
+                  className="dropdown-content menu z-40 mt-1 w-52 rounded-2xl border border-base-300/50 bg-base-100 p-2 shadow-lg"
+                  role="menu"
+                >
+                  <li>
+                    <button
+                      type="button"
+                      className="rounded-xl text-left font-medium"
+                      role="menuitem"
+                      onClick={() => setChatSettingsOpen(true)}
+                    >
+                      Sohbet ayarları
+                    </button>
+                  </li>
+                  {conversationId && !isCompose ? (
+                    <>
+                      <li>
+                        <button
+                          type="button"
+                          className="rounded-xl text-left font-medium"
+                          role="menuitem"
+                          onClick={() => {
+                            setSelectionMode(true);
+                            setSelectedMessageIds([]);
+                          }}
+                        >
+                          Mesaj seç
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          type="button"
+                          className="rounded-xl text-left font-medium text-error"
+                          role="menuitem"
+                          disabled={isClearing}
+                          onClick={() => {
+                            if (
+                              !window.confirm(
+                                "Bu sohbetteki tüm mesajlar kalıcı olarak silinecek. Emin misiniz?"
+                              )
+                            ) {
+                              return;
+                            }
+                            clearChat();
+                          }}
+                        >
+                          {isClearing ? "Temizleniyor…" : "Sohbeti temizle"}
+                        </button>
+                      </li>
+                    </>
+                  ) : null}
+                </ul>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -661,6 +903,19 @@ const ChatPage = () => {
             setForwardTargetMessage(actionMenu.message);
             setForwardOpen(true);
           }
+        }}
+        canDelete={
+          !!(
+            actionMenu &&
+            conversationId &&
+            !isCompose &&
+            senderId(actionMenu.message) === myId
+          )
+        }
+        onDelete={() => {
+          if (!actionMenu?.message?._id) return;
+          if (!window.confirm("Bu mesaj silinsin mi?")) return;
+          removeMessage(actionMenu.message._id);
         }}
         reactionEmojis={conversationId && !isCompose ? MESSAGE_REACTION_EMOJIS : undefined}
         onReaction={(emoji) => {
@@ -740,7 +995,7 @@ const ChatPage = () => {
               return (
                 <SwipeableMessageRow
                   key={m._id}
-                  disabled={isCompose || !conversationId}
+                  disabled={isCompose || !conversationId || selectionMode}
                   onReply={() => {
                     setReplyTarget(m);
                     setEditingMessage(null);
@@ -749,7 +1004,9 @@ const ChatPage = () => {
                 >
                   <div
                     id={rowId ? `chat-msg-${rowId}` : undefined}
-                    className={`flex w-full min-w-0 max-w-full ${mine ? "justify-end" : "justify-start"} ${
+                    className={`flex w-full min-w-0 max-w-full items-start ${
+                      mine ? "justify-end" : "justify-start"
+                    } ${
                       clusterTop ? density.clusterTop : density.clusterRest
                     } ${
                       highlightedMessageId && rowId && highlightedMessageId === rowId
@@ -757,6 +1014,18 @@ const ChatPage = () => {
                         : ""
                     }`}
                   >
+                    {selectionMode && mine && rowId ? (
+                      <div className="flex shrink-0 items-start pt-2 pr-2">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-sm checkbox-primary"
+                          checked={selectedMessageIds.includes(rowId)}
+                          onChange={() => toggleMessageSelect(rowId)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="Mesajı seç"
+                        />
+                      </div>
+                    ) : null}
                     <div
                       className={`flex min-w-0 max-w-full flex-col ${mine ? "items-end" : "items-start"} ${
                         m.share?.kind
@@ -766,11 +1035,21 @@ const ChatPage = () => {
                     >
                       <div
                         role="group"
+                        onClick={(e) => {
+                          if (!selectionMode || !mine || !rowId) return;
+                          if (e.target.closest("a, button, video, input")) return;
+                          toggleMessageSelect(rowId);
+                        }}
                         onContextMenu={(e) => {
+                          if (selectionMode) {
+                            e.preventDefault();
+                            return;
+                          }
                           e.preventDefault();
                           setActionMenu({ message: m, x: e.clientX, y: e.clientY });
                         }}
                         onTouchStart={(e) => {
+                          if (selectionMode) return;
                           clearLongPress();
                           longPressTimerRef.current = window.setTimeout(() => {
                             const touch = e.touches[0];
@@ -875,9 +1154,17 @@ const ChatPage = () => {
                           {m.share?.kind ? (
                             <MessageSharePreview share={m.share} mine={mine} />
                           ) : null}
+                          {Array.isArray(m.attachments) && m.attachments.length > 0 ? (
+                            <MessageAttachments attachments={m.attachments} mine={mine} />
+                          ) : null}
                           {visibleMessageText(m.text) ? (
                             <p
-                              className={`max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] ${m.share?.kind ? "mt-2" : ""}`}
+                              className={`max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] ${
+                                m.share?.kind ||
+                                (Array.isArray(m.attachments) && m.attachments.length > 0)
+                                  ? "mt-2"
+                                  : ""
+                              }`}
                             >
                               {m.text}
                             </p>
@@ -1008,6 +1295,113 @@ const ChatPage = () => {
             </button>
           </div>
         )}
+        {pendingAttachments.length > 0 && !editingMessage && (
+          <div className="mb-2 flex flex-wrap gap-2 px-0.5">
+            {pendingAttachments.map((item) => {
+              const isImg =
+                item.mimeType.startsWith("image/") ||
+                (item.status === "ready" &&
+                  item.kind === "image" &&
+                  !item.mimeType.startsWith("video/"));
+              const isVid = item.mimeType.startsWith("video/");
+              const showThumb = isImg || isVid;
+              const previewSrc =
+                item.status === "uploading"
+                  ? item.localPreviewUrl
+                  : item.status === "ready"
+                    ? item.url
+                    : null;
+
+              return (
+                <div
+                  key={item.clientId}
+                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-base-300/60 bg-base-200/40 shadow-sm"
+                >
+                  {item.status === "uploading" && showThumb && previewSrc ? (
+                    <div
+                      className={`relative overflow-hidden ${
+                        isVid ? "h-28 w-44 sm:h-32 sm:w-48" : "h-28 w-28 sm:h-32 sm:w-32"
+                      }`}
+                    >
+                      {isVid ? (
+                        <video
+                          src={previewSrc}
+                          className="h-full w-full object-cover"
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : (
+                        <img
+                          src={previewSrc}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-base-100/55 backdrop-blur-[2px]">
+                        <span className="loading loading-spinner loading-md text-primary" />
+                        <span className="text-[11px] font-semibold text-base-content/80">
+                          Yükleniyor…
+                        </span>
+                      </div>
+                    </div>
+                  ) : item.status === "uploading" ? (
+                    <div className="flex h-28 w-36 flex-col items-center justify-center gap-2 px-3 sm:h-32">
+                      <LuFileText className="h-10 w-10 text-base-content/35" />
+                      <span className="loading loading-spinner loading-sm text-primary" />
+                      <span className="text-center text-[11px] font-medium text-base-content/70">
+                        Yükleniyor…
+                      </span>
+                    </div>
+                  ) : item.status === "ready" && showThumb && previewSrc ? (
+                    <div
+                      className={`relative overflow-hidden ${
+                        isVid ? "h-28 w-44 sm:h-32 sm:w-48" : "h-28 w-28 sm:h-32 sm:w-32"
+                      }`}
+                    >
+                      {isVid ? (
+                        <video
+                          src={previewSrc}
+                          className="h-full w-full object-cover"
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : (
+                        <img
+                          src={previewSrc}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-2 py-1.5">
+                        <p className="truncate text-[10px] font-medium text-white/95">
+                          {item.originalName || "Medya"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : item.status === "ready" ? (
+                    <div className="flex h-24 max-w-[12rem] items-center gap-2 px-3 py-2">
+                      <LuFileText className="h-8 w-8 shrink-0 text-primary/80" />
+                      <p className="min-w-0 flex-1 truncate text-xs font-medium text-base-content">
+                        {item.originalName || "Dosya"}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs btn-circle absolute right-1 top-1 z-10 h-7 w-7 min-h-0 border border-base-300/50 bg-base-100/90 p-0 opacity-90 shadow-sm backdrop-blur-sm hover:bg-error/20 hover:text-error"
+                    aria-label="Kaldır"
+                    onClick={() => removePendingAttachment(item.clientId)}
+                  >
+                    <LuX className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
         {replyingTo && !editingMessage && (
           <div className="mb-2 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/8 px-3 py-2">
             <div className="min-w-0 flex-1 border-l-2 border-primary pl-2">
@@ -1032,6 +1426,27 @@ const ChatPage = () => {
           className="flex w-full min-w-0 max-w-full items-end gap-2"
           onSubmit={handleSubmit}
         >
+          {!editingMessage && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                accept="image/*,video/*,.pdf,.zip,.txt,text/plain,application/pdf,application/zip"
+                onChange={handleChatFiles}
+              />
+              <button
+                type="button"
+                className="btn btn-ghost btn-circle h-12 w-12 shrink-0"
+                aria-label="Dosya veya fotoğraf ekle"
+                disabled={isPending || pendingAttachments.length >= 5}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <LuPaperclip className="h-5 w-5" />
+              </button>
+            </>
+          )}
           <label className="relative min-h-[48px] min-w-0 flex-1">
             <textarea
               ref={textareaRef}

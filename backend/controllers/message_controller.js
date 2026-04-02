@@ -23,10 +23,72 @@ const SHARE_PREVIEW = {
   profile: "Bir profil paylaştı",
 };
 
-const lastPreviewForMessage = (text, shareDoc) => {
+const MAX_CHAT_ATTACHMENTS = 5;
+const MAX_CHAT_FILE_BYTES = 15 * 1024 * 1024;
+
+const lastPreviewForMessage = (text, shareDoc, attachments) => {
   if (shareDoc?.kind === "post") return SHARE_PREVIEW.post;
   if (shareDoc?.kind === "profile") return SHARE_PREVIEW.profile;
+  if (attachments?.length) {
+    const imgs = attachments.filter((a) => a.kind === "image").length;
+    const files = attachments.length - imgs;
+    if (imgs && files) return `🖼️ ${imgs} fotoğraf, 📎 ${files} dosya`;
+    if (imgs > 1) return `🖼️ ${imgs} fotoğraf`;
+    if (imgs === 1) return "🖼️ Fotoğraf";
+    if (files > 1) return `📎 ${files} dosya`;
+    return "📎 Dosya";
+  }
   return String(text || "").slice(0, 120);
+};
+
+const isAllowedAttachmentUrl = (url) => {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:") return false;
+    return u.hostname.toLowerCase().includes("cloudinary.com");
+  } catch {
+    return false;
+  }
+};
+
+const validateAttachments = (raw) => {
+  if (raw == null || raw === "") return { ok: true, attachments: [] };
+  if (!Array.isArray(raw)) {
+    return { ok: false, message: "Ekler geçersiz." };
+  }
+  if (raw.length > MAX_CHAT_ATTACHMENTS) {
+    return { ok: false, message: "En fazla 5 ek eklenebilir." };
+  }
+  const out = [];
+  for (const a of raw) {
+    if (!a || typeof a !== "object") {
+      return { ok: false, message: "Ekler geçersiz." };
+    }
+    const url = String(a.url || "").trim();
+    if (!isAllowedAttachmentUrl(url)) {
+      return { ok: false, message: "Geçersiz dosya adresi." };
+    }
+    const kind = a.kind === "file" ? "file" : "image";
+    const mimeType = String(a.mimeType || "").slice(0, 128);
+    const originalName = String(a.originalName || "dosya").slice(0, 200);
+    const size = Number(a.size);
+    if (Number.isFinite(size) && size > MAX_CHAT_FILE_BYTES) {
+      return { ok: false, message: "Bir dosya en fazla 15 MB olabilir." };
+    }
+    out.push({
+      url,
+      kind,
+      mimeType,
+      originalName,
+      size: Number.isFinite(size) && size >= 0 ? size : 0,
+    });
+  }
+  return { ok: true, attachments: out };
+};
+
+const pickAttachments = (body) => {
+  const b = normalizeRequestBody(body);
+  return b.attachments;
 };
 
 /** İstemciden gelen share gövdesini doğrula; yoksa share: null */
@@ -72,7 +134,7 @@ const validateSharePayload = async (raw) => {
 
 const replyToPopulate = {
   path: "replyTo",
-  select: "_id text sender share createdAt",
+  select: "_id text sender share createdAt attachments",
   populate: [
     { path: "sender", select: "username profileImage fullname" },
     {
@@ -219,7 +281,18 @@ const buildReplySnapshot = async (replyToId) => {
   const trimmed = String(ref.text || "")
     .replace(/\u2060/g, "")
     .trim();
-  let preview = lastPreviewForMessage(trimmed, ref.share);
+  let preview = "";
+  if (ref.attachments?.length) {
+    const imgs = ref.attachments.filter((x) => x.kind === "image").length;
+    const files = ref.attachments.length - imgs;
+    if (imgs && files) preview = `🖼️ ${imgs} · 📎 ${files}`;
+    else if (imgs > 1) preview = `🖼️ ${imgs} fotoğraf`;
+    else if (imgs === 1) preview = "🖼️ Fotoğraf";
+    else if (files > 1) preview = `📎 ${files} dosya`;
+    else preview = "📎 Dosya";
+  } else {
+    preview = lastPreviewForMessage(trimmed, ref.share, ref.attachments);
+  }
   if (!preview || !String(preview).trim()) {
     preview = "Mesaj";
   }
@@ -268,7 +341,17 @@ export const send_message = async (req, res) => {
           shareInput.profileUser != null)) ||
       (incoming.postId != null && String(incoming.postId).trim() !== "");
 
-    if (!trimmed && !shareDoc) {
+    const attRes = validateAttachments(pickAttachments(incoming));
+    if (!attRes.ok) {
+      return res.status(400).json({ message: attRes.message });
+    }
+    const attachmentsDoc = attRes.attachments || [];
+
+    if (shareDoc && attachmentsDoc.length > 0) {
+      return res.status(400).json({ message: "Paylaşım ile dosya birlikte gönderilemez." });
+    }
+
+    if (!trimmed && !shareDoc && attachmentsDoc.length === 0) {
       if (hadShareIntent) {
         return res.status(400).json({ message: "Paylaşım doğrulanamadı." });
       }
@@ -285,7 +368,13 @@ export const send_message = async (req, res) => {
     /** Paylaşım + boş metin: şema/önizleme için görünmez işaret (UI'da gösterilmez) */
     const SHARE_TEXT_PLACEHOLDER = "\u2060";
     const messageText =
-      shareDoc && !trimmed ? SHARE_TEXT_PLACEHOLDER : trimmed.slice(0, 4000);
+      shareDoc && !trimmed
+        ? SHARE_TEXT_PLACEHOLDER
+        : trimmed
+          ? trimmed.slice(0, 4000)
+          : attachmentsDoc.length > 0
+            ? SHARE_TEXT_PLACEHOLDER
+            : "";
 
     const [toUser, fromUser] = await Promise.all([
       User.findById(toUserId),
@@ -300,7 +389,7 @@ export const send_message = async (req, res) => {
       return res.status(403).json({ message: "Bu kullanıcıya mesaj gönderemezsiniz." });
     }
 
-    const preview = lastPreviewForMessage(trimmed, shareDoc);
+    const preview = lastPreviewForMessage(trimmed, shareDoc, attachmentsDoc);
 
     const key = participantKey(fromUserId, toUserId);
     let conv = await Conversation.findOne({ participantKey: key });
@@ -311,6 +400,7 @@ export const send_message = async (req, res) => {
         sender: fromUserId,
         text: messageText,
         ...(shareDoc ? { share: shareDoc } : {}),
+        ...(attachmentsDoc.length ? { attachments: attachmentsDoc } : {}),
         ...(replyToRef ? { replyTo: replyToRef } : {}),
         ...(replySnapshotDoc ? { replySnapshot: replySnapshotDoc } : {}),
       });
@@ -373,6 +463,9 @@ export const send_message = async (req, res) => {
     // 3) Sohbet yok ve karşılıklı takip yok → mesaj isteği
     if (replyToMessageId) {
       return res.status(400).json({ message: "Mesaj isteği gönderilirken alıntı kullanılamaz." });
+    }
+    if (attachmentsDoc.length > 0) {
+      return res.status(400).json({ message: "Mesaj isteğinde dosya gönderilemez." });
     }
 
     const existingPending = await MessageRequest.findOne({
@@ -692,7 +785,7 @@ export const accept_request = async (req, res) => {
     let conv = await Conversation.findOne({ participantKey: key });
     const ids = [reqDoc.from, reqDoc.to].sort(sortParticipantIds);
 
-    const preview = lastPreviewForMessage(reqDoc.text, reqDoc.share);
+    const preview = lastPreviewForMessage(reqDoc.text, reqDoc.share, []);
 
     if (!conv) {
       conv = await Conversation.create({
@@ -811,6 +904,96 @@ export const edit_message = async (req, res) => {
     res.status(200).json(msgOut);
   } catch (error) {
     console.log("Error in edit_message", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+export const delete_message = async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const userId = req.user._id;
+    const conv = await Conversation.findById(conversationId);
+    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
+      return res.status(404).json({ message: "Sohbet bulunamadı." });
+    }
+    const msg = await Message.findById(messageId);
+    if (!msg) return res.status(404).json({ message: "Mesaj bulunamadı." });
+    if (msg.conversation.toString() !== conversationId) {
+      return res.status(400).json({ message: "Mesaj bu sohbete ait değil." });
+    }
+    if (msg.sender.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Bu mesajı silemezsiniz." });
+    }
+    await Message.deleteOne({ _id: messageId });
+    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
+    const payload = {
+      conversationId: String(conversationId),
+      messageIds: [String(messageId)],
+    };
+    if (peerId) emitToUser(peerId.toString(), "message:deleted", payload);
+    emitToUser(userId.toString(), "message:deleted", payload);
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    console.log("Error in delete_message", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+export const delete_messages_bulk = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user._id;
+    const b = normalizeRequestBody(req.body);
+    const raw = b.messageIds;
+    if (!Array.isArray(raw) || raw.length === 0) {
+      return res.status(400).json({ message: "messageIds gerekli." });
+    }
+    const ids = raw.map((x) => String(x).trim()).filter(Boolean);
+    if (ids.length === 0) {
+      return res.status(400).json({ message: "messageIds gerekli." });
+    }
+    const conv = await Conversation.findById(conversationId);
+    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
+      return res.status(404).json({ message: "Sohbet bulunamadı." });
+    }
+    await Message.deleteMany({
+      _id: { $in: ids },
+      conversation: conversationId,
+      sender: userId,
+    });
+    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
+    const payload = {
+      conversationId: String(conversationId),
+      messageIds: ids.map(String),
+    };
+    if (peerId) emitToUser(peerId.toString(), "message:deleted", payload);
+    emitToUser(userId.toString(), "message:deleted", payload);
+    res.status(200).json({ ok: true, messageIds: payload.messageIds });
+  } catch (error) {
+    console.log("Error in delete_messages_bulk", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+export const clear_conversation_messages = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user._id;
+    const conv = await Conversation.findById(conversationId);
+    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
+      return res.status(404).json({ message: "Sohbet bulunamadı." });
+    }
+    await Message.deleteMany({ conversation: conversationId });
+    conv.lastMessagePreview = "Sohbet temizlendi";
+    conv.lastMessageAt = new Date();
+    await conv.save();
+    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
+    const payload = { conversationId: String(conversationId) };
+    if (peerId) emitToUser(peerId.toString(), "conversation:cleared", payload);
+    emitToUser(userId.toString(), "conversation:cleared", payload);
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    console.log("Error in clear_conversation_messages", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };
