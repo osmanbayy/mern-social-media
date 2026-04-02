@@ -1,50 +1,19 @@
 import { useState } from "react";
 import Posts from "../../components/common/Posts";
 import CreatePost from "./CreatePost";
+import HomeFeedTabs from "../../components/home/HomeFeedTabs";
+import { POST_FEED_TYPES } from "../../constants/postFeedTypes";
 
 const HomePage = () => {
-  const [feedType, setFeedType] = useState("forYou");
+  const [feedType, setFeedType] = useState(POST_FEED_TYPES.FOR_YOU);
 
   return (
     <div className="w-full min-h-screen mb-14 md:mb-0">
-        {/* Header */}
-        <div className="flex w-full border-b border-base-300/50 bg-base-100/95 backdrop-blur-md sticky top-0 z-10">
-          <div
-            className={
-              "flex justify-center flex-1 p-4 hover:bg-base-200/50 transition-all duration-300 cursor-pointer relative group"
-            }
-            onClick={() => setFeedType("forYou")}
-          >
-            <span className={`font-medium transition-colors ${
-              feedType === "forYou" ? "text-base-content" : "text-base-content/20 group-hover:text-base-content"
-            }`}>
-              Senin İçin
-            </span>
-            {feedType === "forYou" && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 bg-base-content h-1 rounded-full"></div>
-            )}
-          </div>
-          <div
-            className="flex justify-center flex-1 p-4 hover:bg-base-200/50 transition-all duration-300 cursor-pointer relative group"
-            onClick={() => setFeedType("following")}
-          >
-            <span className={`font-medium transition-colors ${
-              feedType === "following" ? "text-base-content" : "text-base-content/20 group-hover:text-base-content"
-            }`}>
-              Takip Ettiklerin
-            </span>
-            {feedType === "following" && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 bg-base-content h-1 rounded-full"></div>
-            )}
-          </div>
-        </div>
-
-        {/*  CREATE POST INPUT */}
-        <CreatePost />
-
-        {/* POSTS */}
-        <Posts feedType={feedType} />
+      <HomeFeedTabs feedType={feedType} onFeedTypeChange={setFeedType} />
+      <CreatePost />
+      <Posts feedType={feedType} />
     </div>
   );
 };
+
 export default HomePage;

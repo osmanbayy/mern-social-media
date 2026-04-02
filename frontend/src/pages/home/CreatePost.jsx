@@ -1,86 +1,41 @@
 import { CiImageOn } from "react-icons/ci";
-import { useRef, useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
 import { LiaTelegram } from "react-icons/lia";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
-import { toast } from "react-hot-toast";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useNavigate } from "react-router-dom";
-import { createPost } from "../../api/posts";
-import { invalidatePostsFeed } from "../../utils/invalidatePostsFeed";
-import useMention from "../../hooks/useMention";
 import MentionDropdown from "../../components/common/MentionDropdown";
 import EmojiPickerButton from "../../components/common/EmojiPickerButton";
+import { useCreatePostForm } from "../../hooks/useCreatePostForm";
 
 const CreatePost = () => {
-  const [text, setText] = useState("");
-  const [img, setImg] = useState(null);
-
   const navigate = useNavigate();
-
-  const [showPicker, setShowPicker] = useState(false);
-  const imgRef = useRef(null);
-  const textareaRef = useRef(null);
+  const { theme } = useTheme();
+  const { authUser } = useAuth();
 
   const {
+    text,
+    img,
+    showPicker,
+    setShowPicker,
+    imgRef,
+    textareaRef,
     showMentionDropdown,
     mentionQuery,
     mentionPosition,
     handleTextChange,
     handleSelectUser,
     closeMentionDropdown,
-  } = useMention(text, setText, textareaRef);
-
-  const { theme } = useTheme();
-  const { authUser } = useAuth();
-  const queryClient = useQueryClient();
-
-  const handleEmojiClick = (emojiObject) => {
-    setText((prevText) => prevText + emojiObject.emoji);
-  };
-
-  const {
-    mutate: createPostMutation,
+    handleEmojiSelect,
+    handleSubmit,
+    handleImgChange,
+    clearImage,
     isPending,
     isError,
     error,
-  } = useMutation({
-    mutationFn: ({ text, img }) => createPost({ text, img }),
-    onSuccess: () => {
-      setText("");
-      setImg(null);
-      toast.success("Gönderi paylaşıldı.");
-      invalidatePostsFeed(queryClient);
-    },
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    createPostMutation({ text, img });
-  };
-
-  const handleImgChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Lütfen bir resim dosyası seçin.");
-      return;
-    }
-
-    try {
-      const { optimizeImage } = await import("../../utils/imageOptimizer");
-      const optimizedImage = await optimizeImage(file, 9);
-      setImg(optimizedImage);
-    } catch (err) {
-      toast.error(err.message || "Resim yüklenirken bir hata oluştu.");
-    }
-  };
-
-  const canSubmit = text.trim() || img;
-  const disabledSubmit = isPending || !canSubmit;
+    disabledSubmit,
+  } = useCreatePostForm();
 
   return (
     <div className="border-b border-base-300/40 bg-gradient-to-b from-base-100 via-base-100 to-base-200/30 backdrop-blur-md">
@@ -138,10 +93,7 @@ const CreatePost = () => {
                   <button
                     type="button"
                     className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-base-content/85 text-base-100 shadow-md backdrop-blur-sm transition-transform hover:scale-105 hover:bg-base-content"
-                    onClick={() => {
-                      setImg(null);
-                      imgRef.current.value = null;
-                    }}
+                    onClick={clearImage}
                     aria-label="Görseli kaldır"
                   >
                     <IoCloseSharp className="h-5 w-5" />
@@ -174,15 +126,11 @@ const CreatePost = () => {
 
                   <EmojiPickerButton
                     theme={theme}
-                    onEmojiClick={handleEmojiClick}
+                    onEmojiClick={handleEmojiSelect}
                     showPicker={showPicker}
                     setShowPicker={setShowPicker}
                     buttonClassName="flex h-10 w-10 items-center justify-center rounded-xl bg-base-200/60 transition-colors hover:bg-primary/15 dark:bg-base-300/40"
-                    iconClassName={
-                      theme === "dark"
-                        ? "fill-amber-400/95"
-                        : "fill-sky-500"
-                    }
+                    iconClassName={theme === "dark" ? "fill-amber-400/95" : "fill-sky-500"}
                   />
                 </div>
 

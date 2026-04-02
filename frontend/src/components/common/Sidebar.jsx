@@ -1,8 +1,8 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/AuthContext";
 import toast from "react-hot-toast";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import LogoutDialog from "../modals/LogoutDialog";
 import { logout } from "../../api/auth";
 import { getNotifications } from "../../api/notifications";
@@ -56,12 +56,6 @@ const Sidebar = () => {
   });
 
   const { authUser } = useAuth();
-
-  useEffect(() => {
-    if (!authUser) {
-      <Navigate to={"/login"} />;
-    }
-  }, [authUser]);
 
   const { data: notifications } = useQuery({
     queryKey: ["notifications"],
