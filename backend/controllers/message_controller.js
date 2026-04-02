@@ -60,7 +60,7 @@ const validateSharePayload = async (raw) => {
 
 const replyToPopulate = {
   path: "replyTo",
-  select: "text sender share createdAt",
+  select: "_id text sender share createdAt",
   populate: [
     { path: "sender", select: "username profileImage fullname" },
     {

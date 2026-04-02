@@ -13,7 +13,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { FaArrowLeft } from "react-icons/fa6";
-import { LuSendHorizontal, LuCheck, LuCheckCheck, LuEllipsisVertical } from "react-icons/lu";
+import {
+  LuSendHorizontal,
+  LuCheck,
+  LuCheckCheck,
+  LuEllipsisVertical,
+  LuChevronsDown,
+} from "react-icons/lu";
 import toast from "react-hot-toast";
 import MessageSharePreview from "../../components/messages/MessageSharePreview";
 import {
@@ -30,8 +36,10 @@ import MessageContextMenu from "../../components/messages/MessageContextMenu";
 import ForwardMessageModal from "../../components/messages/ForwardMessageModal";
 import {
   getMessageDocId,
+  getQuotedMessageId,
   getReplyPreviewText,
   messageHasQuotedReply,
+  scrollChildIntoContainerCenter,
 } from "../../utils/messageChat";
 
 const formatMsgTime = (iso) => {
@@ -87,12 +95,16 @@ const ChatPage = () => {
     replyingToRef.current = null;
     setReplyingTo(null);
   }, []);
+
   const [editingMessage, setEditingMessage] = useState(null);
   const [actionMenu, setActionMenu] = useState(null);
   const [forwardOpen, setForwardOpen] = useState(false);
   const [forwardTargetMessage, setForwardTargetMessage] = useState(null);
   const [chatSettingsOpen, setChatSettingsOpen] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const longPressTimerRef = useRef(null);
+
   const { appearance, resolvedBubbles, chatBgClass } = useChatAppearance();
   const density = CHAT_DENSITY_MAP[appearance.messageDensity] || CHAT_DENSITY_MAP.default;
   const messageFontClass = CHAT_FONT_MAP[appearance.messageFontSize] || CHAT_FONT_MAP.md;
@@ -102,6 +114,31 @@ const ChatPage = () => {
   const bottomRef = useRef(null);
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
+
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, []);
+
+  const handleQuoteNavigate = useCallback((e, msg) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const qid = getQuotedMessageId(msg);
+    if (!qid) return;
+    const normalized = String(qid).trim();
+    const container = scrollRef.current;
+    const el = document.getElementById(`chat-msg-${normalized}`);
+    if (!el || !container?.contains(el)) {
+      toast.error("Bu mesaj listede görünmüyor (daha eski mesajlar yüklenmediyse görünmez).");
+      return;
+    }
+    requestAnimationFrame(() => {
+      scrollChildIntoContainerCenter(container, el);
+    });
+    setHighlightedMessageId(normalized);
+    window.setTimeout(() => setHighlightedMessageId(null), 2200);
+  }, []);
 
   const clearLongPress = () => {
     if (longPressTimerRef.current != null) {
@@ -248,6 +285,19 @@ const ChatPage = () => {
     if (!conversationId || isCompose || isLoading) return;
     markConversationRead(conversationId).catch(() => {});
   }, [conversationId, isCompose, isLoading, messages.length]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return undefined;
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const distFromBottom = scrollHeight - scrollTop - clientHeight;
+      setShowScrollToBottom(distFromBottom > 180);
+    };
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [conversationId, messages.length]);
 
   const { mutate: send, isPending } = useMutation({
     mutationFn: ({ text: t, replyToId }) =>
@@ -512,10 +562,11 @@ const ChatPage = () => {
       />
 
       {/* Messages */}
-      <div
-        ref={scrollRef}
-        className={`scrollbar-hide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden ${density.scrollPadding} ${chatBgClass}`}
-      >
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <div
+          ref={scrollRef}
+          className={`scrollbar-hide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden ${density.scrollPadding} ${chatBgClass}`}
+        >
         {isLoading && (
           <div className="flex justify-center py-16">
             <LoadingSpinner />
@@ -550,6 +601,7 @@ const ChatPage = () => {
 
               const m = row.m;
               const i = row.index;
+              const rowId = getMessageDocId(m);
               const mine = senderId(m) === myId;
               const bubbleResolved = mine ? resolvedBubbles.mine : resolvedBubbles.theirs;
               const prev = messages[i - 1];
@@ -578,8 +630,13 @@ const ChatPage = () => {
                   }}
                 >
                   <div
+                    id={rowId ? `chat-msg-${rowId}` : undefined}
                     className={`flex w-full min-w-0 max-w-full ${mine ? "justify-end" : "justify-start"} ${
                       clusterTop ? density.clusterTop : density.clusterRest
+                    } ${
+                      highlightedMessageId && rowId && highlightedMessageId === rowId
+                        ? "scroll-mt-20 rounded-2xl ring-2 ring-primary/50"
+                        : ""
                     }`}
                   >
                     <div
@@ -633,37 +690,70 @@ const ChatPage = () => {
                               : undefined
                           }
                         >
-                          {messageHasQuotedReply(m) && (
-                            <div
-                              className={`mb-2 border-l-[3px] pl-2.5 ${
-                                mine
-                                  ? bubbleResolved.mode === "theme"
-                                    ? "border-primary-content/45"
-                                    : "border-current/35"
-                                  : "border-primary/55"
-                              }`}
-                            >
-                              <p
-                                className={`text-[11px] font-semibold ${
-                                  mine ? "opacity-95" : "text-base-content/85"
+                          {messageHasQuotedReply(m) &&
+                            (getQuotedMessageId(m) ? (
+                              <button
+                                type="button"
+                                className={`mb-2 w-full rounded-lg border-l-[3px] pl-2.5 text-left transition hover:bg-black/5 active:scale-[0.99] dark:hover:bg-white/10 ${
+                                  mine
+                                    ? bubbleResolved.mode === "theme"
+                                      ? "border-primary-content/45"
+                                      : "border-current/35"
+                                    : "border-primary/55"
+                                }`}
+                                onClick={(e) => handleQuoteNavigate(e, m)}
+                              >
+                                <p
+                                  className={`text-[11px] font-semibold ${
+                                    mine ? "opacity-95" : "text-base-content/85"
+                                  }`}
+                                >
+                                  {m.replyTo?.sender?.fullname ||
+                                    m.replyTo?.sender?.username ||
+                                    m.replySnapshot?.senderLabel ||
+                                    "…"}
+                                </p>
+                                <p
+                                  className={`line-clamp-2 text-[12px] ${
+                                    mine ? "opacity-85" : "text-base-content/65"
+                                  }`}
+                                >
+                                  {m.replyTo
+                                    ? getReplyPreviewText(m.replyTo)
+                                    : (m.replySnapshot?.preview || "").trim() || "Mesaj"}
+                                </p>
+                              </button>
+                            ) : (
+                              <div
+                                className={`mb-2 border-l-[3px] pl-2.5 ${
+                                  mine
+                                    ? bubbleResolved.mode === "theme"
+                                      ? "border-primary-content/45"
+                                      : "border-current/35"
+                                    : "border-primary/55"
                                 }`}
                               >
-                                {m.replyTo?.sender?.fullname ||
-                                  m.replyTo?.sender?.username ||
-                                  m.replySnapshot?.senderLabel ||
-                                  "…"}
-                              </p>
-                              <p
-                                className={`line-clamp-2 text-[12px] ${
-                                  mine ? "opacity-85" : "text-base-content/65"
-                                }`}
-                              >
-                                {m.replyTo
-                                  ? getReplyPreviewText(m.replyTo)
-                                  : (m.replySnapshot?.preview || "").trim() || "Mesaj"}
-                              </p>
-                            </div>
-                          )}
+                                <p
+                                  className={`text-[11px] font-semibold ${
+                                    mine ? "opacity-95" : "text-base-content/85"
+                                  }`}
+                                >
+                                  {m.replyTo?.sender?.fullname ||
+                                    m.replyTo?.sender?.username ||
+                                    m.replySnapshot?.senderLabel ||
+                                    "…"}
+                                </p>
+                                <p
+                                  className={`line-clamp-2 text-[12px] ${
+                                    mine ? "opacity-85" : "text-base-content/65"
+                                  }`}
+                                >
+                                  {m.replyTo
+                                    ? getReplyPreviewText(m.replyTo)
+                                    : (m.replySnapshot?.preview || "").trim() || "Mesaj"}
+                                </p>
+                              </div>
+                            ))}
                           {m.share?.kind ? (
                             <MessageSharePreview share={m.share} mine={mine} />
                           ) : null}
@@ -720,6 +810,20 @@ const ChatPage = () => {
           </div>
         )}
         <div ref={bottomRef} className="h-px w-full shrink-0" />
+        </div>
+        {showScrollToBottom && (
+          <button
+            type="button"
+            className="btn btn-circle btn-primary btn-sm absolute bottom-4 right-2 z-20 h-8 w-8 min-h-0 border-0 p-0 shadow-md sm:bottom-5 sm:right-4"
+            onClick={() => {
+              scrollToBottom();
+              setShowScrollToBottom(false);
+            }}
+            aria-label="En alta in"
+          >
+            <LuChevronsDown className="h-3.5 w-3.5" strokeWidth={2.25} />
+          </button>
+        )}
       </div>
 
       {/* Composer */}

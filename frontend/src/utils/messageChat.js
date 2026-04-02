@@ -31,6 +31,40 @@ export function messageHasQuotedReply(m) {
   return hasPreview || hasSender;
 }
 
+/** Alıntılanan mesajın id’si (DOM’da `chat-msg-{id}` ile eşleşir); sadece `replyTo` varken */
+export function getQuotedMessageId(m) {
+  if (!m || typeof m !== "object") return null;
+  const rt = m.replyTo;
+  if (rt == null || rt === "") return null;
+  if (typeof rt === "object") {
+    const raw = rt._id ?? rt.id;
+    if (raw == null) return null;
+    if (typeof raw === "object" && raw !== null && typeof raw.toString === "function") {
+      const s = String(raw);
+      return s && s !== "[object Object]" ? s : null;
+    }
+    return String(raw);
+  }
+  const s = String(rt).trim();
+  return s || null;
+}
+
+/**
+ * İç içe scroll alanlarında `scrollIntoView` bazen yanlış atayı kaydırır.
+ * Hedef öğeyi verilen scroll container içinde dikey ortalar.
+ */
+export function scrollChildIntoContainerCenter(container, childEl) {
+  if (!container || !childEl) return;
+  const cr = container.getBoundingClientRect();
+  const er = childEl.getBoundingClientRect();
+  const next =
+    container.scrollTop +
+    (er.top - cr.top) -
+    container.clientHeight / 2 +
+    er.height / 2;
+  container.scrollTo({ top: Math.max(0, next), behavior: "smooth" });
+}
+
 /** @param {Record<string, unknown> | null | undefined} message */
 export function getReplyPreviewText(message) {
   if (!message || typeof message !== "object") return "Mesaj";
