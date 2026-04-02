@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { invalidatePostsFeed } from "../../utils/invalidatePostsFeed";
 import { FaRegComment } from "react-icons/fa";
 import { IoMdBookmark } from "react-icons/io";
 import { FaHeart } from "react-icons/fa6";
@@ -21,14 +22,14 @@ const PostActions = ({
   variant = "default", // "default" or "compact"
 }) => {
   const [showRetweetDropdown, setShowRetweetDropdown] = useState(false);
-  const dropdownRef = useRef(null);
+  const retweetAnchorRef = useRef(null);
   const queryClient = useQueryClient();
 
   const { mutate: directRetweet } = useMutation({
     mutationFn: () => retweetPost(post._id),
     onSuccess: (data) => {
       toast.success(data.retweeted ? "Gönderi retweet edildi." : "Retweet geri alındı.");
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      invalidatePostsFeed(queryClient);
       queryClient.invalidateQueries({ queryKey: ["user"] });
     },
     onError: (error) => {
@@ -68,7 +69,7 @@ const PostActions = ({
             </div>
           )}
 
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative" ref={retweetAnchorRef}>
             <div
               className="flex gap-1.5 items-center group cursor-pointer"
               onClick={handleRetweetClick}
@@ -97,7 +98,7 @@ const PostActions = ({
             {showRetweetDropdown && !isRetweeted && (
               <RetweetDropdown
                 post={post}
-                isRetweeted={isRetweeted}
+                anchorRef={retweetAnchorRef}
                 onClose={() => setShowRetweetDropdown(false)}
               />
             )}
@@ -166,7 +167,7 @@ const PostActions = ({
         )}
 
         {/* Repost Button with Dropdown */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative" ref={retweetAnchorRef}>
           <div
             className="flex items-center gap-2 group cursor-pointer"
             onClick={handleRetweetClick}
@@ -195,7 +196,7 @@ const PostActions = ({
           {showRetweetDropdown && !isRetweeted && (
             <RetweetDropdown
               post={post}
-              isRetweeted={isRetweeted}
+              anchorRef={retweetAnchorRef}
               onClose={() => setShowRetweetDropdown(false)}
             />
           )}

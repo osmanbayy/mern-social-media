@@ -1159,6 +1159,16 @@ export const retweet_post = async (req, res) => {
           select: "-password",
         });
 
+      const retweeter = await User.findById(userId).select("followers");
+      if (retweeter?.followers?.length) {
+        const payload = populatedRetweet.toObject
+          ? populatedRetweet.toObject()
+          : populatedRetweet;
+        for (const fid of retweeter.followers) {
+          emitToUser(fid.toString(), "feed:new_post", { post: payload });
+        }
+      }
+
       return res.status(200).json({ message: "Gönderi retweet edildi.", retweeted: true, post: populatedRetweet });
     }
   } catch (error) {
@@ -1249,6 +1259,14 @@ export const quote_retweet = async (req, res) => {
         path: "retweetedBy",
         select: "-password",
       });
+
+    const quoter = await User.findById(userId).select("followers");
+    if (quoter?.followers?.length) {
+      const payload = populatedPost.toObject ? populatedPost.toObject() : populatedPost;
+      for (const fid of quoter.followers) {
+        emitToUser(fid.toString(), "feed:new_post", { post: payload });
+      }
+    }
 
     res.status(201).json(populatedPost);
   } catch (error) {
