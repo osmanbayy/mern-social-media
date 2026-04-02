@@ -73,7 +73,7 @@ const MessageRequestsPage = () => {
           <button
             type="button"
             className="btn btn-circle btn-ghost btn-sm shrink-0"
-            onClick={() => navigate("/messages")}
+            onClick={() => navigate(-1)}
             aria-label="Mesajlara dön"
           >
             <FaArrowLeft className="h-5 w-5" />

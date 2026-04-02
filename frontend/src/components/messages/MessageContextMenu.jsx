@@ -19,6 +19,8 @@ import {
  *   onQuote: () => void;
  *   onForward: () => void;
  *   canEdit: boolean;
+ *   canDelete?: boolean;
+ *   onDelete?: () => void;
  *   reactionEmojis?: string[];
  *   onReaction?: (emoji: string) => void;
  * }} props
@@ -33,6 +35,8 @@ export default function MessageContextMenu({
   onQuote,
   onForward,
   canEdit,
+  canDelete,
+  onDelete,
   reactionEmojis,
   onReaction,
 }) {
