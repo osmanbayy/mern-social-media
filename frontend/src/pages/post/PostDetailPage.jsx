@@ -50,6 +50,7 @@ const PostDetailPage = () => {
   } = useMention(comment, setComment, commentTextareaRef);
 
   const { authUser, isLoading: isAuthLoading } = useAuth();
+  const { theme } = useTheme();
 
   // Fetch single post
   const { data: post, isLoading: isPostLoading } = useQuery({
@@ -172,7 +173,6 @@ const PostDetailPage = () => {
   const isSaved = post.saves.includes(authUser?._id);
   const isMyPost = authUser?._id === post.user?._id;
   const formattedDate = formatPostDate(post.createdAt);
-  const { theme } = useTheme();
 
   // Comment handlers
   const handleLikeComment = (commentId, e) => {

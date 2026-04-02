@@ -1,3 +1,5 @@
+import { handleApiResponse } from "./handleApiResponse.js";
+
 /** Mesaj API kökü ile aynı — sohbet dosya yüklemesi /api/messages/upload/chat */
 const getApiBase = () => {
   const base = import.meta.env.VITE_API_BASE_URL;
@@ -12,24 +14,8 @@ const getApiBase = () => {
 
 const API_BASE = getApiBase();
 
-const handleResponse = async (response) => {
-  const contentType = response.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
-    const text = await response.text();
-    const t = text.trim();
-    if (t.startsWith("<!DOCTYPE") || t.startsWith("<html") || t.includes("<pre>")) {
-      throw new Error(
-        "API'ye ulaşılamadı (HTML yanıtı). Backend'i yeniden başlatın; geliştirmede proxy'yi kontrol edin."
-      );
-    }
-    throw new Error(t.slice(0, 200) || "Beklenmeyen bir hata oluştu.");
-  }
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || data.error || "Bir hata oluştu.");
-  }
-  return data;
-};
+const handleResponse = (response) =>
+  handleApiResponse(response, { nonJsonFallback: "Beklenmeyen bir hata oluştu." });
 
 /**
  * Sohbet dosyası (resim, video, PDF, zip, metin) — Cloudinary

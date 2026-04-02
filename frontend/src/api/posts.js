@@ -1,5 +1,7 @@
 // Posts API - All post-related API calls
 
+import { handleApiResponse } from "./handleApiResponse.js";
+
 // API base URL'i normalize et (çift slash'ları temizle)
 const getApiBase = () => {
   const base = import.meta.env.VITE_API_BASE_URL;
@@ -15,19 +17,8 @@ const getApiBase = () => {
 
 const API_BASE = getApiBase();
 
-const handleResponse = async (response) => {
-  const contentType = response.headers.get("content-type");
-  if (contentType && !contentType.includes("application/json")) {
-    const text = await response.text();
-    throw new Error("Sunucu hatası: JSON beklenirken HTML döndü.");
-  }
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || "Bir hata oluştu.");
-  }
-  return data;
-};
+const handleResponse = (response) =>
+  handleApiResponse(response, { nonJsonFallback: "Bir hata oluştu." });
 
 // Get all posts
 export const getAllPosts = async (page = 1, limit = 10) => {

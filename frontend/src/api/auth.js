@@ -1,3 +1,5 @@
+import { handleApiResponse } from "./handleApiResponse.js";
+
 const getApiBase = () => {
   const base = import.meta.env.VITE_API_BASE_URL;
   if (!base) return "/api/auth";
@@ -15,19 +17,8 @@ const API_BASE = getApiBase();
 const AUTH_ME_TIMEOUT_MS = 7000;
 const AUTH_MUTATION_TIMEOUT_MS = 10000;
 
-const handleResponse = async (response) => {
-  const contentType = response.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
-    const text = await response.text();
-    throw new Error(text || "Unexpected error occurred.");
-  }
-  
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || data.error || "An error occurred.");
-  }
-  return data;
-};
+const handleResponse = (response) =>
+  handleApiResponse(response, { nonJsonFallback: "Beklenmeyen bir hata oluştu." });
 
 export const getCurrentUser = async () => {
   const controller = new AbortController();

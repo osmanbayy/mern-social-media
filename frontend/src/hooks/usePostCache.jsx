@@ -36,11 +36,14 @@ const usePostCache = (post) => {
     return post;
   }, [post, postsQueries, updateTrigger]);
 
-  // Force re-render when cache updates by listening to query cache changes
+  // Önbellek güncellemesi üst bileşen (Posts) render’ı sırasında tetiklenirse senkron setState
+  // "Cannot update Post while rendering Posts" uyarısına yol açar; bir sonraki tike ertelenir.
   useEffect(() => {
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
       if (event?.query?.queryKey?.[0] === "posts") {
-        setUpdateTrigger((prev) => prev + 1);
+        queueMicrotask(() => {
+          setUpdateTrigger((prev) => prev + 1);
+        });
       }
     });
     return unsubscribe;

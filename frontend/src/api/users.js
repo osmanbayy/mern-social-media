@@ -1,5 +1,7 @@
 // Users API - All user-related API calls
 
+import { handleApiResponse } from "./handleApiResponse.js";
+
 // API base URL'i normalize et (çift slash'ları temizle)
 const getApiBase = () => {
   const base = import.meta.env.VITE_API_BASE_URL;
@@ -15,25 +17,8 @@ const getApiBase = () => {
 
 const API_BASE = getApiBase();
 
-const handleResponse = async (response) => {
-  const contentType = response.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
-    const text = await response.text();
-    const t = text.trim();
-    if (t.startsWith("<!DOCTYPE") || t.startsWith("<html") || t.includes("<pre>")) {
-      throw new Error(
-        "API'ye ulaşılamadı (HTML yanıtı). Geliştirmede proxy ve VITE_API_BASE_URL'i kontrol edin."
-      );
-    }
-    throw new Error(t.slice(0, 200) || "Beklenmeyen bir hata oluştu.");
-  }
-  
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || data.error || "Bir hata oluştu.");
-  }
-  return data;
-};
+const handleResponse = (response) =>
+  handleApiResponse(response, { nonJsonFallback: "Beklenmeyen bir hata oluştu." });
 
 // Get user profile
 export const getUserProfile = async (username) => {
@@ -53,28 +38,21 @@ export const getUserByIdSummary = async (id) => {
 
 export const updateUserProfile = async (userData) => {
   try {
+    // express-validator optional()+isString: null alanları göndermek "Invalid value" üretir
+    const payload = Object.fromEntries(
+      Object.entries(userData).filter(([, v]) => v !== null && v !== undefined)
+    );
+
     const response = await fetch(`${API_BASE}/update`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify(userData),
+      body: JSON.stringify(payload),
     });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = "Failed to update profile";
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.message || errorData.error || errorMessage;
-      } catch {
-        errorMessage = errorText || errorMessage;
-      }
-      throw new Error(errorMessage);
-    }
-    
-    return handleResponse(response);
+
+    return handleApiResponse(response, { nonJsonFallback: "Profil güncellenemedi." });
   } catch (error) {
     throw error;
   }

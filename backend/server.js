@@ -18,6 +18,7 @@ import { v2 as cloudinary } from "cloudinary";
 import cors from "cors";
 import { globalApiLimiter, maybeUpgradeGlobalLimiterFromRedis } from "./middlewares/rateLimit.js";
 import { getAllowedOrigins } from "./lib/corsConfig.js";
+import { payloadErrorHandler } from "./middlewares/payloadErrorHandler.js";
 
 import "./models/message_request_model.js";
 import "./models/conversation_model.js";
@@ -148,6 +149,8 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/messages", messageRoutes);
 // Vercel serverless bazen isteği /api öneki olmadan iletir; aynı router'ı kök path ile de bağla
 app.use("/messages", messageRoutes);
+
+app.use(payloadErrorHandler);
 
 /** Vercel serverless bu dosyayı import eder; socket.io statik import deploy/bundle sorunlarına yol açabiliyor — sadece yerelde dinamik import */
 if (!process.env.VERCEL) {
