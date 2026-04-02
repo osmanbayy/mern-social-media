@@ -6,7 +6,7 @@ import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import LoadingSpinner from "./LoadingSpinner";
 import { followUser, getSuggestedUsers } from "../../api/users";
 import toast from "react-hot-toast";
-import { LuSearch } from "react-icons/lu";
+import { LuSearch, LuSparkles, LuChevronRight } from "react-icons/lu";
 import { RIGHT_PANEL_CONSTANTS, RIGHT_PANEL_ROUTES } from "../../constants/rightPanel";
 import { extractSuggestedUsers, getHasMoreUsers, getDisplayedUsers } from "../../utils/suggestedUsers";
 
@@ -15,10 +15,11 @@ const RightPanel = () => {
   const navigate = useNavigate();
   const [loadingUserId, setLoadingUserId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const { data: suggestedUsersData, isLoading } = useQuery({
     queryKey: ["suggestedUsers"],
-    queryFn: () => getSuggestedUsers(RIGHT_PANEL_CONSTANTS.INITIAL_PAGE, RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT),
+    queryFn: () =>
+      getSuggestedUsers(RIGHT_PANEL_CONSTANTS.INITIAL_PAGE, RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT),
   });
 
   const suggestedUsers = extractSuggestedUsers(suggestedUsersData);
@@ -29,36 +30,33 @@ const RightPanel = () => {
     mutationFn: (userId) => followUser(userId),
     onMutate: (userId) => {
       setLoadingUserId(userId);
-      // Optimistically remove user from list
       queryClient.setQueryData(["suggestedUsers"], (oldData) => {
         if (!oldData) return oldData;
-        
+
         if (Array.isArray(oldData)) {
-          return oldData.filter(user => user._id !== userId);
+          return oldData.filter((user) => user._id !== userId);
         }
-        
+
         if (oldData.users) {
           return {
             ...oldData,
-            users: oldData.users.filter(user => user._id !== userId),
+            users: oldData.users.filter((user) => user._id !== userId),
             hasMore: oldData.hasMore || false,
           };
         }
-        
+
         return oldData;
       });
     },
     onSuccess: async () => {
-      // Invalidate queries to refresh data
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] }),
         queryClient.invalidateQueries({ queryKey: ["authUser"] }),
       ]);
       setLoadingUserId(null);
     },
-    onError: (error, userId) => {
+    onError: (error) => {
       toast.error(error.message);
-      // Revert optimistic update on error
       queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] });
       setLoadingUserId(null);
     },
@@ -79,85 +77,116 @@ const RightPanel = () => {
     follow(userId);
   };
 
-  if (suggestedUsers.length === 0) {
-    return <div className="md:w-64 w-0"></div>;
-  }
+  const showSuggestionsBlock = isLoading || displayedUsers.length > 0;
 
   return (
-    <div className="hidden lg:flex flex-shrink-0 w-92">
-      <div className="sticky top-0 h-screen flex flex-col p-5 pt-4 overflow-y-auto gap-4">
-        {/* Search Input */}
-        <div className="w-full">
-          <form onSubmit={handleSearch} className="relative">
+    <div className="hidden w-92 flex-shrink-0 lg:flex">
+      <div className="sticky top-0 flex h-screen flex-col gap-4 overflow-y-auto p-5 pt-4">
+        <form onSubmit={handleSearch} className="relative w-full">
+          <label className="input input-bordered flex h-11 w-full items-center gap-2 rounded-full border-base-300/60 bg-base-200/40 pl-1 pr-2 text-sm shadow-sm transition focus-within:border-accent/40 focus-within:ring-2 focus-within:ring-accent/20">
+            <LuSearch className="ml-2 h-5 w-5 shrink-0 text-base-content/45" aria-hidden />
             <input
-              type="text"
-              placeholder="Ara..."
+              type="search"
+              placeholder="Ara…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-full bg-base-200/50 border border-base-300/50 focus:outline-none focus:ring-2 focus:ring-base-content/50 transition-all duration-200 text-sm"
+              className="grow bg-transparent placeholder:text-base-content/45 focus:outline-none"
+              autoComplete="off"
             />
-            <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40" />
-          </form>
-        </div>
+          </label>
+        </form>
 
-        <div className="p-5 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-300/50 shadow w-full">
-          <p className="font-bold text-lg mb-5 text-base-content">Kimi takip etmeli?</p>
-          <div className="flex flex-col gap-4">
-            {isLoading && (
-              <>
-                {Array.from({ length: RIGHT_PANEL_CONSTANTS.SKELETON_COUNT }).map((_, index) => (
+        {showSuggestionsBlock && (
+          <section className="w-full overflow-hidden rounded-3xl border border-base-300/60 bg-gradient-to-b from-base-100 via-base-100 to-base-200/25 shadow-xl ring-1 ring-black/5 dark:from-base-100 dark:via-base-100 dark:to-base-300/20 dark:ring-white/5">
+            <div className="border-b border-base-300/40 bg-gradient-to-r from-accent/8 to-transparent px-4 py-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/12 text-accent">
+                    <LuSparkles className="h-4 w-4" strokeWidth={2.25} />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-[15px] font-bold leading-tight tracking-tight text-base-content">
+                      Kimi takip etmeli?
+                    </h2>
+                    <p className="text-xs text-base-content/55">Senin için seçildi</p>
+                  </div>
+                </div>
+                {hasMore && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(RIGHT_PANEL_ROUTES.SUGGESTIONS)}
+                    className="btn btn-ghost btn-xs shrink-0 gap-0.5 rounded-full text-accent"
+                  >
+                    Tümü
+                    <LuChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-0.5 p-2">
+              {isLoading &&
+                Array.from({ length: RIGHT_PANEL_CONSTANTS.SKELETON_COUNT }).map((_, index) => (
                   <RightPanelSkeleton key={index} />
                 ))}
-              </>
-            )}
-            {!isLoading && displayedUsers.map((user) => (
-              <Link
-                to={`${RIGHT_PANEL_ROUTES.PROFILE}/${user.username}`}
-                className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-base-200/50 transition-all duration-300 group w-full"
-                key={user._id}
-              >
-                <div className="flex gap-3 items-center flex-1 min-w-0 overflow-hidden">
-                  <div className="avatar flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full ring-2 ring-base-300">
-                      <img
-                        src={user.profileImage || defaultProfilePicture}
-                        className="w-full h-full rounded-full object-cover"
-                        alt={user.fullname}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
-                    <span className="text-sm tracking-tight truncate group-hover:text-primary transition-colors block">
-                      {user.fullname}
-                    </span>
-                    <span className="text-xs text-base-content/60 truncate block">
-                      @{user.username}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex-shrink-0">
-                  <button
-                    className="btn btn-soft btn-sm rounded-full transition-transform duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
-                    onClick={(e) => handleFollowClick(e, user._id)}
-                    disabled={loadingUserId === user._id}
+
+              {!isLoading &&
+                displayedUsers.map((user) => (
+                  <Link
+                    to={`${RIGHT_PANEL_ROUTES.PROFILE}/${user.username}`}
+                    className="group flex items-center justify-between gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-base-200/50"
+                    key={user._id}
                   >
-                    {loadingUserId === user._id ? <LoadingSpinner size="sm" /> : "Takip Et"}
-                  </button>
-                </div>
-              </Link>
-            ))}
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="avatar shrink-0">
+                        <div className="h-11 w-11 rounded-full ring-2 ring-base-300/70 transition-[box-shadow] duration-300 group-hover:ring-accent/35">
+                          <img
+                            src={user.profileImage || defaultProfilePicture}
+                            className="h-full w-full rounded-full object-cover"
+                            alt=""
+                          />
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold tracking-tight text-base-content group-hover:text-accent">
+                          {user.fullname}
+                        </p>
+                        <p className="truncate text-xs text-base-content/50">@{user.username}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-accent btn-xs shrink-0 rounded-full px-4 font-semibold shadow-sm"
+                      onClick={(e) => handleFollowClick(e, user._id)}
+                      disabled={loadingUserId === user._id}
+                    >
+                      {loadingUserId === user._id ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        "Takip et"
+                      )}
+                    </button>
+                  </Link>
+                ))}
+            </div>
+
             {!isLoading && displayedUsers.length > 0 && (
-              <button
-                onClick={() => navigate(RIGHT_PANEL_ROUTES.SUGGESTIONS)}
-                className="btn btn-ghost btn-sm w-full mt-2 hover:bg-base-200/50 transition-all duration-200 text-center rounded-xl"
-              >
-                Daha fazla öneri göster
-              </button>
+              <div className="border-t border-base-300/40 p-2">
+                <button
+                  type="button"
+                  onClick={() => navigate(RIGHT_PANEL_ROUTES.SUGGESTIONS)}
+                  className="btn btn-ghost btn-sm h-10 w-full gap-1 rounded-2xl font-medium text-base-content/75 hover:bg-base-200/60 hover:text-base-content"
+                >
+                  Daha fazla öneri
+                  <LuChevronRight className="h-4 w-4 opacity-70" />
+                </button>
+              </div>
             )}
-          </div>
-        </div>
+          </section>
+        )}
       </div>
     </div>
   );
 };
+
 export default RightPanel;
