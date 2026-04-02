@@ -5,6 +5,8 @@ import {
   get_conversations,
   get_messages,
   mark_conversation_read,
+  ack_messages_delivered,
+  toggle_message_reaction,
   get_incoming_requests,
   accept_request,
   decline_request,
@@ -22,6 +24,16 @@ router.patch(
   edit_message
 );
 router.post("/conversations/:conversationId/read", protect_route, mark_conversation_read);
+router.post(
+  "/conversations/:conversationId/delivered",
+  protect_route,
+  ack_messages_delivered
+);
+router.post(
+  "/conversations/:conversationId/messages/:messageId/reactions",
+  protect_route,
+  toggle_message_reaction
+);
 router.get("/requests/incoming", protect_route, get_incoming_requests);
 router.post("/requests/:requestId/accept", protect_route, accept_request);
 router.post("/requests/:requestId/decline", protect_route, decline_request);

@@ -81,6 +81,11 @@ const userSchema = new mongoose.Schema(
     ],
     verifyOtp: { type: String, default: "" },
     verifyOtpExpiresAt: { type: Number, default: 0 },
+    /** Çevrimdışı / son görülme (socket kopunca güncellenir) */
+    lastSeen: {
+      type: Date,
+      default: null,
+    },
     isAccountVerified: { type: Boolean, default: false },
     resetOtp: { type: String, default: "" },
     resetOtpExpiresAt: { type: Number, default: 0 },

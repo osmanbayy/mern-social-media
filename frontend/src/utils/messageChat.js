@@ -1,3 +1,6 @@
+/** Sunucu ile aynı liste (message_controller ALLOWED_REACTION_EMOJI) */
+export const MESSAGE_REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+
 /** Mongoose / API mesaj nesnesinden tek bir id string üretir */
 export function getMessageDocId(message) {
   if (message == null || typeof message !== "object") return null;

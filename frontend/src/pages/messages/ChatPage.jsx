@@ -7,9 +7,12 @@ import {
   sendMessage,
   editMessage,
   markConversationRead,
+  ackMessagesDelivered,
+  toggleMessageReaction,
 } from "../../api/messages";
 import { getUserByIdSummary } from "../../api/users";
 import { useAuth } from "../../contexts/AuthContext";
+import { useSocket } from "../../contexts/SocketContext";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { FaArrowLeft } from "react-icons/fa6";
@@ -40,6 +43,7 @@ import {
   getReplyPreviewText,
   messageHasQuotedReply,
   scrollChildIntoContainerCenter,
+  MESSAGE_REACTION_EMOJIS,
 } from "../../utils/messageChat";
 
 const formatMsgTime = (iso) => {
@@ -70,6 +74,33 @@ const senderId = (m) =>
 
 /** API `read` + şema `readReceipt` (geriye uyum) */
 const messageIsRead = (m) => m.read === true || m.readReceipt === true;
+
+const messageIsDelivered = (m) =>
+  m.delivered === true || (m.deliveredAt != null && m.deliveredAt !== "");
+
+/** Gönderilen → iletildi → okundu (sadece kendi mesajlarımız) */
+const messageDeliveryPhase = (m) => {
+  if (messageIsRead(m)) return "read";
+  if (messageIsDelivered(m)) return "delivered";
+  return "sent";
+};
+
+const formatLastSeen = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "az önce";
+  if (mins < 60) return `${mins} dk önce`;
+  const h = Math.floor(mins / 60);
+  if (h < 24) return `${h} sa. önce`;
+  return d.toLocaleString("tr-TR", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 /** Sunucunun paylaşım-only mesajlarda kullandığı görünmez işaret (Word Joiner) */
 const visibleMessageText = (t) => {
@@ -103,7 +134,12 @@ const ChatPage = () => {
   const [chatSettingsOpen, setChatSettingsOpen] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [peerTyping, setPeerTyping] = useState(false);
   const longPressTimerRef = useRef(null);
+  const typingStopTimerRef = useRef(null);
+  const peerTypingClearRef = useRef(null);
+  const deliveredAckSentRef = useRef(new Set());
+  const { socket } = useSocket();
 
   const { appearance, resolvedBubbles, chatBgClass } = useChatAppearance();
   const density = CHAT_DENSITY_MAP[appearance.messageDensity] || CHAT_DENSITY_MAP.default;
@@ -234,6 +270,8 @@ const ChatPage = () => {
       username: "…",
       fullname: "Kullanıcı",
       profileImage: null,
+      online: false,
+      lastSeen: null,
     };
   }, [isCompose, composePeerId]);
 
@@ -299,6 +337,57 @@ const ChatPage = () => {
     return () => el.removeEventListener("scroll", onScroll);
   }, [conversationId, messages.length]);
 
+  useEffect(() => {
+    deliveredAckSentRef.current = new Set();
+  }, [conversationId]);
+
+  /** Karşı tarafın mesajları için iletildi (cihazda alındı) */
+  useEffect(() => {
+    if (!conversationId || !myId || !messages.length) return;
+    const ids = messages
+      .filter((msg) => senderId(msg) !== myId && !messageIsDelivered(msg))
+      .map((msg) => getMessageDocId(msg))
+      .filter(Boolean)
+      .filter((id) => !deliveredAckSentRef.current.has(id));
+    if (ids.length === 0) return;
+    ids.forEach((id) => deliveredAckSentRef.current.add(id));
+    ackMessagesDelivered(conversationId, ids).catch(() => {
+      ids.forEach((id) => deliveredAckSentRef.current.delete(id));
+    });
+  }, [conversationId, myId, messages]);
+
+  useEffect(() => {
+    if (!conversationId || isCompose) return undefined;
+    const t = window.setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    }, 28000);
+    return () => window.clearInterval(t);
+  }, [conversationId, isCompose, queryClient]);
+
+  useEffect(() => {
+    if (!socket || !conversationId || !peerId) return undefined;
+    const onTyping = (p) => {
+      if (String(p?.conversationId) !== String(conversationId)) return;
+      if (String(p?.userId) !== String(peerId)) return;
+      setPeerTyping(true);
+      if (peerTypingClearRef.current != null) {
+        window.clearTimeout(peerTypingClearRef.current);
+      }
+      peerTypingClearRef.current = window.setTimeout(() => setPeerTyping(false), 2800);
+    };
+    const onStop = (p) => {
+      if (String(p?.conversationId) !== String(conversationId)) return;
+      if (String(p?.userId) !== String(peerId)) return;
+      setPeerTyping(false);
+    };
+    socket.on("chat:typing", onTyping);
+    socket.on("chat:typing_stop", onStop);
+    return () => {
+      socket.off("chat:typing", onTyping);
+      socket.off("chat:typing_stop", onStop);
+    };
+  }, [socket, conversationId, peerId]);
+
   const { mutate: send, isPending } = useMutation({
     mutationFn: ({ text: t, replyToId }) =>
       sendMessage(peerId, {
@@ -308,6 +397,9 @@ const ChatPage = () => {
     onSuccess: (data) => {
       setText("");
       clearReplyTarget();
+      if (socket && conversationId) {
+        socket.emit("chat:typing_stop", { conversationId });
+      }
       if (data?.pending || data?.request) {
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
         queryClient.invalidateQueries({ queryKey: ["messageRequests"] });
@@ -319,6 +411,9 @@ const ChatPage = () => {
       }
       const newCid = data?.conversationId;
       if (isCompose && newCid) {
+        if (socket) {
+          socket.emit("chat:typing_stop", { conversationId: newCid });
+        }
         navigate(`/messages/chat/${newCid}`, { replace: true });
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
         queryClient.invalidateQueries({ queryKey: ["messageRequests"] });
@@ -378,6 +473,19 @@ const ChatPage = () => {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       textareaRef.current?.focus();
       toast.success("Mesaj güncellendi");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const { mutate: sendReaction } = useMutation({
+    mutationFn: ({ messageId, emoji }) => {
+      if (!conversationId) {
+        return Promise.reject(new Error("Sohbet yok."));
+      }
+      return toggleMessageReaction(conversationId, messageId, emoji);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
     },
     onError: (e) => toast.error(e.message),
   });
@@ -484,8 +592,13 @@ const ChatPage = () => {
               <p className="truncate font-semibold leading-tight text-base-content">
                 {otherUser?.fullname || otherUser?.username || "…"}
               </p>
-              <p className="truncate text-xs text-base-content/50">
-                @{otherUser?.username}
+              <p className="truncate text-xs text-base-content/50">@{otherUser?.username}</p>
+              <p className="truncate text-[11px] font-medium leading-tight text-primary/90">
+                {otherUser?.online
+                  ? "Çevrimiçi"
+                  : otherUser?.lastSeen
+                    ? `Son görülme: ${formatLastSeen(otherUser.lastSeen)}`
+                    : "Çevrimdışı"}
               </p>
             </div>
           </button>
@@ -548,6 +661,11 @@ const ChatPage = () => {
             setForwardTargetMessage(actionMenu.message);
             setForwardOpen(true);
           }
+        }}
+        reactionEmojis={conversationId && !isCompose ? MESSAGE_REACTION_EMOJIS : undefined}
+        onReaction={(emoji) => {
+          if (!actionMenu?.message?._id) return;
+          sendReaction({ messageId: actionMenu.message._id, emoji });
         }}
       />
 
@@ -765,6 +883,35 @@ const ChatPage = () => {
                             </p>
                           ) : null}
                         </div>
+                        {Array.isArray(m.reactions) && m.reactions.length > 0 ? (
+                          <div
+                            className={`mt-1 flex max-w-full flex-wrap items-center gap-1 px-0.5 ${
+                              mine ? "justify-end" : "justify-start"
+                            }`}
+                          >
+                            {(() => {
+                              const map = new Map();
+                              for (const r of m.reactions) {
+                                const e = r.emoji;
+                                map.set(e, (map.get(e) || 0) + 1);
+                              }
+                              return [...map.entries()].map(([emoji, count]) => (
+                                <span
+                                  key={emoji}
+                                  className="inline-flex items-baseline gap-0.5 text-lg leading-none"
+                                  title={count > 1 ? `${count} tepki` : undefined}
+                                >
+                                  <span aria-hidden>{emoji}</span>
+                                  {count > 1 ? (
+                                    <span className="text-[10px] font-medium tabular-nums text-base-content/50">
+                                      {count}
+                                    </span>
+                                  ) : null}
+                                </span>
+                              ));
+                            })()}
+                          </div>
+                        ) : null}
                       </div>
                       {clusterBottom && (
                         <span
@@ -778,28 +925,47 @@ const ChatPage = () => {
                               düzenlendi
                             </span>
                           )}
-                          {mine && (
-                            <span
-                              className="inline-flex shrink-0"
-                              title={messageIsRead(m) ? "Görüldü" : "İletildi"}
-                              aria-label={messageIsRead(m) ? "Görüldü" : "İletildi"}
-                            >
-                              {messageIsRead(m) ? (
-                                <LuCheckCheck
-                                  className={`size-3.5 ${
-                                    resolvedBubbles.mine.mode === "theme" ? "text-primary" : ""
-                                  }`}
-                                  style={
-                                    resolvedBubbles.mine.mode === "inline"
-                                      ? { color: resolvedBubbles.mine.color, opacity: 0.88 }
-                                      : undefined
-                                  }
-                                />
-                              ) : (
-                                <LuCheck className="size-3.5 text-base-content/45" />
-                              )}
-                            </span>
-                          )}
+                          {mine &&
+                            (() => {
+                              const phase = messageDeliveryPhase(m);
+                              const label =
+                                phase === "read"
+                                  ? "Okundu"
+                                  : phase === "delivered"
+                                    ? "İletildi"
+                                    : "Gönderildi";
+                              return (
+                                <>
+                                  <span
+                                    className="inline-flex shrink-0 items-center gap-0.5"
+                                    title={label}
+                                    aria-label={label}
+                                  >
+                                    {phase === "read" ? (
+                                      <LuCheckCheck
+                                        className={`size-3.5 ${
+                                          resolvedBubbles.mine.mode === "theme" ? "text-primary" : ""
+                                        }`}
+                                        style={
+                                          resolvedBubbles.mine.mode === "inline"
+                                            ? { color: resolvedBubbles.mine.color, opacity: 0.88 }
+                                            : undefined
+                                        }
+                                      />
+                                    ) : null}
+                                    {phase === "delivered" ? (
+                                      <LuCheckCheck className="size-3.5 text-base-content/50" />
+                                    ) : null}
+                                    {phase === "sent" ? (
+                                      <LuCheck className="size-3.5 text-base-content/45" />
+                                    ) : null}
+                                  </span>
+                                  <span className="max-w-[4.5rem] text-[9px] font-semibold uppercase leading-tight tracking-wide text-base-content/45">
+                                    {label}
+                                  </span>
+                                </>
+                              );
+                            })()}
                         </span>
                       )}
                     </div>
@@ -828,6 +994,12 @@ const ChatPage = () => {
 
       {/* Composer */}
       <div className="min-w-0 shrink-0 border-t border-base-300/60 bg-base-100/95 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md sm:px-3">
+        {peerTyping && !editingMessage && (
+          <div className="mb-2 flex items-center gap-2 px-1">
+            <span className="loading loading-dots loading-xs text-primary" />
+            <span className="text-xs font-medium text-base-content/65">Yazıyor…</span>
+          </div>
+        )}
         {editingMessage && (
           <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-accent/25 bg-accent/10 px-3 py-2">
             <p className="min-w-0 text-sm font-medium text-base-content">Mesajı düzenliyorsun</p>
@@ -867,7 +1039,23 @@ const ChatPage = () => {
               placeholder={editingMessage ? "Düzenlenen mesaj…" : "Mesaj yazın…"}
               rows={1}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (socket && conversationId && !editingMessage) {
+                  socket.emit("chat:typing", { conversationId });
+                  if (typingStopTimerRef.current != null) {
+                    window.clearTimeout(typingStopTimerRef.current);
+                  }
+                  typingStopTimerRef.current = window.setTimeout(() => {
+                    socket.emit("chat:typing_stop", { conversationId });
+                  }, 2200);
+                }
+              }}
+              onBlur={() => {
+                if (socket && conversationId) {
+                  socket.emit("chat:typing_stop", { conversationId });
+                }
+              }}
               onInput={(e) => {
                 const el = e.target;
                 el.style.height = "auto";

@@ -5,6 +5,18 @@ import User from "../models/user_model.js";
 import Notification from "../models/notification_model.js";
 import Post from "../models/post_model.js";
 import { emitToUser } from "../lib/socket_emit.js";
+import { isUserOnline } from "../lib/presence.js";
+
+const ALLOWED_REACTION_EMOJI = new Set(["👍", "❤️", "😂", "😮", "😢", "🙏"]);
+
+const shapeOutgoingMessage = (m) => {
+  if (!m) return null;
+  return {
+    ...m,
+    read: m.readReceipt === true,
+    delivered: m.deliveredAt != null,
+  };
+};
 
 const SHARE_PREVIEW = {
   post: "Bir gönderi paylaştı",
@@ -81,10 +93,11 @@ const populateMessageOutgoing = async (msgId) => {
       populate: { path: "user", select: "username profileImage fullname" },
     })
     .populate("share.profileUser", "username profileImage fullname bio")
+    .populate({ path: "reactions.user", select: "username fullname" })
     .populate(replyToPopulate)
     .lean();
   if (!populated) return null;
-  return { ...populated, read: populated.readReceipt === true };
+  return shapeOutgoingMessage(populated);
 };
 
 const messageQueryPopulate = [
@@ -95,6 +108,7 @@ const messageQueryPopulate = [
     populate: { path: "user", select: "username profileImage fullname" },
   },
   { path: "share.profileUser", select: "username profileImage fullname bio" },
+  { path: "reactions.user", select: "username fullname" },
   replyToPopulate,
 ];
 
@@ -418,11 +432,16 @@ export const get_conversations = async (req, res) => {
       conversations.map(async (c) => {
         const otherId = c.participants.find((p) => p.toString() !== userId.toString());
         const other = await User.findById(otherId)
-          .select("_id username profileImage fullname")
+          .select("_id username profileImage fullname lastSeen")
           .lean();
         return {
           ...c,
-          otherUser: other,
+          otherUser: other
+            ? {
+                ...other,
+                online: isUserOnline(other._id),
+              }
+            : null,
         };
       })
     );
@@ -457,10 +476,7 @@ export const get_messages = async (req, res) => {
       Message.countDocuments({ conversation: conversationId }),
     ]);
 
-    const ordered = messages.reverse().map((m) => ({
-      ...m,
-      read: m.readReceipt === true,
-    }));
+    const ordered = messages.reverse().map((m) => shapeOutgoingMessage(m));
 
     res.status(200).json({
       messages: ordered,
@@ -517,6 +533,120 @@ export const mark_conversation_read = async (req, res) => {
     res.status(200).json({ ok: true, count: unread.length, messageIds });
   } catch (error) {
     console.log("Error in mark_conversation_read", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+/** Okuyucu, karşı tarafın mesajlarını cihazına aldı (iletildi); gönderene bildirilir */
+export const ack_messages_delivered = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user._id;
+    const b = normalizeRequestBody(req.body);
+    const rawIds = b.messageIds;
+    if (!Array.isArray(rawIds) || rawIds.length === 0) {
+      return res.status(400).json({ message: "messageIds gerekli." });
+    }
+
+    const conv = await Conversation.findById(conversationId);
+    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
+      return res.status(404).json({ message: "Sohbet bulunamadı." });
+    }
+    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
+    if (!peerId) {
+      return res.status(400).json({ message: "Geçersiz sohbet." });
+    }
+
+    const ids = rawIds.map((x) => String(x).trim()).filter(Boolean);
+    const now = new Date();
+    await Message.updateMany(
+      {
+        _id: { $in: ids },
+        conversation: conversationId,
+        sender: peerId,
+        deliveredAt: null,
+      },
+      { $set: { deliveredAt: now } }
+    );
+
+    const updated = await Message.find({
+      _id: { $in: ids },
+      conversation: conversationId,
+      sender: peerId,
+      deliveredAt: { $ne: null },
+    })
+      .select("_id")
+      .lean();
+    const messageIds = updated.map((m) => m._id.toString());
+
+    if (messageIds.length > 0) {
+      emitToUser(peerId.toString(), "message:delivered", {
+        conversationId: String(conversationId),
+        messageIds,
+      });
+    }
+
+    res.status(200).json({ ok: true, messageIds });
+  } catch (error) {
+    console.log("Error in ack_messages_delivered", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+export const toggle_message_reaction = async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const userId = req.user._id;
+    const b = normalizeRequestBody(req.body);
+    const emoji = b.emoji != null ? String(b.emoji).trim() : "";
+    if (!ALLOWED_REACTION_EMOJI.has(emoji)) {
+      return res.status(400).json({ message: "Geçersiz emoji." });
+    }
+
+    const conv = await Conversation.findById(conversationId);
+    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
+      return res.status(404).json({ message: "Sohbet bulunamadı." });
+    }
+
+    const msg = await Message.findOne({
+      _id: messageId,
+      conversation: conversationId,
+    });
+    if (!msg) {
+      return res.status(404).json({ message: "Mesaj bulunamadı." });
+    }
+
+    const list = msg.reactions || [];
+    const idx = list.findIndex((r) => r.user.toString() === userId.toString());
+    if (idx >= 0 && list[idx].emoji === emoji) {
+      list.splice(idx, 1);
+    } else {
+      if (idx >= 0) list.splice(idx, 1);
+      list.push({ user: userId, emoji });
+    }
+    msg.reactions = list;
+    await msg.save();
+
+    const msgOut = await populateMessageOutgoing(msg._id);
+    if (!msgOut) {
+      return res.status(500).json({ message: "Mesaj güncellenemedi." });
+    }
+
+    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
+    if (peerId) {
+      emitToUser(peerId.toString(), "message:reaction", {
+        conversationId: String(conversationId),
+        message: msgOut,
+      });
+    }
+    emitToUser(userId.toString(), "message:reaction", {
+      conversationId: String(conversationId),
+      message: msgOut,
+    });
+
+    res.status(200).json(msgOut);
+  } catch (error) {
+    console.log("Error in toggle_message_reaction", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };

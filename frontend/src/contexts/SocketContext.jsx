@@ -54,6 +54,16 @@ export const SocketProvider = ({ children }) => {
       /** Sunucudaki read alanı ile cache’i eşitle (setQueryData id eşleşmesi kaçırılabiliyordu) */
       queryClient.invalidateQueries({ queryKey: ["messages", cid] });
     });
+    s.on("message:delivered", (payload) => {
+      const { conversationId } = payload || {};
+      if (!conversationId) return;
+      queryClient.invalidateQueries({ queryKey: ["messages", String(conversationId)] });
+    });
+    s.on("message:reaction", (payload) => {
+      const { conversationId } = payload || {};
+      if (!conversationId) return;
+      queryClient.invalidateQueries({ queryKey: ["messages", String(conversationId)] });
+    });
     s.on("conversations:updated", () => {
       invalidate([["conversations"]]);
     });

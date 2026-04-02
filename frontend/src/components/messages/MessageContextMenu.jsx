@@ -18,6 +18,8 @@ import {
  *   onQuote: () => void;
  *   onForward: () => void;
  *   canEdit: boolean;
+ *   reactionEmojis?: string[];
+ *   onReaction?: (emoji: string) => void;
  * }} props
  */
 export default function MessageContextMenu({
@@ -30,6 +32,8 @@ export default function MessageContextMenu({
   onQuote,
   onForward,
   canEdit,
+  reactionEmojis,
+  onReaction,
 }) {
   const ref = useRef(null);
 
@@ -56,8 +60,9 @@ export default function MessageContextMenu({
 
   const vw = typeof window !== "undefined" ? window.innerWidth : 400;
   const vh = typeof window !== "undefined" ? window.innerHeight : 600;
-  const menuW = 200;
-  const menuH = 220;
+  const showReactions = Array.isArray(reactionEmojis) && reactionEmojis.length > 0 && typeof onReaction === "function";
+  const menuW = showReactions ? Math.min(320, vw - 16) : 200;
+  const menuH = showReactions ? 300 : 220;
   const left = Math.min(Math.max(8, x), vw - menuW - 8);
   const top = Math.min(Math.max(8, y), vh - menuH - 8);
 
@@ -66,9 +71,30 @@ export default function MessageContextMenu({
       ref={ref}
       role="menu"
       className="fixed z-[250] min-w-[11.5rem] rounded-2xl border border-base-300/60 bg-base-100/98 py-1.5 shadow-2xl backdrop-blur-md"
-      style={{ left, top }}
+      style={{ left, top, width: showReactions ? menuW : undefined }}
       onClick={(e) => e.stopPropagation()}
     >
+      {showReactions && (
+        <div
+          className="flex flex-wrap items-center justify-center gap-1 border-b border-base-300/50 px-2 pb-2 pt-1"
+          role="group"
+          aria-label="Tepki seç"
+        >
+          {reactionEmojis.map((emo) => (
+            <button
+              key={emo}
+              type="button"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-2xl leading-none transition-colors hover:bg-base-200/90 active:scale-95"
+              onClick={() => {
+                onReaction(emo);
+                onClose();
+              }}
+            >
+              {emo}
+            </button>
+          ))}
+        </div>
+      )}
       {canEdit && onEdit && (
         <button
           type="button"

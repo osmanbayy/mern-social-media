@@ -161,6 +161,42 @@ export const markConversationRead = async (conversationId) => {
   return handleResponse(response);
 };
 
+/** Karşı tarafın gönderdiği mesajlar için iletildi (alıcı cihazda) */
+export const ackMessagesDelivered = async (conversationId, messageIds) => {
+  const cid = conversationId != null ? String(conversationId).trim() : "";
+  if (!cid || !Array.isArray(messageIds) || messageIds.length === 0) {
+    throw new Error("Geçersiz istek.");
+  }
+  const response = await fetch(
+    `${API_BASE}/conversations/${encodeURIComponent(cid)}/delivered`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ messageIds }),
+    }
+  );
+  return handleResponse(response);
+};
+
+export const toggleMessageReaction = async (conversationId, messageId, emoji) => {
+  const cid = conversationId != null ? String(conversationId).trim() : "";
+  const mid = messageId != null ? String(messageId).trim() : "";
+  if (!cid || !mid) {
+    throw new Error("Geçersiz mesaj.");
+  }
+  const response = await fetch(
+    `${API_BASE}/conversations/${encodeURIComponent(cid)}/messages/${encodeURIComponent(mid)}/reactions`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ emoji }),
+    }
+  );
+  return handleResponse(response);
+};
+
 export const getIncomingMessageRequests = async () => {
   const response = await fetch(`${API_BASE}/requests/incoming`, {
     credentials: "include",

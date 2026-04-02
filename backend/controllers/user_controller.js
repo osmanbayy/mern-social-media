@@ -4,6 +4,7 @@ import Post from "../models/post_model.js";
 import bcrypt from "bcryptjs";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
+import { isUserOnline } from "../lib/presence.js";
 
 export const get_user_profile = async (req, res) => {
   const { username } = req.params;
@@ -81,6 +82,8 @@ export const get_user_by_id_summary = async (req, res) => {
       username: user.username,
       fullname: user.fullname,
       profileImage: user.profileImage,
+      online: isUserOnline(id),
+      lastSeen: user.lastSeen || null,
     });
   } catch (error) {
     console.log("Error in get_user_by_id_summary", error.message);

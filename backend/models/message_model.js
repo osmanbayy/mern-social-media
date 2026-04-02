@@ -55,6 +55,26 @@ const messageSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    /** Alıcı mesajı cihazına aldı (iletildi); gönderen mesajında dolu */
+    deliveredAt: {
+      type: Date,
+      default: null,
+    },
+    /** Kullanıcı başına tek emoji (yenisi eskisinin yerine geçer) */
+    reactions: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        emoji: {
+          type: String,
+          maxlength: 16,
+          required: true,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );
