@@ -39,6 +39,22 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    /** Bu sohbetteki başka bir mesaja yanıt (alıntı) */
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
+    /** Alıntı önizlemesi (populate’a bağlı kalmadan karşı tarafta da görünsün) */
+    replySnapshot: {
+      senderLabel: { type: String, default: "" },
+      preview: { type: String, default: "" },
+    },
+    /** Metin düzenlendiyse (sadece metin mesajları) */
+    editedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

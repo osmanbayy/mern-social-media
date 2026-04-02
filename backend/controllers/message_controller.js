@@ -58,6 +58,20 @@ const validateSharePayload = async (raw) => {
   return { ok: false, status: 400, message: "Geçersiz paylaşım." };
 };
 
+const replyToPopulate = {
+  path: "replyTo",
+  select: "text sender share createdAt",
+  populate: [
+    { path: "sender", select: "username profileImage fullname" },
+    {
+      path: "share.post",
+      select: "text img user createdAt",
+      populate: { path: "user", select: "username profileImage fullname" },
+    },
+    { path: "share.profileUser", select: "username profileImage fullname bio" },
+  ],
+};
+
 const populateMessageOutgoing = async (msgId) => {
   const populated = await Message.findById(msgId)
     .populate("sender", "username profileImage fullname")
@@ -67,6 +81,7 @@ const populateMessageOutgoing = async (msgId) => {
       populate: { path: "user", select: "username profileImage fullname" },
     })
     .populate("share.profileUser", "username profileImage fullname bio")
+    .populate(replyToPopulate)
     .lean();
   if (!populated) return null;
   return { ...populated, read: populated.readReceipt === true };
@@ -80,6 +95,7 @@ const messageQueryPopulate = [
     populate: { path: "user", select: "username profileImage fullname" },
   },
   { path: "share.profileUser", select: "username profileImage fullname bio" },
+  replyToPopulate,
 ];
 
 const sortParticipantIds = (a, b) => {
@@ -155,6 +171,48 @@ const pickShareInput = (body) => {
   return undefined;
 };
 
+const pickReplyToId = (body) => {
+  const b = normalizeRequestBody(body);
+  let raw = b.replyTo ?? b.replyToMessageId ?? b.quotedMessageId;
+  if (raw != null && typeof raw === "object" && !Array.isArray(raw)) {
+    raw = raw._id ?? raw.id ?? raw.$oid;
+  }
+  if (raw == null || raw === "") return null;
+  const s = String(raw).trim();
+  return s || null;
+};
+
+/** Alıntı: referans mesaj aynı sohbette olmalı */
+const validateReplyTo = async (replyToId, convId) => {
+  if (!replyToId) return { ok: true, replyTo: null };
+  const ref = await Message.findById(String(replyToId)).select("conversation").lean();
+  if (!ref) {
+    return { ok: false, status: 400, message: "Alıntılanan mesaj bulunamadı." };
+  }
+  if (ref.conversation.toString() !== convId.toString()) {
+    return { ok: false, status: 400, message: "Alıntı bu sohbete ait olmalı." };
+  }
+  return { ok: true, replyTo: String(replyToId) };
+};
+
+/** Alıntı balonunda gösterilecek metin + gönderen (DB’de saklanır) */
+const buildReplySnapshot = async (replyToId) => {
+  if (!replyToId) return null;
+  const ref = await Message.findById(String(replyToId))
+    .populate("sender", "username fullname")
+    .lean();
+  if (!ref) return null;
+  const trimmed = String(ref.text || "")
+    .replace(/\u2060/g, "")
+    .trim();
+  let preview = lastPreviewForMessage(trimmed, ref.share);
+  if (!preview || !String(preview).trim()) {
+    preview = "Mesaj";
+  }
+  const senderLabel = ref.sender?.fullname || ref.sender?.username || "…";
+  return { senderLabel, preview };
+};
+
 export const send_message = async (req, res) => {
   try {
     let incoming = normalizeRequestBody(req.body);
@@ -165,6 +223,7 @@ export const send_message = async (req, res) => {
     ) {
       incoming = normalizeRequestBody(req.rawBody);
     }
+    const replyToMessageId = pickReplyToId(incoming);
     const shareInput = pickShareInput(incoming);
     const text = incoming.text;
     const toUserId = req.params.toUserId;
@@ -232,12 +291,14 @@ export const send_message = async (req, res) => {
     const key = participantKey(fromUserId, toUserId);
     let conv = await Conversation.findOne({ participantKey: key });
 
-    const createMessageDoc = async (convId) =>
+    const createMessageDoc = async (convId, replyToRef, replySnapshotDoc) =>
       Message.create({
         conversation: convId,
         sender: fromUserId,
         text: messageText,
         ...(shareDoc ? { share: shareDoc } : {}),
+        ...(replyToRef ? { replyTo: replyToRef } : {}),
+        ...(replySnapshotDoc ? { replySnapshot: replySnapshotDoc } : {}),
       });
 
     const respondWithMessage = async (convLocal, msgDoc) => {
@@ -260,11 +321,16 @@ export const send_message = async (req, res) => {
 
     // 1) Zaten açık sohbet varsa (ör. istek kabul edildikten sonra) karşılıklı takip olmasa da mesaj buraya gider
     if (conv) {
+      const replyRes = await validateReplyTo(replyToMessageId, conv._id);
+      if (!replyRes.ok) {
+        return res.status(replyRes.status).json({ message: replyRes.message });
+      }
+      const replySnap = replyRes.replyTo ? await buildReplySnapshot(replyRes.replyTo) : null;
       conv.lastMessageAt = new Date();
       conv.lastMessagePreview = preview;
       await conv.save();
 
-      const msg = await createMessageDoc(conv._id);
+      const msg = await createMessageDoc(conv._id, replyRes.replyTo, replySnap);
       return respondWithMessage(conv, msg);
     }
 
@@ -279,11 +345,22 @@ export const send_message = async (req, res) => {
         lastMessagePreview: preview,
       });
 
-      const msg = await createMessageDoc(conv._id);
+      const replyRes = await validateReplyTo(replyToMessageId, conv._id);
+      if (!replyRes.ok) {
+        await Conversation.deleteOne({ _id: conv._id });
+        return res.status(replyRes.status).json({ message: replyRes.message });
+      }
+      const replySnapNew = replyRes.replyTo ? await buildReplySnapshot(replyRes.replyTo) : null;
+
+      const msg = await createMessageDoc(conv._id, replyRes.replyTo, replySnapNew);
       return respondWithMessage(conv, msg);
     }
 
     // 3) Sohbet yok ve karşılıklı takip yok → mesaj isteği
+    if (replyToMessageId) {
+      return res.status(400).json({ message: "Mesaj isteği gönderilirken alıntı kullanılamaz." });
+    }
+
     const existingPending = await MessageRequest.findOne({
       from: fromUserId,
       to: toUserId,
@@ -548,6 +625,62 @@ export const accept_request = async (req, res) => {
     res.status(200).json({ conversation: conv, message: msgOut });
   } catch (error) {
     console.log("Error in accept_request", error.message);
+    res.status(500).json({ message: "Sunucu hatası." });
+  }
+};
+
+export const edit_message = async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const userId = req.user._id;
+    const body = normalizeRequestBody(req.body);
+    const text = body.text != null ? String(body.text).trim() : "";
+
+    if (!text) {
+      return res.status(400).json({ message: "Mesaj boş olamaz." });
+    }
+
+    const conv = await Conversation.findById(conversationId);
+    if (!conv || !conv.participants.some((p) => p.toString() === userId.toString())) {
+      return res.status(404).json({ message: "Sohbet bulunamadı." });
+    }
+
+    const msg = await Message.findById(messageId);
+    if (!msg) return res.status(404).json({ message: "Mesaj bulunamadı." });
+    if (msg.conversation.toString() !== conversationId) {
+      return res.status(400).json({ message: "Mesaj bu sohbete ait değil." });
+    }
+    if (msg.sender.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Bu mesajı düzenleyemezsiniz." });
+    }
+    if (msg.share && msg.share.kind) {
+      return res.status(400).json({ message: "Paylaşım mesajları düzenlenemez." });
+    }
+
+    msg.text = text.slice(0, 4000);
+    msg.editedAt = new Date();
+    await msg.save();
+
+    const msgOut = await populateMessageOutgoing(msg._id);
+    if (!msgOut) {
+      return res.status(500).json({ message: "Mesaj kaydedilemedi." });
+    }
+
+    const peerId = conv.participants.find((p) => p.toString() !== userId.toString());
+    if (peerId) {
+      emitToUser(peerId.toString(), "message:edited", {
+        conversationId: String(conversationId),
+        message: msgOut,
+      });
+    }
+    emitToUser(userId.toString(), "message:edited", {
+      conversationId: String(conversationId),
+      message: msgOut,
+    });
+
+    res.status(200).json(msgOut);
+  } catch (error) {
+    console.log("Error in edit_message", error.message);
     res.status(500).json({ message: "Sunucu hatası." });
   }
 };

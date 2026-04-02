@@ -44,6 +44,9 @@ export const SocketProvider = ({ children }) => {
     s.on("message:new", () => {
       invalidate([["conversations"], ["messages"]]);
     });
+    s.on("message:edited", () => {
+      invalidate([["conversations"], ["messages"]]);
+    });
     s.on("message:read", (payload) => {
       const { conversationId } = payload || {};
       if (!conversationId) return;

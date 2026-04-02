@@ -98,12 +98,17 @@ export const sendMessage = async (toUserId, payload = {}) => {
     throw new Error("Mesaj boş olamaz.");
   }
 
-  /** Sunucu paylaşımda boş metin için \u2060 kullanır; isteğe text göndermeyebiliriz */
+  const replyTo =
+    opts.replyTo != null && String(opts.replyTo).trim() !== "" ? String(opts.replyTo).trim() : null;
+
+  /** Sunucu paylaşımda boş metin için \u2060 kullanır; isteğe text göndermeyebiliriz. replyTo kökte açıkça gider. */
+  const replyFields = replyTo ? { replyTo, replyToMessageId: replyTo } : {};
+
   const body = share
     ? text.trim()
-      ? { share, text }
-      : { share }
-    : { text };
+      ? { share, text, ...replyFields }
+      : { share, ...replyFields }
+    : { text, ...replyFields };
 
   const response = await fetch(`${API_BASE}/send/${encodeURIComponent(id)}`, {
     method: "POST",
@@ -130,6 +135,24 @@ export const getMessages = async (conversationId, page = 1) => {
 };
 
 /** Karşı tarafın mesajlarını okundu işaretle; gönderene socket ile bildirilir */
+export const editMessage = async (conversationId, messageId, { text }) => {
+  const cid = conversationId != null ? String(conversationId).trim() : "";
+  const mid = messageId != null ? String(messageId).trim() : "";
+  if (!cid || !mid) {
+    throw new Error("Geçersiz mesaj.");
+  }
+  const response = await fetch(
+    `${API_BASE}/conversations/${encodeURIComponent(cid)}/messages/${encodeURIComponent(mid)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ text: text != null ? String(text) : "" }),
+    }
+  );
+  return handleResponse(response);
+};
+
 export const markConversationRead = async (conversationId) => {
   const response = await fetch(
     `${API_BASE}/conversations/${encodeURIComponent(conversationId)}/read`,

@@ -1,10 +1,11 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getConversations,
   getMessages,
   sendMessage,
+  editMessage,
   markConversationRead,
 } from "../../api/messages";
 import { getUserByIdSummary } from "../../api/users";
@@ -24,6 +25,14 @@ import {
 } from "../../constants/chatAppearance";
 import { useChatAppearance } from "../../contexts/ChatAppearanceContext";
 import ChatSettingsModal from "../../components/chat/ChatSettingsModal";
+import SwipeableMessageRow from "../../components/messages/SwipeableMessageRow";
+import MessageContextMenu from "../../components/messages/MessageContextMenu";
+import ForwardMessageModal from "../../components/messages/ForwardMessageModal";
+import {
+  getMessageDocId,
+  getReplyPreviewText,
+  messageHasQuotedReply,
+} from "../../utils/messageChat";
 
 const formatMsgTime = (iso) => {
   if (!iso) return "";
@@ -67,7 +76,23 @@ const ChatPage = () => {
   const queryClient = useQueryClient();
   const { authUser } = useAuth();
   const [text, setText] = useState("");
+  const [replyingTo, setReplyingTo] = useState(null);
+  /** State bir sonraki render’da güncellenir; gönderimde anında okumak için ref */
+  const replyingToRef = useRef(null);
+  const setReplyTarget = useCallback((m) => {
+    replyingToRef.current = m;
+    setReplyingTo(m);
+  }, []);
+  const clearReplyTarget = useCallback(() => {
+    replyingToRef.current = null;
+    setReplyingTo(null);
+  }, []);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [actionMenu, setActionMenu] = useState(null);
+  const [forwardOpen, setForwardOpen] = useState(false);
+  const [forwardTargetMessage, setForwardTargetMessage] = useState(null);
   const [chatSettingsOpen, setChatSettingsOpen] = useState(false);
+  const longPressTimerRef = useRef(null);
   const { appearance, resolvedBubbles, chatBgClass } = useChatAppearance();
   const density = CHAT_DENSITY_MAP[appearance.messageDensity] || CHAT_DENSITY_MAP.default;
   const messageFontClass = CHAT_FONT_MAP[appearance.messageFontSize] || CHAT_FONT_MAP.md;
@@ -77,6 +102,52 @@ const ChatPage = () => {
   const bottomRef = useRef(null);
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
+
+  const clearLongPress = () => {
+    if (longPressTimerRef.current != null) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const copyMessageToClipboard = async (m) => {
+    try {
+      if (m.share?.kind === "post") {
+        const pid = m.share.post?._id ?? m.share.post;
+        if (pid) {
+          await navigator.clipboard.writeText(`${window.location.origin}/post/${pid}`);
+          toast.success("Gönderi linki kopyalandı");
+          return;
+        }
+      }
+      if (m.share?.kind === "profile") {
+        const u = m.share.profileUser;
+        const un = typeof u === "object" && u?.username ? u.username : null;
+        if (un) {
+          await navigator.clipboard.writeText(`${window.location.origin}/profile/${un}`);
+          toast.success("Profil linki kopyalandı");
+          return;
+        }
+      }
+      if (visibleMessageText(m.text)) {
+        await navigator.clipboard.writeText(visibleMessageText(m.text));
+        toast.success("Kopyalandı");
+      }
+    } catch {
+      toast.error("Kopyalanamadı");
+    }
+  };
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setActionMenu(null);
+        clearReplyTarget();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [clearReplyTarget]);
 
   const isCompose = Boolean(composePeerId);
   const myId = authUser?._id?.toString();
@@ -179,9 +250,14 @@ const ChatPage = () => {
   }, [conversationId, isCompose, isLoading, messages.length]);
 
   const { mutate: send, isPending } = useMutation({
-    mutationFn: () => sendMessage(peerId, { text }),
+    mutationFn: ({ text: t, replyToId }) =>
+      sendMessage(peerId, {
+        text: t,
+        ...(replyToId ? { replyTo: String(replyToId) } : {}),
+      }),
     onSuccess: (data) => {
       setText("");
+      clearReplyTarget();
       if (data?.pending || data?.request) {
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
         queryClient.invalidateQueries({ queryKey: ["messageRequests"] });
@@ -228,6 +304,34 @@ const ChatPage = () => {
     onError: (e) => toast.error(e.message),
   });
 
+  const { mutate: saveEdit, isPending: isEditPending } = useMutation({
+    mutationFn: () => {
+      if (!editingMessage?._id || !conversationId) {
+        return Promise.reject(new Error("Düzenleme geçersiz."));
+      }
+      return editMessage(conversationId, editingMessage._id, { text });
+    },
+    onSuccess: (data) => {
+      setEditingMessage(null);
+      setText("");
+      if (data?._id && conversationId) {
+        queryClient.setQueryData(["messages", conversationId], (old) => {
+          const base = old || { messages: [], page: 1, totalPages: 1, total: 0 };
+          const list = base.messages || [];
+          const next = list.map((msg) =>
+            String(msg._id) === String(data._id) ? { ...msg, ...data } : msg
+          );
+          return { ...base, messages: next };
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      textareaRef.current?.focus();
+      toast.success("Mesaj güncellendi");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   if (!conversationId && !composePeerId) {
     return null;
   }
@@ -265,8 +369,36 @@ const ChatPage = () => {
 
   const handleSubmit = (e) => {
     e?.preventDefault?.();
+    if (editingMessage) {
+      if (!text.trim() || isEditPending) return;
+      saveEdit();
+      return;
+    }
     if (!text.trim() || !peerId || isPending) return;
-    send();
+    const replyToId =
+      getMessageDocId(replyingTo) ?? getMessageDocId(replyingToRef.current);
+    send({ text: text.trim(), replyToId });
+    /** İlk mesajın onSuccess’i gelmeden ikinci gönderimde eski alıntı id’si gitmesin */
+    clearReplyTarget();
+  };
+
+  const canSubmit = editingMessage
+    ? Boolean(text.trim()) && !isEditPending
+    : Boolean(text.trim() && peerId) && !isPending;
+
+  const startEdit = (m) => {
+    if (m.share?.kind) return;
+    const t = visibleMessageText(m.text);
+    if (!t) return;
+    setEditingMessage(m);
+    setText(t);
+    clearReplyTarget();
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessage(null);
+    setText("");
   };
 
   return (
@@ -339,6 +471,46 @@ const ChatPage = () => {
 
       <ChatSettingsModal isOpen={chatSettingsOpen} onClose={() => setChatSettingsOpen(false)} />
 
+      <MessageContextMenu
+        open={actionMenu != null}
+        x={actionMenu?.x ?? 0}
+        y={actionMenu?.y ?? 0}
+        onClose={() => setActionMenu(null)}
+        canEdit={
+          !!(
+            actionMenu &&
+            senderId(actionMenu.message) === myId &&
+            !actionMenu.message.share?.kind &&
+            visibleMessageText(actionMenu.message.text)
+          )
+        }
+        onEdit={() => actionMenu && startEdit(actionMenu.message)}
+        onCopy={() => actionMenu && copyMessageToClipboard(actionMenu.message)}
+        onQuote={() => {
+          if (actionMenu) {
+            setReplyTarget(actionMenu.message);
+            setEditingMessage(null);
+            textareaRef.current?.focus();
+          }
+        }}
+        onForward={() => {
+          if (actionMenu) {
+            setForwardTargetMessage(actionMenu.message);
+            setForwardOpen(true);
+          }
+        }}
+      />
+
+      <ForwardMessageModal
+        isOpen={forwardOpen}
+        onClose={() => {
+          setForwardOpen(false);
+          setForwardTargetMessage(null);
+        }}
+        message={forwardTargetMessage}
+        excludeUserId={peerId}
+      />
+
       {/* Messages */}
       <div
         ref={scrollRef}
@@ -396,84 +568,153 @@ const ChatPage = () => {
               );
 
               return (
-                <div
+                <SwipeableMessageRow
                   key={m._id}
-                  className={`flex w-full min-w-0 max-w-full ${mine ? "justify-end" : "justify-start"} ${
-                    clusterTop ? density.clusterTop : density.clusterRest
-                  }`}
+                  disabled={isCompose || !conversationId}
+                  onReply={() => {
+                    setReplyTarget(m);
+                    setEditingMessage(null);
+                    textareaRef.current?.focus();
+                  }}
                 >
                   <div
-                    className={`flex min-w-0 max-w-full flex-col ${mine ? "items-end" : "items-start"} ${
-                      m.share?.kind
-                        ? "w-full max-w-[min(96%,min(26rem,calc(100vw-1.5rem)))] sm:max-w-[min(96%,28rem)]"
-                        : "w-full max-w-[min(28rem,85%,calc(100vw-1.5rem))]"
+                    className={`flex w-full min-w-0 max-w-full ${mine ? "justify-end" : "justify-start"} ${
+                      clusterTop ? density.clusterTop : density.clusterRest
                     }`}
                   >
                     <div
-                      className={`relative min-w-0 max-w-full shadow-sm ${messageFontClass} ${bubbleRadius} ${
-                        m.share?.kind ? "px-2 py-2 sm:px-2.5 sm:py-2.5" : "px-3.5 py-2.5"
-                      } ${
-                        bubbleResolved.mode === "theme"
-                          ? mine
-                            ? "bg-primary text-primary-content"
-                            : "border border-base-300/40 bg-base-100 text-base-content"
-                          : mine
-                          ? ""
-                          : "border border-black/5 dark:border-white/10"
+                      className={`flex min-w-0 max-w-full flex-col ${mine ? "items-end" : "items-start"} ${
+                        m.share?.kind
+                          ? "w-full max-w-[min(96%,min(26rem,calc(100vw-1.5rem)))] sm:max-w-[min(96%,28rem)]"
+                          : "w-full max-w-[min(28rem,85%,calc(100vw-1.5rem))]"
                       }`}
-                      style={
-                        bubbleResolved.mode === "inline"
-                          ? {
-                              backgroundColor: bubbleResolved.bg,
-                              color: bubbleResolved.color,
-                            }
-                          : undefined
-                      }
                     >
-                      {m.share?.kind ? (
-                        <MessageSharePreview share={m.share} mine={mine} />
-                      ) : null}
-                      {visibleMessageText(m.text) ? (
-                        <p
-                          className={`max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] ${m.share?.kind ? "mt-2" : ""}`}
-                        >
-                          {m.text}
-                        </p>
-                      ) : null}
-                    </div>
-                    {clusterBottom && (
-                      <span
-                        className={`mt-1 flex items-center gap-1 px-1 text-[10px] tabular-nums text-base-content/35 ${
-                          mine ? "justify-end text-right" : "text-left"
-                        }`}
+                      <div
+                        role="group"
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setActionMenu({ message: m, x: e.clientX, y: e.clientY });
+                        }}
+                        onTouchStart={(e) => {
+                          clearLongPress();
+                          longPressTimerRef.current = window.setTimeout(() => {
+                            const touch = e.touches[0];
+                            if (touch) {
+                              setActionMenu({
+                                message: m,
+                                x: touch.clientX,
+                                y: touch.clientY,
+                              });
+                            }
+                          }, 520);
+                        }}
+                        onTouchEnd={clearLongPress}
+                        onTouchCancel={clearLongPress}
+                        onTouchMove={clearLongPress}
                       >
-                        {formatMsgTime(m.createdAt)}
-                        {mine && (
-                          <span
-                            className="inline-flex shrink-0"
-                            title={messageIsRead(m) ? "Görüldü" : "İletildi"}
-                            aria-label={messageIsRead(m) ? "Görüldü" : "İletildi"}
-                          >
-                            {messageIsRead(m) ? (
-                              <LuCheckCheck
-                                className={`size-3.5 ${
-                                  resolvedBubbles.mine.mode === "theme" ? "text-primary" : ""
-                                }`}
-                                style={
-                                  resolvedBubbles.mine.mode === "inline"
-                                    ? { color: resolvedBubbles.mine.color, opacity: 0.88 }
-                                    : undefined
+                        <div
+                          className={`relative min-w-0 max-w-full shadow-sm ${messageFontClass} ${bubbleRadius} ${
+                            m.share?.kind ? "px-2 py-2 sm:px-2.5 sm:py-2.5" : "px-3.5 py-2.5"
+                          } ${
+                            bubbleResolved.mode === "theme"
+                              ? mine
+                                ? "bg-primary text-primary-content"
+                                : "border border-base-300/40 bg-base-100 text-base-content"
+                              : mine
+                                ? ""
+                                : "border border-black/5 dark:border-white/10"
+                          }`}
+                          style={
+                            bubbleResolved.mode === "inline"
+                              ? {
+                                  backgroundColor: bubbleResolved.bg,
+                                  color: bubbleResolved.color,
                                 }
-                              />
-                            ) : (
-                              <LuCheck className="size-3.5 text-base-content/45" />
-                            )}
-                          </span>
-                        )}
-                      </span>
-                    )}
+                              : undefined
+                          }
+                        >
+                          {messageHasQuotedReply(m) && (
+                            <div
+                              className={`mb-2 border-l-[3px] pl-2.5 ${
+                                mine
+                                  ? bubbleResolved.mode === "theme"
+                                    ? "border-primary-content/45"
+                                    : "border-current/35"
+                                  : "border-primary/55"
+                              }`}
+                            >
+                              <p
+                                className={`text-[11px] font-semibold ${
+                                  mine ? "opacity-95" : "text-base-content/85"
+                                }`}
+                              >
+                                {m.replyTo?.sender?.fullname ||
+                                  m.replyTo?.sender?.username ||
+                                  m.replySnapshot?.senderLabel ||
+                                  "…"}
+                              </p>
+                              <p
+                                className={`line-clamp-2 text-[12px] ${
+                                  mine ? "opacity-85" : "text-base-content/65"
+                                }`}
+                              >
+                                {m.replyTo
+                                  ? getReplyPreviewText(m.replyTo)
+                                  : (m.replySnapshot?.preview || "").trim() || "Mesaj"}
+                              </p>
+                            </div>
+                          )}
+                          {m.share?.kind ? (
+                            <MessageSharePreview share={m.share} mine={mine} />
+                          ) : null}
+                          {visibleMessageText(m.text) ? (
+                            <p
+                              className={`max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] ${m.share?.kind ? "mt-2" : ""}`}
+                            >
+                              {m.text}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                      {clusterBottom && (
+                        <span
+                          className={`mt-1 flex flex-wrap items-center gap-x-1 gap-y-0 px-1 text-[10px] tabular-nums text-base-content/35 ${
+                            mine ? "justify-end text-right" : "text-left"
+                          }`}
+                        >
+                          {formatMsgTime(m.createdAt)}
+                          {m.editedAt && (
+                            <span className="text-[9px] font-normal normal-case opacity-80">
+                              düzenlendi
+                            </span>
+                          )}
+                          {mine && (
+                            <span
+                              className="inline-flex shrink-0"
+                              title={messageIsRead(m) ? "Görüldü" : "İletildi"}
+                              aria-label={messageIsRead(m) ? "Görüldü" : "İletildi"}
+                            >
+                              {messageIsRead(m) ? (
+                                <LuCheckCheck
+                                  className={`size-3.5 ${
+                                    resolvedBubbles.mine.mode === "theme" ? "text-primary" : ""
+                                  }`}
+                                  style={
+                                    resolvedBubbles.mine.mode === "inline"
+                                      ? { color: resolvedBubbles.mine.color, opacity: 0.88 }
+                                      : undefined
+                                  }
+                                />
+                              ) : (
+                                <LuCheck className="size-3.5 text-base-content/45" />
+                              )}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </SwipeableMessageRow>
               );
             })}
           </div>
@@ -483,6 +724,34 @@ const ChatPage = () => {
 
       {/* Composer */}
       <div className="min-w-0 shrink-0 border-t border-base-300/60 bg-base-100/95 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md sm:px-3">
+        {editingMessage && (
+          <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-accent/25 bg-accent/10 px-3 py-2">
+            <p className="min-w-0 text-sm font-medium text-base-content">Mesajı düzenliyorsun</p>
+            <button type="button" className="btn btn-ghost btn-xs shrink-0" onClick={cancelEdit}>
+              İptal
+            </button>
+          </div>
+        )}
+        {replyingTo && !editingMessage && (
+          <div className="mb-2 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/8 px-3 py-2">
+            <div className="min-w-0 flex-1 border-l-2 border-primary pl-2">
+              <p className="text-[11px] font-bold text-primary">
+                {senderId(replyingTo) === myId
+                  ? "Sen"
+                  : replyingTo.sender?.fullname || replyingTo.sender?.username || "…"}
+              </p>
+              <p className="line-clamp-2 text-xs text-base-content/65">{getReplyPreviewText(replyingTo)}</p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-xs btn-circle shrink-0"
+              aria-label="Yanıtı kaldır"
+              onClick={clearReplyTarget}
+            >
+              ×
+            </button>
+          </div>
+        )}
         <form
           className="flex w-full min-w-0 max-w-full items-end gap-2"
           onSubmit={handleSubmit}
@@ -491,7 +760,7 @@ const ChatPage = () => {
             <textarea
               ref={textareaRef}
               className="textarea w-full min-w-0 max-w-full resize-none border border-base-300/70 bg-base-200/40 py-3 pl-4 pr-3 text-sm leading-normal text-base-content placeholder:text-base-content/40 focus:border-primary/40 focus:bg-base-100 focus:outline-none focus:ring-2 focus:ring-primary/15 rounded-2xl min-h-[48px] max-h-[120px] [overflow-wrap:anywhere]"
-              placeholder="Mesaj yazın…"
+              placeholder={editingMessage ? "Düzenlenen mesaj…" : "Mesaj yazın…"}
               rows={1}
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -511,10 +780,10 @@ const ChatPage = () => {
           <button
             type="submit"
             className="btn btn-primary btn-circle h-12 w-12 shrink-0 shadow-md shadow-primary/20 disabled:opacity-40"
-            disabled={!text.trim() || !peerId || isPending}
-            aria-label="Gönder"
+            disabled={!canSubmit}
+            aria-label={editingMessage ? "Kaydet" : "Gönder"}
           >
-            {isPending ? (
+            {isPending || isEditPending ? (
               <span className="loading loading-spinner loading-sm" />
             ) : (
               <LuSendHorizontal className="h-5 w-5" />
