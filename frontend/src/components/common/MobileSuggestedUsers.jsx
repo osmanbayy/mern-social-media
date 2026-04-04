@@ -2,6 +2,8 @@ import { Link, useNavigate } from "react-router-dom";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import LoadingSpinner from "./LoadingSpinner";
 import { LuSparkles, LuChevronRight } from "react-icons/lu";
+import { useAuth } from "../../contexts/AuthContext";
+import { isFollowingUser } from "../../utils/followStatus";
 import { SUGGESTED_USERS_QUERY_KEYS } from "../../constants/suggestedUsersQueries";
 import { extractSuggestedUsers } from "../../utils/suggestedUsers";
 import { useSuggestedUsersQuery } from "../../hooks/useSuggestedUsersQuery";
@@ -11,6 +13,7 @@ const MOBILE_SUGGESTIONS_LIMIT = 20;
 
 const MobileSuggestedUsers = () => {
   const navigate = useNavigate();
+  const { authUser } = useAuth();
 
   const { data: suggestedUsersData, isLoading } = useSuggestedUsersQuery({
     queryKey: SUGGESTED_USERS_QUERY_KEYS.mobile,
@@ -20,7 +23,7 @@ const MobileSuggestedUsers = () => {
 
   const suggestedUsers = extractSuggestedUsers(suggestedUsersData);
 
-  const { follow, loadingUserId } = useFollowSuggestedUserMutation({
+  const { follow, loadingUserId, isFollowed } = useFollowSuggestedUserMutation({
     optimisticRemoveFromQueryKeys: [SUGGESTED_USERS_QUERY_KEYS.mobile],
     invalidateQueryKeys: [
       SUGGESTED_USERS_QUERY_KEYS.mobile,
@@ -59,37 +62,55 @@ const MobileSuggestedUsers = () => {
 
         <div className="scrollbar-hide overflow-x-auto px-2 pb-3 pt-1">
           <div className="flex gap-3 px-1">
-            {suggestedUsers.map((user) => (
-              <article
-                key={user._id}
-                className="flex w-[148px] shrink-0 flex-col rounded-2xl border border-base-300/45 bg-base-200/25 p-3 shadow-sm transition hover:border-accent/25 hover:shadow-md"
-              >
-                <Link to={`/profile/${user.username}`} className="flex flex-col items-center text-center">
-                  <div className="avatar mb-2">
-                    <div className="h-16 w-16 rounded-full ring-2 ring-base-300/70 ring-offset-2 ring-offset-base-100 transition hover:ring-accent/40">
-                      <img
-                        src={user.profileImage || defaultProfilePicture}
-                        className="h-full w-full rounded-full object-cover"
-                        alt=""
-                      />
-                    </div>
-                  </div>
-                  <p className="mb-0.5 w-full truncate text-sm font-semibold text-base-content">{user.fullname}</p>
-                  <p className="mb-3 w-full truncate text-xs text-base-content/50">@{user.username}</p>
-                </Link>
-                <button
-                  type="button"
-                  className="btn btn-accent btn-sm mt-auto w-full rounded-full font-semibold shadow-sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    follow(user._id);
-                  }}
-                  disabled={loadingUserId === user._id}
+            {suggestedUsers.map((user) => {
+              const following =
+                isFollowed(user._id) || isFollowingUser(authUser, user._id);
+              const pending = loadingUserId === user._id;
+              return (
+                <article
+                  key={user._id}
+                  className="flex w-[148px] shrink-0 flex-col rounded-2xl border border-base-300/45 bg-base-200/25 p-3 shadow-sm transition hover:border-accent/25 hover:shadow-md"
                 >
-                  {loadingUserId === user._id ? <LoadingSpinner size="sm" /> : "Takip et"}
-                </button>
-              </article>
-            ))}
+                  <Link to={`/profile/${user.username}`} className="flex flex-col items-center text-center">
+                    <div className="avatar mb-2">
+                      <div className="h-16 w-16 rounded-full ring-2 ring-base-300/70 ring-offset-2 ring-offset-base-100 transition hover:ring-accent/40">
+                        <img
+                          src={user.profileImage || defaultProfilePicture}
+                          className="h-full w-full rounded-full object-cover"
+                          alt=""
+                        />
+                      </div>
+                    </div>
+                    <p className="mb-0.5 w-full truncate text-sm font-semibold text-base-content">{user.fullname}</p>
+                    <p className="mb-3 w-full truncate text-xs text-base-content/50">@{user.username}</p>
+                  </Link>
+                  <button
+                    type="button"
+                    className={
+                      following
+                        ? "btn btn-ghost btn-sm mt-auto w-full cursor-default rounded-full border border-base-300/60 font-semibold text-base-content/75"
+                        : "btn btn-accent btn-sm mt-auto w-full rounded-full font-semibold shadow-sm"
+                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!following) follow(user._id);
+                    }}
+                    disabled={pending || following}
+                  >
+                    {pending ? (
+                      <span className="inline-flex items-center justify-center gap-1.5">
+                        <LoadingSpinner size="sm" />
+                        <span className="text-xs">Takip ediliyor…</span>
+                      </span>
+                    ) : following ? (
+                      "Takiptesin"
+                    ) : (
+                      "Takip et"
+                    )}
+                  </button>
+                </article>
+              );
+            })}
           </div>
         </div>
       </div>

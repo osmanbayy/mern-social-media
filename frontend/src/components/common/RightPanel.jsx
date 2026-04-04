@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import RightPanelSkeleton from "../skeletons/RightPanelSkeleton";
 import { useState } from "react";
 import { LuSparkles, LuChevronRight } from "react-icons/lu";
+import { useAuth } from "../../contexts/AuthContext";
+import { isFollowingUser } from "../../utils/followStatus";
 import { RIGHT_PANEL_CONSTANTS, RIGHT_PANEL_ROUTES } from "../../constants/rightPanel";
 import { SUGGESTED_USERS_QUERY_KEYS } from "../../constants/suggestedUsersQueries";
 import { extractSuggestedUsers, getHasMoreUsers, getDisplayedUsers } from "../../utils/suggestedUsers";
@@ -12,6 +14,7 @@ import SuggestedUserRow from "./SuggestedUserRow";
 
 const RightPanel = () => {
   const navigate = useNavigate();
+  const { authUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: suggestedUsersData, isLoading } = useSuggestedUsersQuery({
@@ -24,7 +27,7 @@ const RightPanel = () => {
   const hasMore = getHasMoreUsers(suggestedUsersData, RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT);
   const displayedUsers = getDisplayedUsers(suggestedUsers, RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT);
 
-  const { follow, loadingUserId } = useFollowSuggestedUserMutation({
+  const { follow, loadingUserId, isFollowed } = useFollowSuggestedUserMutation({
     optimisticRemoveFromQueryKeys: [SUGGESTED_USERS_QUERY_KEYS.rightPanel],
     invalidateQueryKeys: [
       SUGGESTED_USERS_QUERY_KEYS.rightPanel,
@@ -101,6 +104,7 @@ const RightPanel = () => {
                     profileHref={`${RIGHT_PANEL_ROUTES.PROFILE}/${user.username}`}
                     variant="panel"
                     isFollowLoading={loadingUserId === user._id}
+                    isFollowing={isFollowed(user._id) || isFollowingUser(authUser, user._id)}
                     onFollowClick={(e) => handleFollowClick(e, user._id)}
                   />
                 ))}

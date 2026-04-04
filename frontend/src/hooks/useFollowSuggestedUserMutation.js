@@ -19,6 +19,9 @@ export function useFollowSuggestedUserMutation({
 } = {}) {
   const queryClient = useQueryClient();
   const [loadingUserId, setLoadingUserId] = useState(null);
+  const [followedUserIds, setFollowedUserIds] = useState(() => new Set());
+
+  const isFollowed = (userId) => followedUserIds.has(userId);
 
   const { mutate: follow } = useMutation({
     mutationFn: (userId) => followUser(userId),
@@ -28,7 +31,8 @@ export function useFollowSuggestedUserMutation({
         queryClient.setQueryData(key, (old) => removeUserFromSuggestedCacheData(old, userId));
       }
     },
-    onSuccess: async () => {
+    onSuccess: async (_, userId) => {
+      setFollowedUserIds((prev) => new Set(prev).add(userId));
       await Promise.all(
         invalidateQueryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey }))
       );
@@ -46,5 +50,5 @@ export function useFollowSuggestedUserMutation({
     },
   });
 
-  return { follow, loadingUserId };
+  return { follow, loadingUserId, isFollowed };
 }
