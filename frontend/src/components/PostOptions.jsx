@@ -15,6 +15,7 @@ import ShareModal from "./modals/ShareModal";
 import BlockUserDialog from "./modals/BlockUserDialog";
 import { blockUser } from "../api/users";
 import { useQueryClient } from "@tanstack/react-query";
+import { invalidatePostsAndAuthUser } from "../utils/queryInvalidation";
 
 const PostOptions = ({ 
   post, 
@@ -90,8 +91,7 @@ const PostOptions = ({
     setIsBlocking(true);
     try {
       await blockUser(postOwner._id);
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      await invalidatePostsAndAuthUser(queryClient);
       setShowBlockDialog(false);
     } catch (error) {
       // Error is handled by the API layer and toast

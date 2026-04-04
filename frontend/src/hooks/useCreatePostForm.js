@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { createPost } from "../api/posts";
-import { invalidatePostsFeed } from "../utils/invalidatePostsFeed";
+import { invalidatePostsFeed } from "../utils/queryInvalidation";
 import useMention from "./useMention";
 
 /**

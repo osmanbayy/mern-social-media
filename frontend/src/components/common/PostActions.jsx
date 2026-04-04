@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { invalidatePostsFeed } from "../../utils/invalidatePostsFeed";
+import { invalidatePostsFeed, invalidateUserProfiles } from "../../utils/queryInvalidation";
 import { FaRegComment } from "react-icons/fa";
 import { IoMdBookmark } from "react-icons/io";
 import { FaHeart } from "react-icons/fa6";
@@ -30,7 +30,7 @@ const PostActions = ({
     onSuccess: (data) => {
       toast.success(data.retweeted ? "Gönderi retweet edildi." : "Retweet geri alındı.");
       invalidatePostsFeed(queryClient);
-      queryClient.invalidateQueries({ queryKey: ["user"] });
+      invalidateUserProfiles(queryClient);
     },
     onError: (error) => {
       toast.error(error.message || "Retweet edilirken bir hata oluştu.");

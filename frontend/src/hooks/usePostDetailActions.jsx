@@ -8,7 +8,7 @@ import {
   commentPost as commentPostAPI,
   pinPost as pinPostAPI,
 } from "../api/posts";
-import { invalidatePostsFeed } from "../utils/invalidatePostsFeed";
+import { invalidatePostById, invalidatePostsFeed, invalidateUserProfiles } from "../utils/queryInvalidation";
 
 /**
  * Hook for post detail page actions (like, save, delete, comment) with optimistic updates
@@ -128,7 +128,7 @@ const usePostDetailActions = (postId) => {
   const { mutate: commentPost, isPending: isCommenting } = useMutation({
     mutationFn: (commentText) => commentPostAPI(postId, commentText),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["post", postId] });
+      invalidatePostById(queryClient, postId);
       invalidatePostsFeed(queryClient);
     },
     onError: (error) => {
@@ -144,9 +144,9 @@ const usePostDetailActions = (postId) => {
         ? "Gönderi başa sabitlendi." 
         : "Gönderi sabitlemeden kaldırıldı.";
       toast.success(message);
-      queryClient.invalidateQueries({ queryKey: ["post", postId] });
+      invalidatePostById(queryClient, postId);
       invalidatePostsFeed(queryClient);
-      queryClient.invalidateQueries({ queryKey: ["user"] });
+      invalidateUserProfiles(queryClient);
     },
     onError: (error) => {
       toast.error(error.message);

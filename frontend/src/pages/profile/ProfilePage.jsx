@@ -10,6 +10,7 @@ import BlockUserDialog from "../../components/modals/BlockUserDialog";
 import ImageCropModal from "../../components/modals/ImageCropModal";
 import ShareModal from "../../components/modals/ShareModal";
 import { getUserProfile, blockUser } from "../../api/users";
+import { invalidateAfterBlockOrProfileDamage } from "../../utils/queryInvalidation";
 import { formatMemberSinceDate } from "../../utils/date";
 import useFollow from "../../hooks/useFollow";
 import useUpdateProfile from "../../hooks/useUpdateProfile";
@@ -107,9 +108,7 @@ const ProfilePage = () => {
     setIsBlocking(true);
     try {
       await blockUser(user._id);
-      queryClient.invalidateQueries({ queryKey: ["user", username] });
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      await invalidateAfterBlockOrProfileDamage(queryClient, username);
       setShowBlockDialog(false);
     } catch (error) {
       if (process.env.NODE_ENV === "development") {

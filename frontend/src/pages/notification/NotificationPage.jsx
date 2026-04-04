@@ -23,6 +23,7 @@ import {
   markAllNotificationsAsRead,
   deleteNotification,
 } from "../../api/notifications";
+import { invalidateNotifications } from "../../utils/queryInvalidation";
 
 const getNotificationLink = (notification) => {
   if (notification.type === "message_request") return "/messages/requests";
@@ -89,7 +90,7 @@ const NotificationPage = () => {
   const { mutate: deleteNotifications, isPending: isDeleting } = useMutation({
     mutationFn: deleteAllNotifications,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      invalidateNotifications(queryClient);
       toast.success("Bildirimler silindi");
     },
     onError: () => {
@@ -100,7 +101,7 @@ const NotificationPage = () => {
   const { mutate: markAllAsRead, isPending: isMarkingRead } = useMutation({
     mutationFn: markAllNotificationsAsRead,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      invalidateNotifications(queryClient);
       toast.success("Tümü okundu olarak işaretlendi");
     },
     onError: () => {
@@ -111,7 +112,7 @@ const NotificationPage = () => {
   const { mutate: deleteSingleNotification, isPending: isDeletingSingle } = useMutation({
     mutationFn: deleteNotification,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      invalidateNotifications(queryClient);
       toast.success("Bildirim silindi");
     },
     onError: () => {

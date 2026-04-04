@@ -9,7 +9,7 @@ import {
   unhidePost as unhidePostAPI,
   pinPost as pinPostAPI,
 } from "../api/posts";
-import { invalidatePostsFeed } from "../utils/invalidatePostsFeed";
+import { invalidatePostsFeed, invalidateUserProfiles } from "../utils/queryInvalidation";
 
 /**
  * Hook for post actions (like, save, delete, hide, unhide) with optimistic updates
@@ -186,7 +186,7 @@ const usePostActions = (postId, updatedPost) => {
         : "Gönderi sabitlemeden kaldırıldı.";
       toast.success(message);
       invalidatePostsFeed(queryClient);
-      queryClient.invalidateQueries({ queryKey: ["user"] });
+      invalidateUserProfiles(queryClient);
     },
     onError: (error) => {
       toast.error(error.message);

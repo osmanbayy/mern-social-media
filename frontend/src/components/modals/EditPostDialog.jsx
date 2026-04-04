@@ -11,7 +11,7 @@ import EmojiMartPicker from "../common/EmojiMartPicker";
 
 import LoadingSpinner from "../common/LoadingSpinner";
 import { editPost } from "../../api/posts";
-import { invalidatePostsFeed } from "../../utils/invalidatePostsFeed";
+import { invalidatePostById, invalidatePostsFeed } from "../../utils/queryInvalidation";
 import useMention from "../../hooks/useMention";
 import MentionDropdown from "../common/MentionDropdown";
 import { useAuth } from "../../contexts/AuthContext";
@@ -148,7 +148,7 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
     onSuccess: () => {
       toast.success("Gönderi güncellendi.");
       invalidatePostsFeed(queryClient);
-      queryClient.invalidateQueries({ queryKey: ["post", post._id] });
+      invalidatePostById(queryClient, post._id);
       closeAndNotify();
     },
     onError: (error) => {

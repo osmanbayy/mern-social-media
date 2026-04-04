@@ -1,6 +1,7 @@
 import toast from "react-hot-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { followUser, unfollowUser } from "../api/users";
+import { invalidateFollowRelated } from "../utils/queryInvalidation";
 
 const useFollow = (userId) => {
   const queryClient = useQueryClient();
@@ -8,13 +9,7 @@ const useFollow = (userId) => {
   const { mutate: follow, isPending } = useMutation({
     mutationFn: () => followUser(userId),
     onSuccess: () => {
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] }),
-        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-        queryClient.invalidateQueries({ queryKey: ["followings"]}),
-        queryClient.invalidateQueries({ queryKey: ["followers"]}),
-        queryClient.invalidateQueries({ queryKey: ["user"]})
-      ]);
+      invalidateFollowRelated(queryClient);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -24,13 +19,7 @@ const useFollow = (userId) => {
   const { mutate: unfollow, isPending: isUnfollowing } = useMutation({
     mutationFn: () => unfollowUser(userId),
     onSuccess: () => {
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] }),
-        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-        queryClient.invalidateQueries({ queryKey: ["followings"]}),
-        queryClient.invalidateQueries({ queryKey: ["followers"]}),
-        queryClient.invalidateQueries({ queryKey: ["user"]})
-      ]);
+      invalidateFollowRelated(queryClient);
     },
     onError: (error) => {
       toast.error(error.message);

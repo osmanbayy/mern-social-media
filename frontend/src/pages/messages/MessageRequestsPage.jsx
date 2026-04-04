@@ -10,6 +10,10 @@ import MessageSharePreview from "../../components/messages/MessageSharePreview";
 import { FaArrowLeft } from "react-icons/fa6";
 import { LuBell, LuUserPlus } from "react-icons/lu";
 import toast from "react-hot-toast";
+import {
+  invalidateAfterMessageRequestAccepted,
+  invalidateAfterMessageRequestDeclined,
+} from "../../utils/queryInvalidation";
 
 const RequestSkeleton = () => (
   <div className="animate-pulse rounded-2xl border border-base-300/30 bg-base-100/50 p-4">
@@ -42,9 +46,7 @@ const MessageRequestsPage = () => {
       queryClient.setQueryData(["messageRequests"], (old) =>
         Array.isArray(old) ? old.filter((r) => String(r._id) !== String(requestId)) : old
       );
-      queryClient.invalidateQueries({ queryKey: ["messageRequests"] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      invalidateAfterMessageRequestAccepted(queryClient);
       toast.success("İstek kabul edildi");
       if (data?.conversation?._id) {
         navigate(`/messages/chat/${data.conversation._id}`, { replace: true });
@@ -59,8 +61,7 @@ const MessageRequestsPage = () => {
       queryClient.setQueryData(["messageRequests"], (old) =>
         Array.isArray(old) ? old.filter((r) => String(r._id) !== String(requestId)) : old
       );
-      queryClient.invalidateQueries({ queryKey: ["messageRequests"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      invalidateAfterMessageRequestDeclined(queryClient);
       toast.success("İstek reddedildi");
     },
     onError: (e) => toast.error(e.message),

@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { followUser } from "../api/users";
 import { removeUserFromSuggestedCacheData } from "../utils/suggestedUsers";
+import { invalidateKeys } from "../utils/queryInvalidation";
 
 /**
  * Öneri listelerinden takip; isteğe bağlı optimistic cache + invalidate.
@@ -33,9 +34,7 @@ export function useFollowSuggestedUserMutation({
     },
     onSuccess: async (_, userId) => {
       setFollowedUserIds((prev) => new Set(prev).add(userId));
-      await Promise.all(
-        invalidateQueryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey }))
-      );
+      await invalidateKeys(queryClient, invalidateQueryKeys);
       setLoadingUserId(null);
       if (successToast) {
         toast.success(successToast);
@@ -43,9 +42,7 @@ export function useFollowSuggestedUserMutation({
     },
     onError: (error) => {
       toast.error(error.message);
-      for (const key of optimisticRemoveFromQueryKeys) {
-        queryClient.invalidateQueries({ queryKey: key });
-      }
+      invalidateKeys(queryClient, optimisticRemoveFromQueryKeys);
       setLoadingUserId(null);
     },
   });

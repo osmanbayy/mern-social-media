@@ -6,6 +6,7 @@ import UnblockUserDialog from "../modals/UnblockUserDialog";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { LuBan } from "react-icons/lu";
+import { invalidateBlockedAndFeed } from "../../utils/queryInvalidation";
 
 const BlockedAccounts = () => {
   const [showUnblockDialog, setShowUnblockDialog] = useState(false);
@@ -29,9 +30,7 @@ const BlockedAccounts = () => {
     setIsUnblocking(true);
     try {
       await unblockUser(selectedUser._id);
-      queryClient.invalidateQueries({ queryKey: ["blockedUsers"] });
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      await invalidateBlockedAndFeed(queryClient);
       setShowUnblockDialog(false);
       setSelectedUser(null);
     } catch (error) {

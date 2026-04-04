@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { LuBell, LuUser, LuSearch, LuHouse, LuMessageSquare } from "react-icons/lu";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import OSSvg from "../svgs/OS";
+import { invalidatePostsFeed } from "../../utils/queryInvalidation";
 
 const SCROLL_DELTA = 6;
 const TOP_REVEAL_PX = 48;
@@ -109,9 +110,7 @@ const MobileBottomNav = ({ authUser, isNotRead, onMenuClick }) => {
           <Link
             to="/"
             className="flex min-w-0 items-center justify-center gap-2"
-            onClick={() =>
-              queryClient.invalidateQueries({ queryKey: ["posts"] })
-            }
+            onClick={() => invalidatePostsFeed(queryClient)}
           >
             <OSSvg className="h-8 w-8 shrink-0 rounded-full" />
             <span className="mobile-header-brand text-base-content truncate leading-none">

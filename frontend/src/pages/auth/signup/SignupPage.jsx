@@ -13,6 +13,7 @@ import { LuEye, LuEyeClosed } from "react-icons/lu";
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import PasswordStrengthIndicator from "../../../components/auth/PasswordStrengthIndicator";
 import StatusNotice from "../../../components/common/StatusNotice";
+import { invalidateAuthUser } from "../../../utils/queryInvalidation";
 
 function SignupPage() {
   const [formData, setFormData] = useState({
@@ -33,7 +34,7 @@ function SignupPage() {
       signup({ email, username, fullname, password }),
     onSuccess: async () => {
       toast.success("Hesabın oluşturuldu.");
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      await invalidateAuthUser(queryClient);
     },
   });
 

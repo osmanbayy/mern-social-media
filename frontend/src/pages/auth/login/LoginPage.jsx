@@ -11,6 +11,7 @@ import { LuEye, LuEyeClosed } from "react-icons/lu";
 import { login } from "../../../api/auth";
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import StatusNotice from "../../../components/common/StatusNotice";
+import { invalidateAuthUser } from "../../../utils/queryInvalidation";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ const LoginPage = () => {
   const { mutate, isError, error, isPending } = useMutation({
     mutationFn: ({ username, password }) => login(username, password),
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      await invalidateAuthUser(queryClient);
       toast.success("Hoşgeldin!");
     },
   });

@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { updateUserProfile } from "../api/users";
 import { useAuth } from "../contexts/AuthContext";
+import { invalidateAuthUserAndUserProfiles } from "../utils/queryInvalidation";
 
 const useUpdateProfile = () => {
   const queryClient = useQueryClient();
@@ -13,10 +14,7 @@ const useUpdateProfile = () => {
     mutationFn: (formData) => updateUserProfile(formData),
     onSuccess: (updatedUser, formData) => {
       toast.success("Profil güncellendi.");
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-        queryClient.invalidateQueries({ queryKey: ["user"] }),
-      ]).then(() => {
+      invalidateAuthUserAndUserProfiles(queryClient).then(() => {
         if (authUser?.username !== formData?.username && formData?.username) {
           navigate(`/profile/${formData.username}`);
         }

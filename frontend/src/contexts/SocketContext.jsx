@@ -1,7 +1,19 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { invalidatePostsFeed } from "../utils/invalidatePostsFeed";
+import {
+  invalidateConversations,
+  invalidateKeys,
+  invalidateMessagesForConversation,
+  invalidateNotifications,
+  invalidatePostsFeed,
+} from "../utils/queryInvalidation";
+import {
+  QK_CONVERSATIONS,
+  QK_MESSAGE_REQUESTS,
+  QK_MESSAGES_PREFIX,
+  QK_NOTIFICATIONS,
+} from "../constants/queryKeys";
 import { useAuth } from "./AuthContext";
 
 const SocketContext = createContext(null);
@@ -31,64 +43,59 @@ export const SocketProvider = ({ children }) => {
 
     setSocket(s);
 
-    const invalidate = (keys) => {
-      keys.forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
-    };
-
     s.on("notification:new", () => {
-      invalidate([["notifications"]]);
+      invalidateNotifications(queryClient);
     });
     s.on("feed:new_post", () => {
       invalidatePostsFeed(queryClient);
     });
     s.on("message:new", () => {
-      invalidate([["conversations"], ["messages"]]);
+      invalidateKeys(queryClient, [QK_CONVERSATIONS, QK_MESSAGES_PREFIX]);
     });
     s.on("message:edited", () => {
-      invalidate([["conversations"], ["messages"]]);
+      invalidateKeys(queryClient, [QK_CONVERSATIONS, QK_MESSAGES_PREFIX]);
     });
     s.on("message:read", (payload) => {
       const { conversationId } = payload || {};
       if (!conversationId) return;
-      const cid = String(conversationId);
       /** Sunucudaki read alanı ile cache’i eşitle (setQueryData id eşleşmesi kaçırılabiliyordu) */
-      queryClient.invalidateQueries({ queryKey: ["messages", cid] });
+      invalidateMessagesForConversation(queryClient, conversationId);
     });
     s.on("message:delivered", (payload) => {
       const { conversationId } = payload || {};
       if (!conversationId) return;
-      queryClient.invalidateQueries({ queryKey: ["messages", String(conversationId)] });
+      invalidateMessagesForConversation(queryClient, conversationId);
     });
     s.on("message:reaction", (payload) => {
       const { conversationId } = payload || {};
       if (!conversationId) return;
-      queryClient.invalidateQueries({ queryKey: ["messages", String(conversationId)] });
+      invalidateMessagesForConversation(queryClient, conversationId);
     });
     s.on("message:deleted", (payload) => {
       const cid = payload?.conversationId;
       if (cid) {
-        queryClient.invalidateQueries({ queryKey: ["messages", String(cid)] });
+        invalidateMessagesForConversation(queryClient, cid);
       }
-      invalidate([["conversations"]]);
+      invalidateConversations(queryClient);
     });
     s.on("conversation:cleared", (payload) => {
       const cid = payload?.conversationId;
       if (cid) {
-        queryClient.invalidateQueries({ queryKey: ["messages", String(cid)] });
+        invalidateMessagesForConversation(queryClient, cid);
       }
-      invalidate([["conversations"]]);
+      invalidateConversations(queryClient);
     });
     s.on("conversations:updated", () => {
-      invalidate([["conversations"]]);
+      invalidateConversations(queryClient);
     });
     s.on("message_request:new", () => {
-      invalidate([["messageRequests"], ["notifications"]]);
+      invalidateKeys(queryClient, [QK_MESSAGE_REQUESTS, QK_NOTIFICATIONS]);
     });
     s.on("message_request:accepted", () => {
-      invalidate([["conversations"], ["messages"], ["messageRequests"]]);
+      invalidateKeys(queryClient, [QK_CONVERSATIONS, QK_MESSAGES_PREFIX, QK_MESSAGE_REQUESTS]);
     });
     s.on("message_request:declined", () => {
-      invalidate([["messageRequests"]]);
+      invalidateKeys(queryClient, [QK_MESSAGE_REQUESTS]);
     });
 
     return () => {
