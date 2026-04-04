@@ -221,7 +221,9 @@ const RetweetDropdown = ({ post, onClose, anchorRef }) => {
                   />
                 </div>
 
-                {quoteImg && <ImagePreview image={quoteImg} onRemove={handleRemoveImage} />}
+                {quoteImg && (
+                  <ImagePreview imageUrl={quoteImg} onRemove={handleRemoveImage} />
+                )}
 
                 <div className="flex flex-wrap items-center gap-2 border-t border-base-300/40 pt-3">
                   <input

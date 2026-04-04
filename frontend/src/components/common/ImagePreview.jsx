@@ -1,7 +1,8 @@
 import { IoCloseSharp } from "react-icons/io5";
 
-const ImagePreview = ({ imageUrl, onRemove }) => {
-  if (!imageUrl) return null;
+const ImagePreview = ({ imageUrl, image, onRemove }) => {
+  const src = imageUrl ?? image;
+  if (!src) return null;
 
   return (
     <div className="relative w-full max-w-md mx-auto rounded-2xl overflow-hidden border border-base-300/50 group">
@@ -13,7 +14,7 @@ const ImagePreview = ({ imageUrl, onRemove }) => {
         <IoCloseSharp className="w-5 h-5" />
       </button>
       <img
-        src={imageUrl}
+        src={src}
         className="w-full h-auto max-h-96 object-cover"
         alt="Preview"
       />
