@@ -1,19 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import defaultProfilePicture from "../assets/avatar-placeholder.png";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import LoadingSpinner from "../components/common/LoadingSpinner";
-import { followUser, getSuggestedUsers } from "../api/users";
-import toast from "react-hot-toast";
+import SuggestedUserRow from "../components/common/SuggestedUserRow";
+import { getSuggestedUsers } from "../api/users";
+import { SUGGESTED_USERS_QUERY_KEYS } from "../constants/suggestedUsersQueries";
+import { useFollowSuggestedUserMutation } from "../hooks/useFollowSuggestedUserMutation";
 import { IoArrowBack } from "react-icons/io5";
 
 const SuggestionsPage = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [allUsers, setAllUsers] = useState([]);
   const [hasMore, setHasMore] = useState(true);
-  const [loadingUserId, setLoadingUserId] = useState(null);
   const limit = 10; // 10 kullanıcı per page
 
   const { data, isLoading, isFetching } = useQuery({
@@ -44,22 +43,14 @@ const SuggestionsPage = () => {
     }
   }, [data, page]);
 
-  const { mutate: follow } = useMutation({
-    mutationFn: (userId) => followUser(userId),
-    onMutate: (userId) => {
-      setLoadingUserId(userId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] });
-      queryClient.invalidateQueries({ queryKey: ["suggestedUsersPage"] });
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
-      setLoadingUserId(null);
-      toast.success("Kullanıcı takip edildi");
-    },
-    onError: (error) => {
-      toast.error(error.message);
-      setLoadingUserId(null);
-    },
+  const { follow, loadingUserId } = useFollowSuggestedUserMutation({
+    invalidateQueryKeys: [
+      SUGGESTED_USERS_QUERY_KEYS.rightPanel,
+      SUGGESTED_USERS_QUERY_KEYS.mobile,
+      SUGGESTED_USERS_QUERY_KEYS.paginatedPrefix,
+      ["authUser"],
+    ],
+    successToast: "Kullanıcı takip edildi",
   });
 
   const handleScroll = useCallback(() => {
@@ -118,52 +109,18 @@ const SuggestionsPage = () => {
         ) : (
           <div className="flex flex-col gap-4">
             {allUsers.map((user) => (
-              <Link
-                to={`/profile/${user.username}`}
-                className="flex items-center justify-between gap-4 p-4 rounded-xl hover:bg-base-200/50 transition-all duration-300 group border border-base-300/50"
+              <SuggestedUserRow
                 key={user._id}
-              >
-                <div className="flex gap-3 items-center flex-1 min-w-0">
-                  <div className="avatar flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full ring-2 ring-base-300 group-hover:ring-primary transition-all duration-300">
-                      <img
-                        src={user.profileImage || defaultProfilePicture}
-                        className="w-full h-full rounded-full object-cover"
-                        alt={user.fullname}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-base font-semibold tracking-tight truncate group-hover:text-primary transition-colors">
-                      {user.fullname}
-                    </span>
-                    <span className="text-sm text-base-content/60 truncate">
-                      @{user.username}
-                    </span>
-                    {user.bio && (
-                      <span className="text-sm text-base-content/50 mt-1 line-clamp-2">
-                        {user.bio}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-shrink-0">
-                  <button
-                    className="btn btn-primary btn-sm rounded-full text-white hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      follow(user._id);
-                    }}
-                    disabled={loadingUserId === user._id}
-                  >
-                    {loadingUserId === user._id ? (
-                      <LoadingSpinner size="sm" />
-                    ) : (
-                      "Takip et"
-                    )}
-                  </button>
-                </div>
-              </Link>
+                user={user}
+                profileHref={`/profile/${user.username}`}
+                variant="page"
+                isFollowLoading={loadingUserId === user._id}
+                onFollowClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  follow(user._id);
+                }}
+              />
             ))}
           </div>
         )}

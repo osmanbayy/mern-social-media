@@ -1,65 +1,36 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import RightPanelSkeleton from "../skeletons/RightPanelSkeleton";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import defaultProfilePicture from "../../assets/avatar-placeholder.png";
-import LoadingSpinner from "./LoadingSpinner";
-import { followUser, getSuggestedUsers } from "../../api/users";
-import toast from "react-hot-toast";
-import { LuSearch, LuSparkles, LuChevronRight } from "react-icons/lu";
+import { LuSparkles, LuChevronRight } from "react-icons/lu";
 import { RIGHT_PANEL_CONSTANTS, RIGHT_PANEL_ROUTES } from "../../constants/rightPanel";
+import { SUGGESTED_USERS_QUERY_KEYS } from "../../constants/suggestedUsersQueries";
 import { extractSuggestedUsers, getHasMoreUsers, getDisplayedUsers } from "../../utils/suggestedUsers";
+import { useSuggestedUsersQuery } from "../../hooks/useSuggestedUsersQuery";
+import { useFollowSuggestedUserMutation } from "../../hooks/useFollowSuggestedUserMutation";
+import SearchBar from "./SearchBar";
+import SuggestedUserRow from "./SuggestedUserRow";
 
 const RightPanel = () => {
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [loadingUserId, setLoadingUserId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: suggestedUsersData, isLoading } = useQuery({
-    queryKey: ["suggestedUsers"],
-    queryFn: () =>
-      getSuggestedUsers(RIGHT_PANEL_CONSTANTS.INITIAL_PAGE, RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT),
+  const { data: suggestedUsersData, isLoading } = useSuggestedUsersQuery({
+    queryKey: SUGGESTED_USERS_QUERY_KEYS.rightPanel,
+    page: RIGHT_PANEL_CONSTANTS.INITIAL_PAGE,
+    limit: RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT,
   });
 
   const suggestedUsers = extractSuggestedUsers(suggestedUsersData);
   const hasMore = getHasMoreUsers(suggestedUsersData, RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT);
   const displayedUsers = getDisplayedUsers(suggestedUsers, RIGHT_PANEL_CONSTANTS.SUGGESTED_USERS_LIMIT);
 
-  const { mutate: follow } = useMutation({
-    mutationFn: (userId) => followUser(userId),
-    onMutate: (userId) => {
-      setLoadingUserId(userId);
-      queryClient.setQueryData(["suggestedUsers"], (oldData) => {
-        if (!oldData) return oldData;
-
-        if (Array.isArray(oldData)) {
-          return oldData.filter((user) => user._id !== userId);
-        }
-
-        if (oldData.users) {
-          return {
-            ...oldData,
-            users: oldData.users.filter((user) => user._id !== userId),
-            hasMore: oldData.hasMore || false,
-          };
-        }
-
-        return oldData;
-      });
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] }),
-        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-      ]);
-      setLoadingUserId(null);
-    },
-    onError: (error) => {
-      toast.error(error.message);
-      queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] });
-      setLoadingUserId(null);
-    },
+  const { follow, loadingUserId } = useFollowSuggestedUserMutation({
+    optimisticRemoveFromQueryKeys: [SUGGESTED_USERS_QUERY_KEYS.rightPanel],
+    invalidateQueryKeys: [
+      SUGGESTED_USERS_QUERY_KEYS.rightPanel,
+      SUGGESTED_USERS_QUERY_KEYS.mobile,
+      ["authUser"],
+    ],
   });
 
   const handleSearch = (e) => {
@@ -82,19 +53,11 @@ const RightPanel = () => {
   return (
     <div className="hidden w-92 flex-shrink-0 lg:flex">
       <div className="sticky top-0 flex h-screen flex-col gap-4 overflow-y-auto p-5 pt-4">
-        <form onSubmit={handleSearch} className="relative w-full">
-          <label className="input input-bordered flex h-11 w-full items-center gap-2 rounded-full border-base-300/60 bg-base-200/40 pl-1 pr-2 text-sm shadow-sm transition focus-within:border-accent/40 focus-within:ring-2 focus-within:ring-accent/20">
-            <LuSearch className="ml-2 h-5 w-5 shrink-0 text-base-content/45" aria-hidden />
-            <input
-              type="search"
-              placeholder="Ara…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="grow bg-transparent placeholder:text-base-content/45 focus:outline-none"
-              autoComplete="off"
-            />
-          </label>
-        </form>
+        <SearchBar
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onSubmit={handleSearch}
+        />
 
         {showSuggestionsBlock && (
           <section className="w-full overflow-hidden rounded-3xl border border-base-300/60 bg-gradient-to-b from-base-100 via-base-100 to-base-200/25 shadow-xl ring-1 ring-black/5 dark:from-base-100 dark:via-base-100 dark:to-base-300/20 dark:ring-white/5">
@@ -132,41 +95,14 @@ const RightPanel = () => {
 
               {!isLoading &&
                 displayedUsers.map((user) => (
-                  <Link
-                    to={`${RIGHT_PANEL_ROUTES.PROFILE}/${user.username}`}
-                    className="group flex items-center justify-between gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-base-200/50"
+                  <SuggestedUserRow
                     key={user._id}
-                  >
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <div className="avatar shrink-0">
-                        <div className="h-11 w-11 rounded-full ring-2 ring-base-300/70 transition-[box-shadow] duration-300 group-hover:ring-accent/35">
-                          <img
-                            src={user.profileImage || defaultProfilePicture}
-                            className="h-full w-full rounded-full object-cover"
-                            alt=""
-                          />
-                        </div>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold tracking-tight text-base-content group-hover:text-accent">
-                          {user.fullname}
-                        </p>
-                        <p className="truncate text-xs text-base-content/50">@{user.username}</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-accent btn-xs shrink-0 rounded-full px-4 font-semibold shadow-sm"
-                      onClick={(e) => handleFollowClick(e, user._id)}
-                      disabled={loadingUserId === user._id}
-                    >
-                      {loadingUserId === user._id ? (
-                        <LoadingSpinner size="sm" />
-                      ) : (
-                        "Takip et"
-                      )}
-                    </button>
-                  </Link>
+                    user={user}
+                    profileHref={`${RIGHT_PANEL_ROUTES.PROFILE}/${user.username}`}
+                    variant="panel"
+                    isFollowLoading={loadingUserId === user._id}
+                    onFollowClick={(e) => handleFollowClick(e, user._id)}
+                  />
                 ))}
             </div>
 

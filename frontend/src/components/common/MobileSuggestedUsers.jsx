@@ -1,42 +1,33 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import LoadingSpinner from "./LoadingSpinner";
-import { followUser, getSuggestedUsers } from "../../api/users";
-import toast from "react-hot-toast";
 import { LuSparkles, LuChevronRight } from "react-icons/lu";
+import { SUGGESTED_USERS_QUERY_KEYS } from "../../constants/suggestedUsersQueries";
+import { extractSuggestedUsers } from "../../utils/suggestedUsers";
+import { useSuggestedUsersQuery } from "../../hooks/useSuggestedUsersQuery";
+import { useFollowSuggestedUserMutation } from "../../hooks/useFollowSuggestedUserMutation";
+
+const MOBILE_SUGGESTIONS_LIMIT = 20;
 
 const MobileSuggestedUsers = () => {
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [loadingUserId, setLoadingUserId] = useState(null);
 
-  const { data: suggestedUsersData, isLoading } = useQuery({
-    queryKey: ["mobileSuggestedUsers"],
-    queryFn: () => getSuggestedUsers(1, 20),
+  const { data: suggestedUsersData, isLoading } = useSuggestedUsersQuery({
+    queryKey: SUGGESTED_USERS_QUERY_KEYS.mobile,
+    page: 1,
+    limit: MOBILE_SUGGESTIONS_LIMIT,
   });
 
-  const suggestedUsers = Array.isArray(suggestedUsersData)
-    ? suggestedUsersData
-    : suggestedUsersData?.users || [];
+  const suggestedUsers = extractSuggestedUsers(suggestedUsersData);
 
-  const { mutate: follow } = useMutation({
-    mutationFn: (userId) => followUser(userId),
-    onMutate: (userId) => {
-      setLoadingUserId(userId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mobileSuggestedUsers"] });
-      queryClient.invalidateQueries({ queryKey: ["suggestedUsers"] });
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
-      setLoadingUserId(null);
-      toast.success("Takip edildi");
-    },
-    onError: (error) => {
-      toast.error(error.message);
-      setLoadingUserId(null);
-    },
+  const { follow, loadingUserId } = useFollowSuggestedUserMutation({
+    optimisticRemoveFromQueryKeys: [SUGGESTED_USERS_QUERY_KEYS.mobile],
+    invalidateQueryKeys: [
+      SUGGESTED_USERS_QUERY_KEYS.mobile,
+      SUGGESTED_USERS_QUERY_KEYS.rightPanel,
+      ["authUser"],
+    ],
+    successToast: "Takip edildi",
   });
 
   if (isLoading || suggestedUsers.length === 0) {

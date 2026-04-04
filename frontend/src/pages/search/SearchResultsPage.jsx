@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { searchUsersPaginated } from "../../api/users";
 import { searchPosts } from "../../api/posts";
 import Post from "../../components/common/Post";
+import SearchBar from "../../components/common/SearchBar";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { LuSearch, LuUser, LuFileText } from "react-icons/lu";
@@ -91,22 +92,14 @@ const SearchResultsPage = () => {
   const [postHasMore, setPostHasMore] = useState(false);
 
   // Fetch users
-  const {
-    data: usersData,
-    isLoading: isLoadingUsers,
-    refetch: refetchUsers,
-  } = useQuery({
+  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ["searchUsers", query, userPage],
     queryFn: () => searchUsersPaginated(query, userPage, 5),
     enabled: !!query && query.trim().length > 0,
   });
 
   // Fetch posts
-  const {
-    data: postsData,
-    isLoading: isLoadingPosts,
-    refetch: refetchPosts,
-  } = useQuery({
+  const { data: postsData, isLoading: isLoadingPosts } = useQuery({
     queryKey: ["searchPosts", query, postPage],
     queryFn: () => searchPosts(query, postPage, 5),
     enabled: !!query && query.trim().length > 0,
@@ -180,19 +173,14 @@ const SearchResultsPage = () => {
     return (
       <div className="w-full min-h-screen pb-20 lg:pb-0">
         <div className="max-w-2xl mx-auto px-4 py-6">
-          {/* Search Input */}
-          <form onSubmit={handleSearch} className="mb-6">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Ara..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-full bg-base-200/50 border border-base-300/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
-              />
-              <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40" />
-            </div>
-          </form>
+          <SearchBar
+            variant="page"
+            formClassName="mb-6"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onSubmit={handleSearch}
+            placeholder="Ara..."
+          />
 
           <div className="text-center py-12">
             <LuSearch className="w-16 h-16 mx-auto text-base-content/20 mb-4" />
@@ -206,19 +194,14 @@ const SearchResultsPage = () => {
   return (
     <div className="w-full min-h-screen pb-20 lg:pb-0">
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Search Input */}
-        <form onSubmit={handleSearch} className="mb-6">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Ara..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-full bg-base-200/50 border border-base-300/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
-            />
-            <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40" />
-          </div>
-        </form>
+        <SearchBar
+          variant="page"
+          formClassName="mb-6"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onSubmit={handleSearch}
+          placeholder="Ara..."
+        />
 
         {/* Users Section */}
         <div className="mb-8">
