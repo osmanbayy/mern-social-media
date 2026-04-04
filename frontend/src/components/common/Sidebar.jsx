@@ -1,4 +1,3 @@
-import { useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/AuthContext";
 import toast from "react-hot-toast";
@@ -63,15 +62,11 @@ const Sidebar = () => {
   });
 
   const isNotRead = notifications?.map((item) => item?.read).includes(false);
-  const location = useLocation();
-  const isSettingPage = location.pathname === "/settings";
-
   return (
     <>
       <DesktopSidebar
         authUser={authUser}
         isNotRead={isNotRead}
-        isSettingPage={isSettingPage}
         onLogoutClick={() => setIsLogoutModalOpen(true)}
       />
       <MobileBottomNav
