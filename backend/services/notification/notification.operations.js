@@ -5,7 +5,7 @@ export async function listNotifications(userId) {
   const notifications = await Notification.find({ to: userId })
     .populate({
       path: "from",
-      select: "username profileImage fullname",
+      select: "username profileImage fullname isAccountVerified",
     })
     .populate({
       path: "post",

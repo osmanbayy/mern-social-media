@@ -4,6 +4,7 @@ import CommentOptions from "./CommentOptions";
 import MentionText from "./common/MentionText";
 import useMention from "../hooks/useMention";
 import MentionDropdown from "./common/MentionDropdown";
+import VerifiedBadge from "./common/VerifiedBadge";
 import { useRef } from "react";
 
 const CommentItem = ({
@@ -75,13 +76,16 @@ const CommentItem = ({
         <div className="flex flex-col flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <Link
-                to={`/profile/${commentItem.user.username}`}
-                className="font-semibold text-sm hover:text-primary transition-colors"
-                onClick={stopPropagation}
-              >
-                {commentItem.user.fullname || "Kullanıcı"}
-              </Link>
+              <div className="flex min-w-0 items-center gap-1">
+                <Link
+                  to={`/profile/${commentItem.user.username}`}
+                  className="truncate font-semibold text-sm hover:text-primary transition-colors"
+                  onClick={stopPropagation}
+                >
+                  {commentItem.user.fullname || "Kullanıcı"}
+                </Link>
+                <VerifiedBadge user={commentItem.user} size="sm" />
+              </div>
               <span className="text-base-content/50 text-xs">
                 @{commentItem.user.username}
               </span>
@@ -228,13 +232,16 @@ const CommentItem = ({
                         </Link>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <Link
-                              to={`/profile/${reply.user.username}`}
-                              className="font-semibold text-xs hover:text-primary transition-colors"
-                              onClick={stopPropagation}
-                            >
-                              {reply.user.fullname || "Kullanıcı"}
-                            </Link>
+                            <div className="flex min-w-0 items-center gap-1">
+                              <Link
+                                to={`/profile/${reply.user.username}`}
+                                className="truncate font-semibold text-xs hover:text-primary transition-colors"
+                                onClick={stopPropagation}
+                              >
+                                {reply.user.fullname || "Kullanıcı"}
+                              </Link>
+                              <VerifiedBadge user={reply.user} size="sm" />
+                            </div>
                             <span className="text-base-content/50 text-xs">
                               @{reply.user.username}
                             </span>

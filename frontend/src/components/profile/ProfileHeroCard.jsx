@@ -172,6 +172,7 @@ export default function ProfileHeroCard({
 
         <ProfileBioStats
           fullname={user?.fullname}
+          verified={user?.isAccountVerified}
           username={user?.username}
           bio={user?.bio}
           link={user?.link}

@@ -65,7 +65,7 @@ export async function searchUsers({ userId, query }) {
       { fullname: { $regex: searchQuery, $options: "i" } },
     ],
   })
-    .select("username fullname profileImage")
+    .select("username fullname profileImage isAccountVerified")
     .limit(10);
 
   return ok(200, users);

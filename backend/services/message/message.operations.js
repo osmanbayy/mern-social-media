@@ -207,13 +207,13 @@ export async function sendMessage({ fromUserId, toUserId, incoming }) {
   });
 
   const populatedReq = await MessageRequest.findById(reqDoc._id)
-    .populate("from", "username profileImage fullname")
+    .populate("from", "username profileImage fullname isAccountVerified")
     .populate({
       path: "share.post",
       select: "text img user createdAt",
-      populate: { path: "user", select: "username profileImage fullname" },
+      populate: { path: "user", select: "username profileImage fullname isAccountVerified" },
     })
-    .populate("share.profileUser", "username profileImage fullname bio")
+    .populate("share.profileUser", "username profileImage fullname bio isAccountVerified")
     .lean();
 
   emitToUser(toUserId, "message_request:new", { request: populatedReq });
@@ -420,13 +420,13 @@ export async function getIncomingRequests(userId) {
     status: "pending",
   })
     .sort({ createdAt: -1 })
-    .populate("from", "username profileImage fullname")
+    .populate("from", "username profileImage fullname isAccountVerified")
     .populate({
       path: "share.post",
       select: "text img user createdAt",
-      populate: { path: "user", select: "username profileImage fullname" },
+      populate: { path: "user", select: "username profileImage fullname isAccountVerified" },
     })
-    .populate("share.profileUser", "username profileImage fullname bio")
+    .populate("share.profileUser", "username profileImage fullname bio isAccountVerified")
     .lean();
 
   return ok(200, requests);

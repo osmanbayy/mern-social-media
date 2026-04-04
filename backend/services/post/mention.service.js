@@ -40,7 +40,7 @@ export async function sendMentionNotifications(
     const inserted = await Notification.insertMany(notifications);
     const ids = inserted.map((n) => n._id);
     const populated = await Notification.find({ _id: { $in: ids } })
-      .populate("from", "username profileImage fullname")
+      .populate("from", "username profileImage fullname isAccountVerified")
       .populate("post", "_id");
     for (const n of populated) {
       emitToUser(n.to.toString(), "notification:new", n.toObject());

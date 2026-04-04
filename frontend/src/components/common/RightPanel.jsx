@@ -55,7 +55,7 @@ const RightPanel = () => {
 
   return (
     <div className="hidden w-92 flex-shrink-0 lg:flex">
-      <div className="sticky top-0 flex h-screen flex-col gap-4 overflow-y-auto p-5 pt-4">
+      <div className="scrollbar-hide sticky top-0 flex h-screen flex-col gap-4 overflow-y-auto p-5 pt-4">
         <SearchBar
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}

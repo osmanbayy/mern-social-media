@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../contexts/AuthContext";
 import { FaArrowLeft } from "react-icons/fa6";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { getUserProfile, getFollowers, getFollowing } from "../../api/users";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
 import UserRowSkeleton from "../../components/skeletons/UserRowSkeleton";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
 import useFollow from "../../hooks/useFollow";
+import VerifiedBadge from "../../components/common/VerifiedBadge";
 
 const UserRow = ({
   item,
@@ -49,7 +48,10 @@ const UserRow = ({
           </div>
         </div>
         <div className="flex flex-col text-left">
-          <span className="font-semibold text-sm">{item.fullname}</span>
+          <span className="inline-flex items-center gap-1 font-semibold text-sm">
+            {item.fullname}
+            <VerifiedBadge user={item} size="sm" />
+          </span>
           <span className="text-xs text-base-content/60">@{item.username}</span>
           {showMutualLabel && isMutual && (
             <span className="mt-0.5 text-[11px] text-emerald-500">

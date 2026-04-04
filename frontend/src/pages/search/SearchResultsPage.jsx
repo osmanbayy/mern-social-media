@@ -11,6 +11,7 @@ import { LuSearch, LuUser, LuFileText } from "react-icons/lu";
 import { Link } from "react-router-dom";
 import useFollow from "../../hooks/useFollow";
 import { useAuth } from "../../contexts/AuthContext";
+import VerifiedBadge from "../../components/common/VerifiedBadge";
 
 const UserResultItem = ({ user }) => {
   const { follow, unfollow, isPending } = useFollow(user._id);
@@ -35,9 +36,12 @@ const UserResultItem = ({ user }) => {
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
-          {user.fullname}
-        </p>
+        <div className="flex min-w-0 items-center gap-1">
+          <p className="truncate font-semibold text-sm group-hover:text-primary transition-colors">
+            {user.fullname}
+          </p>
+          <VerifiedBadge user={user} size="sm" />
+        </div>
         <p className="text-xs text-base-content/60 truncate">@{user.username}</p>
         {user.bio && (
           <p className="text-xs text-base-content/70 mt-1 line-clamp-2">{user.bio}</p>

@@ -28,7 +28,7 @@ export async function createPost({ userId, text, img }) {
   await sendMentionNotifications(mentions, userId, newPost._id);
 
   const populatedPost = await Post.findById(newPost._id)
-    .populate("user", "username fullname profileImage")
+    .populate("user", "username fullname profileImage isAccountVerified")
     .lean();
 
   const author = await User.findById(userId).select("followers");

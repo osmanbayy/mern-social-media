@@ -1,8 +1,10 @@
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
+import VerifiedBadge from "../common/VerifiedBadge";
 
 export default function ProfileBioStats({
   fullname,
+  verified,
   username,
   bio,
   link,
@@ -15,7 +17,10 @@ export default function ProfileBioStats({
   return (
     <div className="mt-5 space-y-3 border-t border-base-300/35 pt-5">
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-base-content sm:text-[1.35rem]">{fullname}</h2>
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <h2 className="truncate text-xl font-bold tracking-tight text-base-content sm:text-[1.35rem]">{fullname}</h2>
+          <VerifiedBadge verified={verified} size="md" />
+        </div>
         <p className="mt-0.5 text-[15px] text-base-content/55">@{username}</p>
       </div>
 

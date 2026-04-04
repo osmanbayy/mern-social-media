@@ -165,6 +165,7 @@ const ProfilePage = () => {
 
             <ProfileStickyHeader
               fullname={user?.fullname}
+              verified={user?.isAccountVerified}
               postCount={user?.postCount}
               isMyProfile={isMyProfile}
               theme={theme}

@@ -167,7 +167,7 @@ const Posts = ({ feedType, username, userId }) => {
         </p>
       )}
       {(!isLoading || (isRefetching && posts && posts.length > 0)) && posts && posts.length > 0 && (
-        <div className="w-full overflow-x-hidden">
+        <div className="scrollbar-hide w-full overflow-x-hidden">
           {posts.map((post, index) => (
             <div key={post._id} className="w-full">
               <Post post={post} isHidden={feedType === POST_FEED_TYPES.HIDDEN} />

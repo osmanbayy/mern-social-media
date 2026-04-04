@@ -16,6 +16,7 @@ import usePostCache from "../../hooks/usePostCache";
 import usePostActions from "../../hooks/usePostActions";
 import MentionText from "./MentionText";
 import { useTheme } from "../../contexts/ThemeContext";
+import VerifiedBadge from "./VerifiedBadge";
 
 const Post = ({ post, isHidden = false }) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -188,13 +189,16 @@ const Post = ({ post, isHidden = false }) => {
           <div className="flex gap-2 items-center mb-1">
             {postOwner ? (
               <>
-                <Link
-                  to={`/profile/${postOwner.username}`}
-                  className="font-semibold text-sm md:text-base truncate hover:text-primary transition-colors"
-                  onClick={handleProfileClick}
-                >
-                  {postOwner.fullname || "Kullanıcı"}
-                </Link>
+                <div className="flex min-w-0 max-w-[65%] items-center gap-1 sm:max-w-[70%]">
+                  <Link
+                    to={`/profile/${postOwner.username}`}
+                    className="min-w-0 truncate font-semibold text-sm hover:text-primary md:text-base"
+                    onClick={handleProfileClick}
+                  >
+                    {postOwner.fullname || "Kullanıcı"}
+                  </Link>
+                  <VerifiedBadge user={postOwner} size="sm" />
+                </div>
                 <span className="text-base-content/60 flex gap-1 text-xs md:text-sm">
                   <Link 
                     to={`/profile/${postOwner.username}`}
@@ -264,10 +268,11 @@ const Post = ({ post, isHidden = false }) => {
             {/* If quote retweet, show original post preview below quote text */}
             {isRetweet && updatedPost.isQuoteRetweet && originalPost && (
               <div className="p-3 border border-base-300/50 rounded-xl bg-base-200/30">
-                <div className="flex gap-2 items-center mb-2">
-                  <span className="text-xs font-semibold">
+                <div className="flex min-w-0 flex-wrap items-center gap-1 mb-2">
+                  <span className="truncate text-xs font-semibold">
                     {originalPost.user?.fullname || "Kullanıcı"}
                   </span>
+                  <VerifiedBadge user={originalPost.user} size="sm" />
                   <span className="text-xs text-base-content/60">
                     @{originalPost.user?.username || "kullanici"}
                   </span>

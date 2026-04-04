@@ -4,7 +4,6 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { LuPin } from "react-icons/lu";
-import { FaHeart, FaRegComment } from "react-icons/fa";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { formatPostDate } from "../../utils/date";
@@ -13,7 +12,6 @@ import PostImageModal from "../../components/modals/PostImageModal";
 import DeletePostDialog from "../../components/modals/DeletePostDialog";
 import EditPostDialog from "../../components/modals/EditPostDialog";
 import PostOptions from "../../components/PostOptions";
-import CommentOptions from "../../components/CommentOptions";
 import CommentItem from "../../components/CommentItem";
 import PostActions from "../../components/common/PostActions";
 import { getSinglePost, likeComment, replyToComment, deleteComment, editComment } from "../../api/posts";
@@ -22,6 +20,7 @@ import useMention from "../../hooks/useMention";
 import MentionDropdown from "../../components/common/MentionDropdown";
 import MentionText from "../../components/common/MentionText";
 import { useTheme } from "../../contexts/ThemeContext";
+import VerifiedBadge from "../../components/common/VerifiedBadge";
 
 const PostDetailPage = () => {
   const { postId } = useParams();
@@ -322,13 +321,16 @@ const PostDetailPage = () => {
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {postOwner ? (
                   <>
-                    <Link
-                      to={`/profile/${postOwner.username}`}
-                      className="font-bold hover:underline truncate"
-                      onClick={handleProfileClick}
-                    >
-                      {postOwner.fullname || "Kullanıcı"}
-                    </Link>
+                    <div className="flex min-w-0 max-w-full items-center gap-1">
+                      <Link
+                        to={`/profile/${postOwner.username}`}
+                        className="truncate font-bold hover:underline"
+                        onClick={handleProfileClick}
+                      >
+                        {postOwner.fullname || "Kullanıcı"}
+                      </Link>
+                      <VerifiedBadge user={postOwner} size="sm" />
+                    </div>
                     <span className="text-base-content/60 text-sm whitespace-nowrap flex-shrink-0">
                       <Link
                         to={`/profile/${postOwner.username}`}

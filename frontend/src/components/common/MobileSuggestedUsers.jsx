@@ -4,6 +4,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import { LuSparkles, LuChevronRight } from "react-icons/lu";
 import { useAuth } from "../../contexts/AuthContext";
 import { isFollowingUser } from "../../utils/followStatus";
+import VerifiedBadge from "./VerifiedBadge";
 import { SUGGESTED_USERS_QUERY_KEYS } from "../../constants/suggestedUsersQueries";
 import { extractSuggestedUsers } from "../../utils/suggestedUsers";
 import { useSuggestedUsersQuery } from "../../hooks/useSuggestedUsersQuery";
@@ -81,7 +82,10 @@ const MobileSuggestedUsers = () => {
                         />
                       </div>
                     </div>
-                    <p className="mb-0.5 w-full truncate text-sm font-semibold text-base-content">{user.fullname}</p>
+                    <div className="mb-0.5 flex w-full min-w-0 items-center justify-center gap-1">
+                    <p className="truncate text-sm font-semibold text-base-content">{user.fullname}</p>
+                    <VerifiedBadge user={user} size="sm" />
+                  </div>
                     <p className="mb-3 w-full truncate text-xs text-base-content/50">@{user.username}</p>
                   </Link>
                   <button

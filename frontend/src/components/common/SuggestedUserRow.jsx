@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import LoadingSpinner from "./LoadingSpinner";
+import VerifiedBadge from "./VerifiedBadge";
 
 /**
  * Avatar + isim + kullanıcı adı + takip butonu (yatay satır).
@@ -46,15 +47,18 @@ const SuggestedUserRow = ({
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <p
-            className={
-              isPage
-                ? "truncate text-base font-semibold tracking-tight text-base-content transition-colors group-hover:text-accent"
-                : "truncate text-sm font-semibold tracking-tight text-base-content group-hover:text-accent"
-            }
-          >
-            {user.fullname}
-          </p>
+          <div className="flex min-w-0 items-center gap-1">
+            <p
+              className={
+                isPage
+                  ? "truncate text-base font-semibold tracking-tight text-base-content transition-colors group-hover:text-accent"
+                  : "truncate text-sm font-semibold tracking-tight text-base-content group-hover:text-accent"
+              }
+            >
+              {user.fullname}
+            </p>
+            <VerifiedBadge user={user} size="sm" />
+          </div>
           <p className={`truncate text-sm text-base-content/60 ${isPage ? "" : "text-xs text-base-content/50"}`}>
             @{user.username}
           </p>

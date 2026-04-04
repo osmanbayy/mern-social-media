@@ -11,6 +11,7 @@ import {
   LuMessageSquare,
   LuSparkles,
 } from "react-icons/lu";
+import VerifiedBadge from "../../components/common/VerifiedBadge";
 import { BiRepost } from "react-icons/bi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -293,8 +294,9 @@ const NotificationPage = () => {
                             unread ? "font-semibold text-base-content" : "font-medium text-base-content/85"
                           }`}
                         >
-                          <span className="font-bold text-base-content">
-                            {notification.from?.fullname || notification.from?.username}
+                          <span className="inline-flex items-center gap-1 font-bold text-base-content">
+                            <span>{notification.from?.fullname || notification.from?.username}</span>
+                            <VerifiedBadge user={notification.from} size="sm" />
                           </span>{" "}
                           <span className="font-normal">{messageFor(notification)}</span>
                         </p>

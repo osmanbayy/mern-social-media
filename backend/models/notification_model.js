@@ -53,7 +53,7 @@ notificationSchema.post("save", async function (doc) {
   try {
     const Notification = mongoose.model("Notification");
     const populated = await Notification.findById(doc._id)
-      .populate("from", "username profileImage fullname")
+      .populate("from", "username profileImage fullname isAccountVerified")
       .populate("post", "_id")
       .populate("messageRequest");
 

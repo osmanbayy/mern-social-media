@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { LuLogOut, LuEllipsis, LuChevronRight } from "react-icons/lu";
 import OSSvg from "../svgs/OS";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
+import VerifiedBadge from "./VerifiedBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { getNavItems, DESKTOP_MORE_NAV_ITEMS } from "../../constants/navItems";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -74,9 +75,12 @@ const DesktopSidebar = ({ authUser, isNotRead, isSettingPage, onLogoutClick }) =
               </div>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold leading-tight text-base-content">
-                {authUser?.fullname}
-              </p>
+              <div className="flex min-w-0 items-center gap-1">
+                <p className="truncate text-sm font-bold leading-tight text-base-content">
+                  {authUser?.fullname}
+                </p>
+                <VerifiedBadge user={authUser} size="sm" />
+              </div>
               <p className="truncate text-xs text-base-content/50">@{authUser?.username}</p>
               {authUser?.bio && (
                 <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-base-content/45">

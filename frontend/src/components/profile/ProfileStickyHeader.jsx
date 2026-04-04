@@ -1,9 +1,10 @@
 import { FaArrowLeft } from "react-icons/fa6";
-import { HiDotsHorizontal } from "react-icons/hi";
 import ProfileMoreMenu from "./ProfileMoreMenu";
+import VerifiedBadge from "../common/VerifiedBadge";
 
 export default function ProfileStickyHeader({
   fullname,
+  verified,
   postCount,
   isMyProfile,
   theme,
@@ -25,7 +26,10 @@ export default function ProfileStickyHeader({
           <FaArrowLeft className="h-5 w-5" />
         </button>
         <div className="min-w-0 flex-1 pr-1">
-          <h1 className="truncate text-lg font-bold leading-tight tracking-tight">{fullname}</h1>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h1 className="truncate text-lg font-bold leading-tight tracking-tight">{fullname}</h1>
+            <VerifiedBadge verified={verified} size="sm" />
+          </div>
           <p className="text-xs text-base-content/55 sm:text-[13px]">{postCount || 0} gönderi</p>
         </div>
         {!isMyProfile && (

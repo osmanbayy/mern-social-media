@@ -126,25 +126,25 @@ export const replyToPopulate = {
   path: "replyTo",
   select: "_id text sender share createdAt attachments",
   populate: [
-    { path: "sender", select: "username profileImage fullname" },
+    { path: "sender", select: "username profileImage fullname isAccountVerified" },
     {
       path: "share.post",
       select: "text img user createdAt",
-      populate: { path: "user", select: "username profileImage fullname" },
+      populate: { path: "user", select: "username profileImage fullname isAccountVerified" },
     },
-    { path: "share.profileUser", select: "username profileImage fullname bio" },
+    { path: "share.profileUser", select: "username profileImage fullname isAccountVerified bio" },
   ],
 };
 
 export const populateMessageOutgoing = async (msgId) => {
   const populated = await Message.findById(msgId)
-    .populate("sender", "username profileImage fullname")
+    .populate("sender", "username profileImage fullname isAccountVerified")
     .populate({
       path: "share.post",
       select: "text img user createdAt",
-      populate: { path: "user", select: "username profileImage fullname" },
+      populate: { path: "user", select: "username profileImage fullname isAccountVerified" },
     })
-    .populate("share.profileUser", "username profileImage fullname bio")
+    .populate("share.profileUser", "username profileImage fullname isAccountVerified bio")
     .populate({ path: "reactions.user", select: "username fullname" })
     .populate(replyToPopulate)
     .lean();
@@ -153,13 +153,13 @@ export const populateMessageOutgoing = async (msgId) => {
 };
 
 export const messageQueryPopulate = [
-  { path: "sender", select: "username profileImage fullname" },
+  { path: "sender", select: "username profileImage fullname isAccountVerified" },
   {
     path: "share.post",
     select: "text img user createdAt",
-    populate: { path: "user", select: "username profileImage fullname" },
+    populate: { path: "user", select: "username profileImage fullname isAccountVerified" },
   },
-  { path: "share.profileUser", select: "username profileImage fullname bio" },
+  { path: "share.profileUser", select: "username profileImage fullname isAccountVerified bio" },
   { path: "reactions.user", select: "username fullname" },
   replyToPopulate,
 ];
