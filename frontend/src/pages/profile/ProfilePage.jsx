@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/AuthContext";
 import Posts from "../../components/common/Posts";
-import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
+import { ProfileHeaderSkeleton } from "../../components/skeletons";
 import ProfileImageModal from "../../components/modals/ProfileImageModal";
 import CoverImageModal from "../../components/modals/CoverImageModal";
 import BlockUserDialog from "../../components/modals/BlockUserDialog";

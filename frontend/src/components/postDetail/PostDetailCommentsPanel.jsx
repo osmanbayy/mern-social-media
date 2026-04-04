@@ -1,4 +1,4 @@
-import CommentItem from "../CommentItem";
+import CommentItem from "../comments/CommentItem";
 import { POST_DETAIL_COMMENTS_MAX_HEIGHT } from "../../constants/postDetailLayout";
 import { isCommentLikedByUser } from "../../utils/postDetailUtils";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";

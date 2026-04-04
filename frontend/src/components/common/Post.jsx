@@ -10,7 +10,7 @@ import DeletePostDialog from "../modals/DeletePostDialog";
 import EditPostDialog from "../modals/EditPostDialog";
 import PostImageModal from "../modals/PostImageModal";
 import PostImageViewer from "../modals/PostImageViewer";
-import PostOptions from "../PostOptions";
+import PostOptions from "../postOptions/PostOptions";
 import PostActions from "./PostActions";
 import usePostCache from "../../hooks/usePostCache";
 import usePostActions from "../../hooks/usePostActions";

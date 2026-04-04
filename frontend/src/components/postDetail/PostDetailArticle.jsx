@@ -3,7 +3,7 @@ import { LuPin } from "react-icons/lu";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import MentionText from "../common/MentionText";
 import PostActions from "../common/PostActions";
-import PostOptions from "../PostOptions";
+import PostOptions from "../postOptions/PostOptions";
 import VerifiedBadge from "../common/VerifiedBadge";
 
 const stopPropagation = (e) => e.stopPropagation();

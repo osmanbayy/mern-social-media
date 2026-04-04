@@ -1,24 +1,11 @@
-import { handleApiResponse } from "./handleApiResponse.js";
+import { createJsonApiHandlers } from "./apiClient.js";
 
-const getApiBase = () => {
-  const base = import.meta.env.VITE_API_BASE_URL;
-  if (!base) return "/api/auth";
-  
-  let normalized = base.replace(/\/+$/, '');
-  
-  if (!normalized.endsWith('/api')) {
-    normalized = `${normalized}/api`;
-  }
-  
-  return `${normalized}/auth`;
-};
-
-const API_BASE = getApiBase();
+const { API_BASE, handleResponse } = createJsonApiHandlers(
+  "auth",
+  "Beklenmeyen bir hata oluştu."
+);
 const AUTH_ME_TIMEOUT_MS = 7000;
 const AUTH_MUTATION_TIMEOUT_MS = 10000;
-
-const handleResponse = (response) =>
-  handleApiResponse(response, { nonJsonFallback: "Beklenmeyen bir hata oluştu." });
 
 export const getCurrentUser = async () => {
   const controller = new AbortController();
@@ -41,7 +28,7 @@ export const getCurrentUser = async () => {
     
     const data = await handleResponse(response);
     return data;
-  } catch (error) {
+  } catch {
     return null;
   } finally {
     clearTimeout(timeoutId);

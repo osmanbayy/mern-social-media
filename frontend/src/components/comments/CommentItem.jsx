@@ -1,12 +1,12 @@
-import MentionText from "./common/MentionText";
+import MentionText from "../common/MentionText";
 import CommentOptions from "./CommentOptions";
-import CommentActionsBar from "./comments/CommentActionsBar";
-import CommentAuthorLine from "./comments/CommentAuthorLine";
-import CommentEditForm from "./comments/CommentEditForm";
-import CommentRepliesList from "./comments/CommentRepliesList";
-import CommentReplyForm from "./comments/CommentReplyForm";
-import CommentUserAvatar from "./comments/CommentUserAvatar";
-import { useCommentReplyMention } from "../hooks/useCommentReplyMention";
+import CommentActionsBar from "./CommentActionsBar";
+import CommentAuthorLine from "./CommentAuthorLine";
+import CommentEditForm from "./CommentEditForm";
+import CommentRepliesList from "./CommentRepliesList";
+import CommentReplyForm from "./CommentReplyForm";
+import CommentUserAvatar from "./CommentUserAvatar";
+import { useCommentReplyMention } from "../../hooks/useCommentReplyMention";
 
 const stopPropagation = (e) => e.stopPropagation();
 

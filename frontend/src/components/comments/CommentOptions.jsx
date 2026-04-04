@@ -1,20 +1,17 @@
-import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useRef } from "react";
 import { HiDotsHorizontal } from "react-icons/hi";
 import { FaTrash } from "react-icons/fa";
 import { TbEdit } from "react-icons/tb";
-import LoadingSpinner from "./common/LoadingSpinner";
+import LoadingSpinner from "../common/LoadingSpinner";
 
-const CommentOptions = ({ 
-  comment,
-  postOwner,
+const CommentOptions = ({
   isMyComment,
   isPostOwner,
   isDeleting,
   isEditing,
-  onEdit, 
+  onEdit,
   onDelete,
-  theme 
+  theme,
 }) => {
   const dropdownTriggerRef = useRef(null);
 
@@ -31,20 +28,21 @@ const CommentOptions = ({
         <ul
           tabIndex={0}
           className={`dropdown-content rounded-xl border border-base-300/50 menu bg-base-100/95 backdrop-blur-xl z-[100] font-semibold min-w-48 p-2 shadow-2xl transition-all duration-200 ease-out ${
-            theme === "dark" 
-              ? "shadow-black/40 ring-1 ring-white/10" 
+            theme === "dark"
+              ? "shadow-black/40 ring-1 ring-white/10"
               : "shadow-black/20 ring-1 ring-black/5"
           }`}
           style={{
-            boxShadow: theme === "dark"
-              ? "0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1)"
-              : "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)",
-            animation: "dropdownFadeIn 0.2s ease-out"
+            boxShadow:
+              theme === "dark"
+                ? "0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1)"
+                : "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+            animation: "dropdownFadeIn 0.2s ease-out",
           }}
           onClick={(e) => e.stopPropagation()}
         >
           {isMyComment && (
-            <li 
+            <li
               className="hover:bg-base-200/50 transition-colors duration-150 rounded-lg"
               onClick={(e) => {
                 e.preventDefault();
@@ -68,9 +66,9 @@ const CommentOptions = ({
               )}
             </li>
           )}
-          
+
           {(isMyComment || isPostOwner) && (
-            <li 
+            <li
               className="hover:bg-red-500/10 hover:text-red-500 transition-colors duration-150 rounded-lg"
               onClick={(e) => {
                 e.preventDefault();

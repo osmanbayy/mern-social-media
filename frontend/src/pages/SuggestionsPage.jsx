@@ -8,7 +8,7 @@ import SuggestedUserRow from "../components/common/SuggestedUserRow";
 import { getSuggestedUsers } from "../api/users";
 import { SUGGESTED_USERS_QUERY_KEYS } from "../constants/suggestedUsersQueries";
 import { SUGGESTIONS_PAGE } from "../constants/suggestionsPage";
-import SuggestionsPageLoadingSkeleton from "../components/skeletons/SuggestionsPageLoadingSkeleton";
+import { SuggestionsPageLoadingSkeleton } from "../components/skeletons";
 import { useFollowSuggestedUserMutation } from "../hooks/useFollowSuggestedUserMutation";
 import { useAuth } from "../contexts/AuthContext";
 import { isFollowingUser } from "../utils/followStatus";

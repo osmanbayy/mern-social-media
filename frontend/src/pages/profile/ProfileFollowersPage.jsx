@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
-import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
+import PageShell from "../../components/layout/PageShell";
+import { ProfileHeaderSkeleton } from "../../components/skeletons";
 import FollowListContent from "../../components/profile/followList/FollowListContent";
 import FollowListNotFoundState from "../../components/profile/followList/FollowListNotFoundState";
 import FollowListPageHeader from "../../components/profile/followList/FollowListPageHeader";
@@ -29,22 +30,22 @@ const ProfileFollowersPage = () => {
 
   if (isUserLoading || isUserRefetching) {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-b from-base-200/35 via-base-100 to-base-100 pb-20 dark:from-base-300/15 lg:pb-0">
+      <PageShell variant="scroll">
         <ProfileHeaderSkeleton />
-      </div>
+      </PageShell>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen w-full border-r border-base-300/40 bg-gradient-to-b from-base-200/35 via-base-100 to-base-100 pb-20 dark:from-base-300/15 lg:pb-0">
+      <PageShell variant="scrollBordered">
         <FollowListNotFoundState onGoHome={() => navigate("/")} />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="min-h-screen w-full border-r border-base-300/40 bg-gradient-to-b from-base-200/35 via-base-100 to-base-100 pb-20 dark:from-base-300/15 lg:pb-0">
+    <PageShell variant="scrollBordered">
       <FollowListPageHeader
         displayName={user.fullname || user.username}
         subtitle={pageSubtitle}
@@ -64,7 +65,7 @@ const ProfileFollowersPage = () => {
           isSelf={isSelf}
         />
       </main>
-    </div>
+    </PageShell>
   );
 };
 

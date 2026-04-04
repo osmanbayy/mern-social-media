@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Routes, useLocation } from "react-router-dom";
 import Sidebar from "./components/common/Sidebar";
 import RightPanel from "./components/common/RightPanel";
 import { Toaster } from "react-hot-toast";
@@ -7,7 +7,7 @@ import LoadingSpinner from "./components/common/LoadingSpinner";
 import { useAuth } from "./contexts/AuthContext";
 import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
 import StatusNotice from "./components/common/StatusNotice";
-import SplashLoading from "./components/skeletons/SplashLoading";
+import { SplashLoading } from "./components/skeletons";
 import { authenticatedRouteElements } from "./routes/authenticatedRoutes";
 import { guestRouteElements } from "./routes/guestRoutes";
 

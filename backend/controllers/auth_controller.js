@@ -1,4 +1,5 @@
 import { generateTokenAndSetCookie } from "../lib/utils/generate_token.js";
+import { asyncHandler } from "../lib/asyncHandler.js";
 import { sendServiceResult } from "../lib/controllerHttp.js";
 import * as authSession from "../services/auth/auth.session.service.js";
 import * as authMe from "../services/auth/auth.me.service.js";
@@ -6,35 +7,42 @@ import * as authVerify from "../services/auth/auth.verify.service.js";
 import * as authPassword from "../services/auth/auth.password.service.js";
 import * as authEmailTest from "../services/auth/auth.email.test.service.js";
 
-export const signup = async (req, res) => {
-  try {
+const isDev = process.env.NODE_ENV === "development";
+
+export const signup = asyncHandler(
+  "auth.signup",
+  async (req, res) => {
     const result = await authSession.signup(req.body);
     if (result.ok && result.cookieUserId) {
       generateTokenAndSetCookie(result.cookieUserId, res);
     }
     return sendServiceResult(res, result);
-  } catch (error) {
-    console.log("Error in signup controller", error.message);
-    res.status(500).json({ error: "Sunucu hatası!" });
+  },
+  {
+    onError: (_error, res) => {
+      res.status(500).json({ error: "Sunucu hatası!" });
+    },
   }
-};
+);
 
-export const login = async (req, res) => {
-  try {
+export const login = asyncHandler(
+  "auth.login",
+  async (req, res) => {
     const result = await authSession.login(req.body);
     if (result.ok && result.cookieUserId) {
       generateTokenAndSetCookie(result.cookieUserId, res);
     }
     return sendServiceResult(res, result);
-  } catch (error) {
-    console.error("Error in login controller:", error);
-    console.error("Error stack:", error.stack);
-    res.status(500).json({
-      message: "Sunucu hatası!",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+  },
+  {
+    onError: (error, res) => {
+      res.status(500).json({
+        message: "Sunucu hatası!",
+        error: isDev ? error.message : undefined,
+      });
+    },
   }
-};
+);
 
 export const logout = (req, res) => {
   const isProduction = process.env.NODE_ENV === "production";
@@ -50,77 +58,101 @@ export const logout = (req, res) => {
   return res.status(200).json({ message: "Çıkış yapıldı." });
 };
 
-export const get_me = async (req, res) => {
-  try {
+export const get_me = asyncHandler(
+  "auth.get_me",
+  async (req, res) => {
     const result = await authMe.getMe(req.user._id);
     return sendServiceResult(res, result);
-  } catch (error) {
-    console.log("Error in getme controller", error.message);
-    res.status(500).json({ error: "Sunucu hatası!" });
+  },
+  {
+    onError: (_error, res) => {
+      res.status(500).json({ error: "Sunucu hatası!" });
+    },
   }
-};
+);
 
-export const sendVerifyOtp = async (req, res) => {
-  try {
+export const sendVerifyOtp = asyncHandler(
+  "auth.sendVerifyOtp",
+  async (req, res) => {
     const result = await authVerify.sendVerifyOtp(req.body);
     return sendServiceResult(res, result);
-  } catch (error) {
-    console.error("Error in sendVerifyOtp:", error);
-    res.status(500).json({ success: false, message: error.message });
+  },
+  {
+    onError: (error, res) => {
+      res.status(500).json({ success: false, message: error.message });
+    },
   }
-};
+);
 
-export const verifyEmail = async (req, res) => {
-  try {
+export const verifyEmail = asyncHandler(
+  "auth.verifyEmail",
+  async (req, res) => {
     const result = await authVerify.verifyEmail(req.body);
     return sendServiceResult(res, result);
-  } catch (error) {
-    console.error("Error in verifyEmail:", error);
-    res.status(500).json({
-      success: false,
-      message: "Sunucu hatası oluştu.",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+  },
+  {
+    onError: (error, res) => {
+      res.status(500).json({
+        success: false,
+        message: "Sunucu hatası oluştu.",
+        error: isDev ? error.message : undefined,
+      });
+    },
   }
-};
+);
 
-export const sendPasswordResetOtp = async (req, res) => {
-  try {
+export const sendPasswordResetOtp = asyncHandler(
+  "auth.sendPasswordResetOtp",
+  async (req, res) => {
     const result = await authPassword.sendPasswordResetOtp(req.body);
     return sendServiceResult(res, result);
-  } catch (error) {
-    console.error("Error in sendPasswordResetOtp:", error);
-    res.status(500).json({ success: false, message: error.message });
+  },
+  {
+    onError: (error, res) => {
+      res.status(500).json({ success: false, message: error.message });
+    },
   }
-};
+);
 
-export const verifyResetOtp = async (req, res) => {
-  try {
+export const verifyResetOtp = asyncHandler(
+  "auth.verifyResetOtp",
+  async (req, res) => {
     const result = await authPassword.verifyResetOtp(req.body);
     return sendServiceResult(res, result);
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+  },
+  {
+    onError: (error, res) => {
+      res.status(500).json({ success: false, message: error.message });
+    },
   }
-};
+);
 
-export const resetPassword = async (req, res) => {
-  try {
+export const resetPassword = asyncHandler(
+  "auth.resetPassword",
+  async (req, res) => {
     const result = await authPassword.resetPassword(req.body);
     return sendServiceResult(res, result);
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+  },
+  {
+    onError: (error, res) => {
+      res.status(500).json({ success: false, message: error.message });
+    },
   }
-};
+);
 
-export const testEmail = async (req, res) => {
-  try {
+export const testEmail = asyncHandler(
+  "auth.testEmail",
+  async (req, res) => {
     const result = await authEmailTest.sendTestEmail(req.body);
     return sendServiceResult(res, result);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to send test email",
-      error: error.message,
-    });
+  },
+  {
+    onError: (error, res) => {
+      res.status(500).json({
+        success: false,
+        message: "Failed to send test email",
+        error: error.message,
+      });
+    },
   }
-};
+);

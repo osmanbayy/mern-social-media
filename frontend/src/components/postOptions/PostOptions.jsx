@@ -1,13 +1,13 @@
 import { useState, useRef } from "react";
 import { HiDotsHorizontal } from "react-icons/hi";
-import { useAuth } from "../contexts/AuthContext";
-import useFollow from "../hooks/useFollow";
-import { useBlockPostAuthor } from "../hooks/useBlockPostAuthor";
-import { useOpenModalAfterDropdownBlur } from "../hooks/useOpenModalAfterDropdownBlur";
-import ShareModal from "./modals/ShareModal";
-import BlockUserDialog from "./modals/BlockUserDialog";
-import PostOptionsMenu from "./postOptions/PostOptionsMenu";
-import { isAuthUserFollowing } from "../utils/followingUtils";
+import { useAuth } from "../../contexts/AuthContext";
+import useFollow from "../../hooks/useFollow";
+import { useBlockPostAuthor } from "../../hooks/useBlockPostAuthor";
+import { useOpenModalAfterDropdownBlur } from "../../hooks/useOpenModalAfterDropdownBlur";
+import ShareModal from "../modals/ShareModal";
+import BlockUserDialog from "../modals/BlockUserDialog";
+import PostOptionsMenu from "./PostOptionsMenu";
+import { isAuthUserFollowing } from "../../utils/followingUtils";
 
 const stop = (e) => {
   e.preventDefault();

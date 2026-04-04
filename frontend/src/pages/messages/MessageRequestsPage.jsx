@@ -14,7 +14,7 @@ import {
   invalidateAfterMessageRequestAccepted,
   invalidateAfterMessageRequestDeclined,
 } from "../../utils/queryInvalidation";
-import MessageRequestsSkeleton from "../../components/skeletons/MessageRequestsSkeleton";
+import { MessageRequestsSkeleton } from "../../components/skeletons";
 
 const MessageRequestsPage = () => {
   const navigate = useNavigate();

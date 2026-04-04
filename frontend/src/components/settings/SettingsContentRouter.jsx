@@ -1,7 +1,7 @@
-import AccountInformation from "../settingsComponents/AccountInformation";
-import BlockedAccounts from "../settingsComponents/BlockedAccounts";
-import DisplayAndTheme from "../settingsComponents/DisplayAndTheme";
-import SettingsPlaceholder from "../settingsComponents/SettingsPlaceholder";
+import AccountInformation from "./AccountInformation";
+import BlockedAccounts from "./BlockedAccounts";
+import DisplayAndTheme from "./DisplayAndTheme";
+import SettingsPlaceholder from "./SettingsPlaceholder";
 import SettingsAccessibilitySection from "./SettingsAccessibilitySection";
 
 export default function SettingsContentRouter({ selectedId }) {

@@ -1,4 +1,4 @@
-import UserRowSkeleton from "../../skeletons/UserRowSkeleton";
+import { UserRowSkeleton } from "../../skeletons";
 
 export default function FollowListSkeleton() {
   return (

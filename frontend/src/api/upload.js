@@ -1,21 +1,10 @@
-import { handleApiResponse } from "./handleApiResponse.js";
+import { createJsonApiHandlers } from "./apiClient.js";
 
 /** Mesaj API kökü ile aynı — sohbet dosya yüklemesi /api/messages/upload/chat */
-const getApiBase = () => {
-  const base = import.meta.env.VITE_API_BASE_URL;
-  if (!base) return "/api/messages";
-
-  let normalized = base.replace(/\/+$/, "");
-  if (!normalized.endsWith("/api")) {
-    normalized = `${normalized}/api`;
-  }
-  return `${normalized}/messages`;
-};
-
-const API_BASE = getApiBase();
-
-const handleResponse = (response) =>
-  handleApiResponse(response, { nonJsonFallback: "Beklenmeyen bir hata oluştu." });
+const { API_BASE, handleResponse } = createJsonApiHandlers(
+  "messages",
+  "Beklenmeyen bir hata oluştu."
+);
 
 /**
  * Sohbet dosyası (resim, video, PDF, zip, metin) — Cloudinary

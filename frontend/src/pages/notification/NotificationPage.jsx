@@ -1,4 +1,5 @@
-import NotificationListSkeleton from "../../components/skeletons/NotificationListSkeleton";
+import PageShell from "../../components/layout/PageShell";
+import { NotificationListSkeleton } from "../../components/skeletons";
 import NotificationEmptyState from "../../components/notifications/NotificationEmptyState";
 import NotificationList from "../../components/notifications/NotificationList";
 import NotificationPageHeader from "../../components/notifications/NotificationPageHeader";
@@ -20,7 +21,7 @@ const NotificationPage = () => {
   const hasItems = Boolean(notifications?.length);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-base-200/35 via-base-100 to-base-100 pb-20 dark:from-base-300/15 lg:pb-0">
+    <PageShell variant="scroll">
       <NotificationPageHeader
         unreadCount={unreadCount}
         onMarkAllRead={markAllAsRead}
@@ -42,7 +43,7 @@ const NotificationPage = () => {
           />
         )}
       </main>
-    </div>
+    </PageShell>
   );
 };
 

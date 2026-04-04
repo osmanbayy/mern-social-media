@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useMessagesInboxQueries } from "../../hooks/useMessagesInboxQueries";
 import MessagesPageHeader from "../../components/messages/MessagesPageHeader";
-import MessagesListSkeleton from "../../components/skeletons/MessagesListSkeleton";
+import { MessagesListSkeleton } from "../../components/skeletons";
 import MessagesEmptyState from "../../components/messages/MessagesEmptyState";
 import ConversationList from "../../components/messages/ConversationList";
 

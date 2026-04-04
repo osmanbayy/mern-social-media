@@ -1,5 +1,5 @@
 import ChatAppearancePanel from "../chat/ChatAppearancePanel";
-import SettingsPlaceholder from "../settingsComponents/SettingsPlaceholder";
+import SettingsPlaceholder from "./SettingsPlaceholder";
 
 export default function SettingsAccessibilitySection() {
   return (

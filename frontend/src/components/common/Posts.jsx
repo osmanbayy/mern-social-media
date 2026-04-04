@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Post from "./Post";
-import PostSkeleton from "../skeletons/PostSkeleton";
+import { PostSkeleton } from "../skeletons";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { getAllPosts, getFollowingPosts, getUserPosts, getLikedPosts, getSavedPosts, getHiddenPosts } from "../../api/posts";
 import MobileSuggestedUsers from "./MobileSuggestedUsers";

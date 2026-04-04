@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { LuEye, LuEyeClosed } from "react-icons/lu";
 import { login } from "../../../api/auth";
 import { useAutoAnimate } from '@formkit/auto-animate/react'
+import PageShell from "../../../components/layout/PageShell";
 import StatusNotice from "../../../components/common/StatusNotice";
 import { invalidateAuthUser } from "../../../utils/queryInvalidation";
 
@@ -57,7 +58,7 @@ const LoginPage = () => {
   }, [isPending]);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-base-200/35 via-base-100 to-base-100 dark:from-base-300/15">
+    <PageShell variant="auth">
       <div className="grid min-h-screen w-full lg:grid-cols-2">
         <div className="hidden h-full w-full lg:flex lg:flex-col lg:items-center lg:justify-center lg:gap-6 lg:px-10 lg:bg-gradient-to-br lg:from-base-200/45 lg:to-base-100 dark:lg:from-base-300/25 dark:lg:to-base-100">
           <OSSvg className="w-full max-w-md" />
@@ -154,7 +155,7 @@ const LoginPage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 };
 export default LoginPage;

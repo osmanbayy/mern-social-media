@@ -1,24 +1,11 @@
 // Notifications API - All notification-related API calls
 
-import { handleApiResponse } from "./handleApiResponse.js";
+import { createJsonApiHandlers } from "./apiClient.js";
 
-// API base URL'i normalize et (çift slash'ları temizle)
-const getApiBase = () => {
-  const base = import.meta.env.VITE_API_BASE_URL;
-  if (!base) return "/api/notifications";
-  
-  let normalized = base.replace(/\/+$/, '');
-  if (!normalized.endsWith('/api')) {
-    normalized = `${normalized}/api`;
-  }
-  
-  return `${normalized}/notifications`;
-};
-
-const API_BASE = getApiBase();
-
-const handleResponse = (response) =>
-  handleApiResponse(response, { nonJsonFallback: "Bir hata oluştu." });
+const { API_BASE, handleResponse } = createJsonApiHandlers(
+  "notifications",
+  "Bir hata oluştu."
+);
 
 // Get notifications
 export const getNotifications = async () => {

@@ -1,25 +1,12 @@
-/* eslint-disable no-useless-catch */
 // Users API - All user-related API calls
 
+import { createJsonApiHandlers } from "./apiClient.js";
 import { handleApiResponse } from "./handleApiResponse.js";
 
-// API base URL'i normalize et (çift slash'ları temizle)
-const getApiBase = () => {
-  const base = import.meta.env.VITE_API_BASE_URL;
-  if (!base) return "/api/user";
-  
-  let normalized = base.replace(/\/+$/, '');
-  if (!normalized.endsWith('/api')) {
-    normalized = `${normalized}/api`;
-  }
-  
-  return `${normalized}/user`;
-};
-
-const API_BASE = getApiBase();
-
-const handleResponse = (response) =>
-  handleApiResponse(response, { nonJsonFallback: "Beklenmeyen bir hata oluştu." });
+const { API_BASE, handleResponse } = createJsonApiHandlers(
+  "user",
+  "Beklenmeyen bir hata oluştu."
+);
 
 // Get user profile
 export const getUserProfile = async (username) => {
@@ -38,25 +25,21 @@ export const getUserByIdSummary = async (id) => {
 };
 
 export const updateUserProfile = async (userData) => {
-  try {
-    // express-validator optional()+isString: null alanları göndermek "Invalid value" üretir
-    const payload = Object.fromEntries(
-      Object.entries(userData).filter(([, v]) => v !== null && v !== undefined)
-    );
+  // express-validator optional()+isString: null alanları göndermek "Invalid value" üretir
+  const payload = Object.fromEntries(
+    Object.entries(userData).filter(([, v]) => v !== null && v !== undefined)
+  );
 
-    const response = await fetch(`${API_BASE}/update`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(payload),
-    });
+  const response = await fetch(`${API_BASE}/update`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
 
-    return handleApiResponse(response, { nonJsonFallback: "Profil güncellenemedi." });
-  } catch (error) {
-    throw error;
-  }
+  return handleApiResponse(response, { nonJsonFallback: "Profil güncellenemedi." });
 };
 
 // Follow user

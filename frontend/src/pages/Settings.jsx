@@ -3,6 +3,7 @@ import SettingsContentRouter from "../components/settings/SettingsContentRouter"
 import SettingsMobileBar from "../components/settings/SettingsMobileBar";
 import SettingsMobileDrawer from "../components/settings/SettingsMobileDrawer";
 import SettingsSidebar from "../components/settings/SettingsSidebar";
+import PageShell from "../components/layout/PageShell";
 import { useSettingsPage } from "../hooks/useSettingsPage";
 
 const Settings = () => {
@@ -17,7 +18,7 @@ const Settings = () => {
   } = useSettingsPage();
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gradient-to-b from-base-200/35 via-base-100 to-base-100 dark:from-base-300/15 md:flex-row">
+    <PageShell variant="settings">
       <SettingsSidebar selectedId={selectedId} onSelectItem={selectSection} onBack={goBack} />
 
       <SettingsMobileBar
@@ -42,7 +43,7 @@ const Settings = () => {
           </div>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 };
 

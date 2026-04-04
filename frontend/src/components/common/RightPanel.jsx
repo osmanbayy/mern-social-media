@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import RightPanelSkeleton from "../skeletons/RightPanelSkeleton";
+import { RightPanelSkeleton } from "../skeletons";
 import { useState } from "react";
 import { LuSparkles, LuChevronRight } from "react-icons/lu";
 import { useAuth } from "../../contexts/AuthContext";
