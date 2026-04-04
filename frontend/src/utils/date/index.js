@@ -14,15 +14,17 @@ export const formatPostDate = (createdAt) => {
       month: "short",
       day: "numeric",
     });
-  } else if (timeDifferenceInDays === 1) {
-    return "1 gün önce";
-  } else if (timeDifferenceInHours >= 1) {
-    return `${timeDifferenceInHours} saat önce`;
-  } else if (timeDifferenceInMinutes >= 1) {
-    return `${timeDifferenceInMinutes} dakika önce`;
-  } else {
-    return "Hemen Şimdi";
   }
+  if (timeDifferenceInDays === 1) {
+    return "1g";
+  }
+  if (timeDifferenceInHours >= 1) {
+    return `${timeDifferenceInHours} sa`;
+  }
+  if (timeDifferenceInMinutes >= 1) {
+    return `${timeDifferenceInMinutes} dk`;
+  }
+  return "Şimdi";
 };
 
 export const formatMemberSinceDate = (createdAt) => {
