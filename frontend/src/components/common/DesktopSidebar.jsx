@@ -50,7 +50,7 @@ const DesktopSidebar = ({ authUser, isNotRead, isSettingPage, onLogoutClick }) =
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-base-200/50 ring-1 ring-base-300/60 transition group-hover:ring-accent/35">
               <OSSvg className="h-8 w-8" />
             </div>
-            <span className="hidden font-bold tracking-tight text-base-content lg:inline">
+            <span className="desktop-sidebar-label hidden text-2xl font-bold tracking-wider text-base-content lg:inline">
               OnSekiz
             </span>
           </Link>

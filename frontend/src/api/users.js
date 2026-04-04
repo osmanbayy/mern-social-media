@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-catch */
 // Users API - All user-related API calls
 
 import { handleApiResponse } from "./handleApiResponse.js";
