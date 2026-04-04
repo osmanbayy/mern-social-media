@@ -24,6 +24,7 @@ import {
   deleteNotification,
 } from "../../api/notifications";
 import { invalidateNotifications } from "../../utils/queryInvalidation";
+import NotificationListSkeleton from "../../components/skeletons/NotificationListSkeleton";
 
 const getNotificationLink = (notification) => {
   if (notification.type === "message_request") return "/messages/requests";
@@ -65,19 +66,6 @@ const iconShell = (type) => {
   };
   return map[type] || map.like;
 };
-
-const NotificationSkeleton = () => (
-  <div className="animate-pulse rounded-2xl border border-base-300/30 bg-base-100/50 p-4">
-    <div className="flex gap-4">
-      <div className="skeleton h-12 w-12 shrink-0 rounded-full" />
-      <div className="skeleton h-12 w-12 shrink-0 rounded-full" />
-      <div className="min-w-0 flex-1 space-y-2 pt-1">
-        <div className="skeleton h-4 w-3/4 max-w-xs rounded-full" />
-        <div className="skeleton h-3 w-24 rounded-full" />
-      </div>
-    </div>
-  </div>
-);
 
 const NotificationPage = () => {
   const navigate = useNavigate();
@@ -225,14 +213,7 @@ const NotificationPage = () => {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-5 sm:px-5 sm:py-6">
-        {isLoading && (
-          <div className="flex flex-col gap-3">
-            <NotificationSkeleton />
-            <NotificationSkeleton />
-            <NotificationSkeleton />
-            <NotificationSkeleton />
-          </div>
-        )}
+        {isLoading && <NotificationListSkeleton />}
 
         {!isLoading && notifications?.length === 0 && (
           <div className="flex flex-col items-center justify-center px-4 py-20 text-center sm:py-24">

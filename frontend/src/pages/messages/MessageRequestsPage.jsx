@@ -14,23 +14,7 @@ import {
   invalidateAfterMessageRequestAccepted,
   invalidateAfterMessageRequestDeclined,
 } from "../../utils/queryInvalidation";
-
-const RequestSkeleton = () => (
-  <div className="animate-pulse rounded-2xl border border-base-300/30 bg-base-100/50 p-4">
-    <div className="flex gap-3">
-      <div className="skeleton h-14 w-14 shrink-0 rounded-full" />
-      <div className="flex-1 space-y-2">
-        <div className="skeleton h-4 w-32 rounded-full" />
-        <div className="skeleton h-3 w-full rounded-full" />
-        <div className="skeleton h-3 w-4/5 rounded-full" />
-      </div>
-    </div>
-    <div className="mt-4 flex justify-end gap-2">
-      <div className="skeleton h-9 w-20 rounded-full" />
-      <div className="skeleton h-9 w-24 rounded-full" />
-    </div>
-  </div>
-);
+import MessageRequestsSkeleton from "../../components/skeletons/MessageRequestsSkeleton";
 
 const MessageRequestsPage = () => {
   const navigate = useNavigate();
@@ -92,12 +76,7 @@ const MessageRequestsPage = () => {
       </header>
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-3 py-4 sm:px-4 sm:py-6">
-        {isLoading && (
-          <div className="flex flex-col gap-3">
-            <RequestSkeleton />
-            <RequestSkeleton />
-          </div>
-        )}
+        {isLoading && <MessageRequestsSkeleton />}
 
         {!isLoading && (!requests || requests.length === 0) && (
           <div className="flex flex-1 flex-col items-center justify-center px-4 py-12 text-center sm:py-20">
