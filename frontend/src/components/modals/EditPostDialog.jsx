@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -24,10 +25,14 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const showPickerRef = useRef(false);
+  const [pickerFixedStyle, setPickerFixedStyle] = useState(null);
   const textareaRef = useRef(null);
   const imgRef = useRef(null);
   const emojiButtonRef = useRef(null);
   const emojiPickerRef = useRef(null);
+
+  showPickerRef.current = showPicker;
 
   const queryClient = useQueryClient();
   const { authUser } = useAuth();
@@ -87,17 +92,50 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
     return () => cancelAnimationFrame(t);
   }, [isOpen]);
 
+  useLayoutEffect(() => {
+    if (!showPicker || !emojiButtonRef.current) {
+      setPickerFixedStyle(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      const btn = emojiButtonRef.current?.getBoundingClientRect();
+      if (!btn) return;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const width = Math.min(400, vw - 16);
+      const maxHeight = Math.min(440, vh - 24);
+      let top = btn.bottom + 8;
+      let left = btn.left;
+      if (left + width > vw - 8) left = Math.max(8, vw - 8 - width);
+      if (left < 8) left = 8;
+      if (top + maxHeight > vh - 8) {
+        top = Math.max(8, btn.top - maxHeight - 8);
+      }
+      setPickerFixedStyle({ top, left, width, maxHeight });
+    };
+
+    updatePosition();
+    const raf = requestAnimationFrame(updatePosition);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [showPicker]);
+
   useEffect(() => {
     if (!showPicker) return;
     const handleClickOutside = (e) => {
       if (
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(e.target) &&
-        emojiButtonRef.current &&
-        !emojiButtonRef.current.contains(e.target)
+        emojiPickerRef.current?.contains(e.target) ||
+        emojiButtonRef.current?.contains(e.target)
       ) {
-        setShowPicker(false);
+        return;
       }
+      setShowPicker(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
@@ -108,36 +146,15 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   }, [showPicker]);
 
   useEffect(() => {
-    if (!showPicker || !emojiButtonRef.current || !emojiPickerRef.current) return;
-    const button = emojiButtonRef.current;
-    const picker = emojiPickerRef.current;
-    const buttonRect = button.getBoundingClientRect();
-    const pickerRect = picker.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    let left = 0;
-    let top = buttonRect.height + 8;
-    let transform = "";
-    if (buttonRect.left + pickerRect.width > viewportWidth) {
-      left = viewportWidth - buttonRect.right;
-      transform = "translateX(-100%)";
-    }
-    if (buttonRect.bottom + pickerRect.height > viewportHeight) {
-      top = -(pickerRect.height + 8);
-      transform = transform ? `${transform} translateY(-100%)` : "translateY(-100%)";
-    }
-    picker.style.left = `${left}px`;
-    picker.style.top = `${top}px`;
-    picker.style.transform = transform || "";
-  }, [showPicker]);
-
-  useEffect(() => {
     if (!isOpen) return;
     const onKey = (e) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        closeAndNotify();
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      if (showPickerRef.current) {
+        setShowPicker(false);
+        return;
       }
+      closeAndNotify();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -158,6 +175,7 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
 
   const handleEmojiClick = (emojiObject) => {
     setText((prev) => prev + emojiObject.emoji);
+    setShowPicker(false);
   };
 
   const handleImageUpload = async (e) => {
@@ -320,32 +338,39 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
                     className="rounded-full p-2 transition hover:bg-accent/10"
                     onClick={() => setShowPicker((v) => !v)}
                     aria-label="Emoji"
+                    aria-expanded={showPicker}
                   >
                     <BsEmojiSmileFill
                       className={`h-5 w-5 ${theme === "dark" ? "fill-yellow-400" : "fill-blue-500"}`}
                     />
                   </button>
-                  {showPicker && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-[100] bg-black/20 md:hidden"
-                        onClick={() => setShowPicker(false)}
-                      />
-                      <div
-                        ref={emojiPickerRef}
-                        className="absolute z-[110] max-h-[min(440px,70vh)] overflow-hidden rounded-2xl border border-base-300/50 bg-base-100 shadow-2xl animate-dropdownFadeIn"
-                        style={{
-                          maxWidth: "calc(100vw - 2rem)",
-                          maxHeight: "calc(100vh - 200px)",
-                        }}
-                      >
-                        <EmojiMartPicker
-                          theme={theme}
-                          onEmojiSelect={handleEmojiClick}
+                  {showPicker &&
+                    pickerFixedStyle &&
+                    createPortal(
+                      <>
+                        <div
+                          className="fixed inset-0 z-[100000] bg-black/20 sm:bg-black/10"
+                          aria-hidden
+                          onClick={() => setShowPicker(false)}
                         />
-                      </div>
-                    </>
-                  )}
+                        <div
+                          ref={emojiPickerRef}
+                          className="fixed z-[100001] overflow-hidden rounded-2xl border border-base-300/50 bg-base-100 shadow-2xl animate-dropdownFadeIn"
+                          style={{
+                            top: pickerFixedStyle.top,
+                            left: pickerFixedStyle.left,
+                            width: pickerFixedStyle.width,
+                            maxHeight: pickerFixedStyle.maxHeight,
+                          }}
+                        >
+                          <EmojiMartPicker
+                            theme={theme}
+                            onEmojiSelect={handleEmojiClick}
+                          />
+                        </div>
+                      </>,
+                      document.body
+                    )}
                 </div>
               </div>
 

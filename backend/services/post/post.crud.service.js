@@ -77,12 +77,21 @@ export async function editPost({ userId, postId, text, img }) {
   }
 
   let nextImg = post.img;
-  if (img && img !== post.img) {
-    if (post.img) {
-      await destroyCloudinaryImageByUrl(post.img);
+  if (img !== undefined) {
+    const imgExplicitlyEmpty =
+      img === "" || img === null || (typeof img === "string" && img.trim() === "");
+    if (imgExplicitlyEmpty) {
+      if (post.img) {
+        await destroyCloudinaryImageByUrl(post.img);
+      }
+      nextImg = null;
+    } else if (img !== post.img) {
+      if (post.img) {
+        await destroyCloudinaryImageByUrl(post.img);
+      }
+      const uploadedResponse = await cloudinary.uploader.upload(img);
+      nextImg = uploadedResponse.secure_url;
     }
-    const uploadedResponse = await cloudinary.uploader.upload(img);
-    nextImg = uploadedResponse.secure_url;
   }
 
   let mentions = post.mentions;
