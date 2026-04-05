@@ -6,6 +6,7 @@ import { ok, fail } from "../../lib/httpResult.js";
 import { emitToUser } from "../../lib/socket_emit.js";
 import { normalizeLocationInput, normalizePollInput } from "../../lib/postPollLocationNormalize.js";
 import { parseMentions, sendMentionNotifications } from "./mention.service.js";
+import { extractHashtagsFromText } from "../../lib/hashtags.js";
 import { standardPostPopulate } from "./post.populate.js";
 
 export async function retweetPost({ userId, postId }) {
@@ -104,11 +105,13 @@ export async function quoteRetweet({ userId, postId, text, img, poll: pollRaw, l
   }
 
   const mentions = await parseMentions(textStr, userId);
+  const hashtags = extractHashtagsFromText(textStr);
   const quotePost = new Post({
     user: userId,
     text: textStr || undefined,
     img: nextImg,
     mentions,
+    hashtags,
     originalPost: postId,
     isQuoteRetweet: true,
     ...(poll ? { poll } : {}),

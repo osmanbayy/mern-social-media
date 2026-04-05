@@ -233,6 +233,33 @@ export const editComment = async (postId, commentId, commentText) => {
   return handleResponse(response);
 };
 
+/** @param {string} tag Küçük harf, # olmadan */
+export const getPostsByHashtag = async (tag, page = 1, limit = 10) => {
+  if (!tag || String(tag).trim().length === 0) {
+    return {
+      posts: [],
+      hasMore: false,
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+      total: 0,
+    };
+  }
+  const encoded = encodeURIComponent(String(tag).trim());
+  const t = Date.now();
+  const response = await fetch(
+    `${API_BASE}/hashtag/${encoded}?page=${page}&limit=${limit}&t=${t}`,
+    {
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+      },
+    }
+  );
+  return handleResponse(response);
+};
+
 // Search posts
 export const searchPosts = async (query, page = 1, limit = 5) => {
   if (!query || query.trim().length === 0) {

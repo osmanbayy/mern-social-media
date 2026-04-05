@@ -34,6 +34,20 @@ export default defineConfig(() => {
     `http://localhost:${portFromRoot || process.env.PORT || "8000"}`;
   const proxyTarget = normalizeProxyTarget(rawTarget) || rawTarget;
 
+  /** Dev + preview: /api aynı origin’den gidince backend’e yönlendirilir; yoksa SPA index.html döner. */
+  const apiProxy = {
+    "/api": {
+      target: proxyTarget,
+      changeOrigin: true,
+      secure: false,
+    },
+    "/socket.io": {
+      target: proxyTarget,
+      changeOrigin: true,
+      ws: true,
+    },
+  };
+
   return {
     plugins: [
       react(),
@@ -70,6 +84,10 @@ export default defineConfig(() => {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
           runtimeCaching: [
             {
+              urlPattern: ({ url }) => url.pathname.startsWith("/api"),
+              handler: "NetworkOnly",
+            },
+            {
               urlPattern: /^https:\/\/api\./i,
               handler: "NetworkFirst",
               options: {
@@ -93,18 +111,10 @@ export default defineConfig(() => {
     ],
     server: {
       port: 3000,
-      proxy: {
-        "/api": {
-          target: proxyTarget,
-          changeOrigin: true,
-          secure: false,
-        },
-        "/socket.io": {
-          target: proxyTarget,
-          changeOrigin: true,
-          ws: true,
-        },
-      },
+      proxy: apiProxy,
+    },
+    preview: {
+      proxy: apiProxy,
     },
   };
 });

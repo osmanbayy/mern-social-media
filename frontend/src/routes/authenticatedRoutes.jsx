@@ -8,6 +8,7 @@ import PostDetailPage from "../pages/post/PostDetailPage";
 import EditProfilePage from "../pages/profile/EditProfilePage";
 import SuggestionsPage from "../pages/SuggestionsPage";
 import SearchResultsPage from "../pages/search/SearchResultsPage";
+import HashtagPage from "../pages/hashtag/HashtagPage";
 import MessagesPage from "../pages/messages/MessagesPage";
 import MessageRequestsPage from "../pages/messages/MessageRequestsPage";
 import ChatPage from "../pages/messages/ChatPage";
@@ -37,6 +38,7 @@ export function authenticatedRouteElements(isAccountVerified) {
       <Route path="/edit-profile" element={<EditProfilePage />} />
       <Route path="/suggestions" element={<SuggestionsPage />} />
       <Route path="/search" element={<SearchResultsPage />} />
+      <Route path="/hashtag/:tag" element={<HashtagPage />} />
       <Route path="/messages" element={<MessagesPage />} />
       <Route path="/messages/requests" element={<MessageRequestsPage />} />
       <Route path="/messages/chat/new/:userId" element={<ChatPage />} />

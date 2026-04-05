@@ -112,6 +112,23 @@ export const search_posts = asyncHandler("post.search_posts", async (req, res) =
   return sendServiceResult(res, result);
 });
 
+export const get_posts_by_hashtag = asyncHandler("post.get_posts_by_hashtag", async (req, res) => {
+  res.set({
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+    "Content-Type": "application/json",
+  });
+  const tag = req.params.tag;
+  const result = await postFeed.getPostsByHashtag({
+    userId: req.user._id,
+    tag,
+    page: req.query.page,
+    limit: req.query.limit,
+  });
+  return sendServiceResult(res, result);
+});
+
 export const save_unsave_post = asyncHandler("post.save_unsave_post", async (req, res) => {
   const result = await postSocial.saveUnsavePost({
     userId: req.user._id,

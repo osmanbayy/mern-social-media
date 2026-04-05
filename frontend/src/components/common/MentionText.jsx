@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
-import { parseMentions } from "../../utils/mention";
+import { parsePostTextSegments } from "../../utils/postTextSegments";
 
-// Render text with mentions as links
 const MentionText = ({ text, className = "" }) => {
   if (!text) return null;
 
-  const parts = parseMentions(text);
+  const parts = parsePostTextSegments(text);
 
   if (!parts) {
     return <span className={`whitespace-pre-wrap break-words ${className}`}>{text}</span>;
@@ -16,18 +15,29 @@ const MentionText = ({ text, className = "" }) => {
       {parts.map((part, index) => {
         if (part.type === "text") {
           return <span key={index}>{part.content}</span>;
-        } else {
+        }
+        if (part.type === "mention") {
           return (
             <Link
               key={index}
               to={`/profile/${part.username}`}
-              className="text-primary hover:underline font-medium"
+              className="font-medium text-primary hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
               {part.fullMatch}
             </Link>
           );
         }
+        return (
+          <Link
+            key={index}
+            to={`/hashtag/${encodeURIComponent(part.tag)}`}
+            className="font-medium text-primary hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part.fullMatch}
+          </Link>
+        );
       })}
     </span>
   );

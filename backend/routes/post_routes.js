@@ -24,6 +24,7 @@ import {
   delete_comment,
   edit_comment,
   search_posts,
+  get_posts_by_hashtag,
   retweet_post,
   quote_retweet,
   vote_poll,
@@ -47,6 +48,14 @@ router.get(
   get_following_posts
 );
 router.get("/search", protect_route, pv.searchPostsValidators, validateRequest, search_posts);
+router.get(
+  "/hashtag/:tag",
+  protect_route,
+  pv.hashtagParamValidators,
+  pv.paginationQueryValidators,
+  validateRequest,
+  get_posts_by_hashtag
+);
 router.post(
   "/create",
   protect_route,

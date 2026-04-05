@@ -83,6 +83,11 @@ const postSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    /** Metinden çıkarılan küçük harf etiketler; arama indeksi için */
+    hashtags: {
+      type: [String],
+      default: [],
+    },
     saves: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -134,6 +139,7 @@ const postSchema = new mongoose.Schema(
 postSchema.index({ user: 1, createdAt: -1 });
 postSchema.index({ user: 1, isPinned: -1, createdAt: -1 });
 postSchema.index({ originalPost: 1 });
+postSchema.index({ hashtags: 1, createdAt: -1 });
 
 const Post = mongoose.model("Post", postSchema);
 export default Post;

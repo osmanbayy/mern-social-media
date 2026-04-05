@@ -5,6 +5,7 @@ import { ok, fail } from "../../lib/httpResult.js";
 import { destroyCloudinaryImageByUrl } from "../../lib/cloudinaryPost.js";
 import { normalizeLocationInput, normalizePollInput } from "../../lib/postPollLocationNormalize.js";
 import { parseMentions, sendMentionNotifications } from "./mention.service.js";
+import { extractHashtagsFromText } from "../../lib/hashtags.js";
 import { emitToUser } from "../../lib/socket_emit.js";
 
 export async function createPost({ userId, text, img, poll: pollRaw, location: locationRaw }) {
@@ -34,11 +35,13 @@ export async function createPost({ userId, text, img, poll: pollRaw, location: l
   }
 
   const mentions = await parseMentions(textStr, userId);
+  const hashtags = extractHashtagsFromText(textStr);
   const newPost = new Post({
     user: userId,
     text: textStr || undefined,
     img: imgUrl,
     mentions,
+    hashtags,
     ...(poll ? { poll } : {}),
     ...(location ? { location } : {}),
   });
@@ -135,13 +138,15 @@ export async function editPost({ userId, postId, text, img, location: locationBo
   const resolvedText = typeof text === "string" ? text : post.text ?? "";
 
   let mentions = post.mentions;
+  let hashtags = post.hashtags || [];
   if (text !== undefined) {
     mentions = await parseMentions(resolvedText, userId);
+    hashtags = extractHashtagsFromText(resolvedText);
   }
 
   const updatedPost = await Post.findByIdAndUpdate(
     postId,
-    { text: resolvedText, img: nextImg, mentions, location: nextLocation },
+    { text: resolvedText, img: nextImg, mentions, hashtags, location: nextLocation },
     { new: true }
   )
     .populate({ path: "user", select: "-password" })

@@ -127,3 +127,50 @@ export async function searchPosts({ userId, query, page = 1, limit = 5 }) {
     total: totalCount,
   });
 }
+
+/**
+ * Belirli bir etiket içeren gönderiler (küçük harf eşleşme, engelleme/gizleme dikkate alınır).
+ * @param {{ userId: import("mongoose").Types.ObjectId, tag: string, page?: number|string, limit?: number|string }} p
+ */
+export async function getPostsByHashtag({ userId, tag, page = 1, limit = 10 }) {
+  if (!tag || typeof tag !== "string") {
+    return ok(200, {
+      posts: [],
+      hasMore: false,
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+      total: 0,
+    });
+  }
+
+  const ctx = await getViewerBlockContext(userId);
+  if (!ctx) return fail(404, "Kullanıcı bulunamadı.");
+  const { hiddenPostIds, blockedObjectIds } = ctx;
+
+  const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+  const lim = parseInt(limit, 10);
+
+  const filter = {
+    _id: { $nin: hiddenPostIds },
+    user: { $nin: blockedObjectIds },
+    hashtags: tag,
+  };
+
+  const posts = await Post.find(filter)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(lim)
+    .populate({ path: "user", select: "-password" })
+    .populate(populateCommentsUser);
+
+  const totalCount = await Post.countDocuments(filter);
+  const hasMore = skip + posts.length < totalCount;
+
+  return ok(200, {
+    posts,
+    hasMore,
+    page: parseInt(page, 10),
+    limit: lim,
+    total: totalCount,
+  });
+}

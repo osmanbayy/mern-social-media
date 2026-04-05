@@ -1,5 +1,6 @@
 import { body, param, query } from "express-validator";
 import { LIMITS } from "../lib/securityConstants.js";
+import { normalizeHashtagParam } from "../lib/hashtags.js";
 
 /** Metin, görsel, anket veya konum etiketinden en az biri dolu olmalı */
 export function requirePostContent(req, res, next) {
@@ -146,6 +147,13 @@ export const searchPostsValidators = [
     .isInt({ min: 1, max: 100 })
     .toInt()
     .withMessage("Geçersiz limit."),
+];
+
+export const hashtagParamValidators = [
+  param("tag")
+    .customSanitizer((value) => normalizeHashtagParam(value) ?? "")
+    .notEmpty()
+    .withMessage("Geçersiz etiket."),
 ];
 
 export const paginationQueryValidators = [
