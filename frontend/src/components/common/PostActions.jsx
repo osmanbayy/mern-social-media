@@ -51,7 +51,7 @@ const PostActions = ({
   };
   if (variant === "compact") {
     return (
-      <div className="flex justify-between mt-4 pt-3 border-t border-base-300/30">
+      <div className="relative z-0 flex justify-between mt-4 pt-3 border-t border-base-300/30">
         <div className="flex gap-6 items-center">
           {onComment && (
             <div
@@ -147,7 +147,7 @@ const PostActions = ({
   }
 
   return (
-    <div className="flex items-center justify-between pt-4 border-t border-base-300/50 mt-3">
+    <div className="relative z-0 flex items-center justify-between pt-4 border-t border-base-300/50 mt-3">
       <div className="flex items-center gap-8">
         {/* Comment Button */}
         {onComment && (

@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import MentionDropdown from "../../components/common/MentionDropdown";
 import EmojiPickerButton from "../../components/common/EmojiPickerButton";
 import NearbyPlacePicker from "../../components/common/NearbyPlacePicker";
+import LocationPreview from "../../components/common/LocationPreview";
 import PostComposerPollFields, {
   PostComposerPollToggleButton,
 } from "../../components/common/PostComposerPollFields";
@@ -117,6 +118,11 @@ const CreatePost = () => {
                   />
                 </div>
               )}
+
+              <LocationPreview
+                place={selectedPlace}
+                onRemove={() => setSelectedPlace(null)}
+              />
 
               <div className="mt-3 flex flex-col gap-3 border-t border-base-300/35 pt-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">

@@ -188,7 +188,7 @@ const Post = ({ post, isHidden = false }) => {
               <span>Başa sabitlendi</span>
             </div>
           )}
-          <div className="flex gap-2 items-center mb-1">
+          <div className="relative z-10 flex gap-2 items-center mb-1">
             {postOwner ? (
               <>
                 <div className="flex min-w-0 max-w-[65%] items-center gap-1 sm:max-w-[70%]">

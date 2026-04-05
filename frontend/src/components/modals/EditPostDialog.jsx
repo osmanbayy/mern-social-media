@@ -19,6 +19,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import NearbyPlacePicker from "../common/NearbyPlacePicker";
+import LocationPreview from "../common/LocationPreview";
 
 const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   const [text, setText] = useState(post.text || "");
@@ -308,6 +309,12 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
                   <img src={img} alt="" className="max-h-80 w-full object-cover" />
                 </div>
               )}
+
+              <LocationPreview
+                place={location}
+                onRemove={() => setLocation(null)}
+                className="w-full max-w-md"
+              />
             </div>
           </div>
 

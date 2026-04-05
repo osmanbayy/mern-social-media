@@ -1,6 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { IoLocationOutline } from "react-icons/io5";
-import { getNearbyPlaces } from "../../api/places";
+import { getNearbyPlaces, searchPlaces } from "../../api/places";
+
+function formatDistanceM(m, hasUserCoords) {
+  if (m == null || Number.isNaN(m)) return "—";
+  if (m === 0 && !hasUserCoords) return "—";
+  if (m >= 1000) return `${(m / 1000).toFixed(1)} km`;
+  return `${m} m`;
+}
 
 /**
  * @param {{ value: { name: string, lat: number, lon: number } | null, onChange: (v: { name: string, lat: number, lon: number } | null) => void, disabled?: boolean, buttonClassName?: string, iconOnly?: boolean }} props
@@ -9,26 +17,116 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
   const [open, setOpen] = useState(false);
   /** 'idle' | 'geo' | 'api' */
   const [loadPhase, setLoadPhase] = useState("idle");
-  const [places, setPlaces] = useState([]);
+  const [nearbyPlaces, setNearbyPlaces] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  /** Arama sonuçları (null = henüz yanıt yok veya arama modu değil) */
+  const [searchResults, setSearchResults] = useState(null);
+  const [searchRetryNonce, setSearchRetryNonce] = useState(0);
   /** Panel içi hata — toast kullanılmıyor (yanlış zamanda global bildirim oluşmasın) */
   const [panelError, setPanelError] = useState(null);
   /** Son istek başarılı ve API gövdesi işlendi; boş liste metni sadece buna göre */
   const [showEmptyHint, setShowEmptyHint] = useState(false);
 
   const wrapRef = useRef(null);
+  const panelRef = useRef(null);
   const abortRef = useRef(null);
   const loadSeqRef = useRef(0);
+  const [panelPos, setPanelPos] = useState(null);
+  /** Konum alındıktan sonra arama ve mesafe için */
+  const [userCoords, setUserCoords] = useState(null);
 
   const loading = loadPhase !== "idle";
+  const inSearch = searchQuery.trim().length >= 2;
+  const hasUserCoords = userCoords != null;
+
+  const updatePanelPosition = useCallback(() => {
+    const el = wrapRef.current;
+    if (!el || !open) return;
+    const r = el.getBoundingClientRect();
+    const width = Math.min(window.innerWidth - 24, 320);
+    let left = r.left;
+    if (left + width > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - width - 8);
+    } else if (left < 8) {
+      left = 8;
+    }
+    const top = r.bottom + 8;
+    setPanelPos({ top, left, width });
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPanelPos(null);
+      return;
+    }
+    updatePanelPosition();
+  }, [open, updatePanelPosition]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onScroll = () => updatePanelPosition();
+    const onResize = () => updatePanelPosition();
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open, updatePanelPosition]);
 
   useEffect(() => {
     if (!open) return;
     const onDoc = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+      const t = e.target;
+      if (wrapRef.current?.contains(t)) return;
+      if (panelRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
+
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults(null);
+      setSearchLoading(false);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (!open) return;
+    const q = searchQuery.trim();
+    if (q.length < 2) return;
+
+    let cancelled = false;
+    const ac = new AbortController();
+    const tid = setTimeout(async () => {
+      setSearchLoading(true);
+      setPanelError(null);
+      try {
+        const data = await searchPlaces(q, userCoords?.lat, userCoords?.lon, ac.signal);
+        if (cancelled) return;
+        setSearchResults(data.places || []);
+      } catch (e) {
+        if (cancelled || e?.name === "AbortError" || e?.code === 20) return;
+        const msg =
+          typeof e?.message === "string" && e.message.trim()
+            ? e.message
+            : "Arama yapılamadı.";
+        setPanelError(msg);
+        setSearchResults([]);
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(tid);
+      ac.abort();
+    };
+  }, [searchQuery, open, userCoords, searchRetryNonce]);
 
   const geoMessage = (err) => {
     const code = err?.code;
@@ -52,7 +150,8 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
 
     setPanelError(null);
     setShowEmptyHint(false);
-    setPlaces([]);
+    setNearbyPlaces([]);
+    setUserCoords(null);
 
     if (!navigator.geolocation) {
       setLoadPhase("idle");
@@ -84,7 +183,8 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
       const data = await getNearbyPlaces(lat, lon, ac.signal);
       if (finishIfStale()) return;
       const list = data.places || [];
-      setPlaces(list);
+      setUserCoords({ lat, lon });
+      setNearbyPlaces(list);
       setShowEmptyHint(list.length === 0);
     };
 
@@ -96,7 +196,8 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
           ? e.message
           : "Yakındaki yerler alınamadı. Bir süre sonra tekrar deneyin.";
       setPanelError(msg);
-      setPlaces([]);
+      setNearbyPlaces([]);
+      setUserCoords(null);
       setShowEmptyHint(false);
     };
 
@@ -154,9 +255,15 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
       setLoadPhase("idle");
       setPanelError(null);
       setShowEmptyHint(false);
+      setSearchQuery("");
+      setSearchResults(null);
+      setSearchLoading(false);
       setOpen(false);
       return;
     }
+    setSearchQuery("");
+    setSearchResults(null);
+    setSearchLoading(false);
     setOpen(true);
     loadNearby();
   };
@@ -201,18 +308,27 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
         )}
       </button>
 
-      {open && (
-        <div
-          className="absolute left-0 top-full z-[120] mt-2 w-[min(100vw-1.5rem,20rem)] isolate overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0_22px_50px_-12px_rgba(0,0,0,0.28)] dark:border-zinc-700 dark:bg-zinc-950 dark:shadow-[0_22px_50px_-12px_rgba(0,0,0,0.55)]"
-          role="listbox"
-        >
+      {open &&
+        panelPos &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={{
+              position: "fixed",
+              top: panelPos.top,
+              left: panelPos.left,
+              width: panelPos.width,
+            }}
+            className="z-[200000] isolate overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0_22px_50px_-12px_rgba(0,0,0,0.28)] dark:border-zinc-700 dark:bg-zinc-950 dark:shadow-[0_22px_50px_-12px_rgba(0,0,0,0.55)]"
+            role="listbox"
+          >
           {/* Tam opak yüzeyler: Daisy base-* tema değişkenleri saydam olabildiği için neutral/white sabit tonları */}
           <div className="border-b border-neutral-200 bg-neutral-100 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-content shadow-sm">
                 <IoLocationOutline className="h-5 w-5" aria-hidden />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-600 dark:text-zinc-400">
                   Yakın yerler
                 </p>
@@ -221,10 +337,21 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
                 </p>
               </div>
             </div>
+            <label className="mt-3 block">
+              <span className="sr-only">Konum ara</span>
+              <input
+                type="search"
+                autoComplete="off"
+                placeholder="Mahalle, ilçe veya şehir ara…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input input-bordered input-sm mt-0 w-full rounded-xl border-neutral-300 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary focus:outline-none dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              />
+            </label>
           </div>
 
           <div className="max-h-72 overflow-y-auto overscroll-contain bg-white dark:bg-zinc-950">
-            {panelError && !loading && (
+            {panelError && (!loading || inSearch) && !(inSearch && searchLoading) && (
               <div className="m-3 rounded-xl border border-red-500 bg-neutral-100 p-3 dark:border-red-600 dark:bg-zinc-900">
                 <p className="text-sm leading-relaxed text-red-600 dark:text-red-400">{panelError}</p>
                 <button
@@ -232,7 +359,11 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
                   className="mt-3 inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-content transition hover:brightness-110"
                   onClick={() => {
                     setPanelError(null);
-                    loadNearby();
+                    if (inSearch && searchQuery.trim().length >= 2) {
+                      setSearchRetryNonce((n) => n + 1);
+                    } else {
+                      loadNearby();
+                    }
                   }}
                 >
                   Tekrar dene
@@ -240,7 +371,7 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
               </div>
             )}
 
-            {loading && (
+            {loading && !inSearch && (
               <div className="min-h-[9rem] bg-white px-4 py-4 dark:bg-zinc-950">
                 <div className="flex items-start gap-3">
                   <span className="loading loading-spinner loading-md shrink-0 text-primary" />
@@ -268,9 +399,21 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
               </div>
             )}
 
+            {inSearch && searchLoading && searchResults === null && (
+              <div className="space-y-2.5 bg-white px-4 py-4 dark:bg-zinc-950" aria-busy>
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="h-10 animate-pulse rounded-xl bg-neutral-200 dark:bg-zinc-800"
+                  />
+                ))}
+              </div>
+            )}
+
             {!loading &&
+              !inSearch &&
               !panelError &&
-              places.map((p) => (
+              nearbyPlaces.map((p) => (
                 <button
                   key={p.id}
                   type="button"
@@ -285,16 +428,49 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
                     {p.name}
                   </span>
                   <span className="shrink-0 rounded-full bg-neutral-200 px-2.5 py-1 text-xs font-semibold tabular-nums text-neutral-800 dark:bg-zinc-800 dark:text-zinc-200">
-                    {p.distanceM} m
+                    {formatDistanceM(p.distanceM, hasUserCoords)}
                   </span>
                 </button>
               ))}
 
-            {!loading && !panelError && showEmptyHint && places.length === 0 && (
+            {inSearch &&
+              !searchLoading &&
+              searchResults &&
+              !panelError &&
+              searchResults.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="option"
+                  className="group flex w-full items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-neutral-100 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                  onClick={() => {
+                    onChange({ name: p.name, lat: p.lat, lon: p.lon });
+                    setOpen(false);
+                  }}
+                >
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900 dark:text-zinc-100">
+                    {p.name}
+                  </span>
+                  <span className="shrink-0 rounded-full bg-neutral-200 px-2.5 py-1 text-xs font-semibold tabular-nums text-neutral-800 dark:bg-zinc-800 dark:text-zinc-200">
+                    {formatDistanceM(p.distanceM, hasUserCoords)}
+                  </span>
+                </button>
+              ))}
+
+            {!loading && !inSearch && !panelError && showEmptyHint && nearbyPlaces.length === 0 && (
               <p className="bg-white px-4 py-6 text-center text-sm text-neutral-700 dark:bg-zinc-950 dark:text-zinc-300">
                 Bu konumda yakın isimli yer bulunamadı.
                 <span className="mt-1 block text-xs text-neutral-500 dark:text-zinc-500">
                   Menüyü kapatıp tekrar deneyebilirsiniz.
+                </span>
+              </p>
+            )}
+
+            {inSearch && !searchLoading && searchResults && searchResults.length === 0 && !panelError && (
+              <p className="bg-white px-4 py-6 text-center text-sm text-neutral-700 dark:bg-zinc-950 dark:text-zinc-300">
+                Aramanızla eşleşen yer bulunamadı.
+                <span className="mt-1 block text-xs text-neutral-500 dark:text-zinc-500">
+                  Farklı bir anahtar kelime deneyin.
                 </span>
               </p>
             )}
@@ -314,8 +490,9 @@ export default function NearbyPlacePicker({ value, onChange, disabled, buttonCla
               </div>
             )}
           </div>
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </div>
   );
 }

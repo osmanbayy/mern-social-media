@@ -6,6 +6,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import MentionDropdown from "./MentionDropdown";
 import ImagePreview from "./ImagePreview";
+import LocationPreview from "./LocationPreview";
 import EmojiPickerButton from "./EmojiPickerButton";
 import NearbyPlacePicker from "./NearbyPlacePicker";
 import PostComposerPollFields, { PostComposerPollToggleButton } from "./PostComposerPollFields";
@@ -80,6 +81,11 @@ const PostCreate = () => {
           )}
         </div>
         <ImagePreview imageUrl={img} onRemove={clearImage} />
+        <LocationPreview
+          place={selectedPlace}
+          onRemove={() => setSelectedPlace(null)}
+          className="max-w-md mx-auto w-full"
+        />
 
         <div className="flex justify-between items-center border-t border-base-300/50 pt-3">
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
