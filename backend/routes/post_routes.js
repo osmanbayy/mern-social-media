@@ -25,6 +25,7 @@ import {
   edit_comment,
   search_posts,
   get_posts_by_hashtag,
+  get_trending_hashtags,
   retweet_post,
   quote_retweet,
   vote_poll,
@@ -48,6 +49,13 @@ router.get(
   get_following_posts
 );
 router.get("/search", protect_route, pv.searchPostsValidators, validateRequest, search_posts);
+router.get(
+  "/trending/hashtags",
+  protect_route,
+  pv.trendingHashtagsQueryValidators,
+  validateRequest,
+  get_trending_hashtags
+);
 router.get(
   "/hashtag/:tag",
   protect_route,

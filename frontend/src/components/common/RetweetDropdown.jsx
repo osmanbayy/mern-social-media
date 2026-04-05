@@ -7,7 +7,11 @@ import { LiaTelegram } from "react-icons/lia";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { retweetPost, quoteRetweet } from "../../api/posts";
-import { invalidatePostsFeed, invalidateUserProfiles } from "../../utils/queryInvalidation";
+import {
+  invalidatePostsFeed,
+  invalidateTrendingHashtags,
+  invalidateUserProfiles,
+} from "../../utils/queryInvalidation";
 import useMention from "../../hooks/useMention";
 import MentionDropdown from "./MentionDropdown";
 import EmojiPickerButton from "./EmojiPickerButton";
@@ -44,6 +48,7 @@ const RetweetDropdown = ({ post, onClose, anchorRef }) => {
     onSuccess: (data) => {
       toast.success(data.retweeted ? "Gönderi retweet edildi." : "Retweet geri alındı.");
       invalidatePostsFeed(queryClient);
+      invalidateTrendingHashtags(queryClient);
       invalidateUserProfiles(queryClient);
       onClose();
     },
@@ -57,6 +62,7 @@ const RetweetDropdown = ({ post, onClose, anchorRef }) => {
     onSuccess: () => {
       toast.success("Alıntı paylaşıldı.");
       invalidatePostsFeed(queryClient);
+      invalidateTrendingHashtags(queryClient);
       invalidateUserProfiles(queryClient);
       onClose();
       setQuoteMode(false);

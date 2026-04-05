@@ -6,6 +6,7 @@ import SearchUserResultRow from "../../components/search/SearchUserResultRow";
 import { useSearchInfiniteResults } from "../../hooks/useSearchInfiniteResults";
 import { useSearchQueryInput } from "../../hooks/useSearchQueryInput";
 import { LuFileText, LuUser } from "react-icons/lu";
+import TrendingHashtagsCard from "../../components/trending/TrendingHashtagsCard";
 
 const SearchResultsPage = () => {
   const { trimmedQuery, hasSearchQuery, input, setInput, submitSearch } = useSearchQueryInput();
@@ -33,7 +34,12 @@ const SearchResultsPage = () => {
       onSubmit={submitSearch}
     >
       {!hasSearchQuery ? (
-        <SearchNoQueryPrompt />
+        <div className="space-y-5">
+          <div className="lg:hidden">
+            <TrendingHashtagsCard variant="page" limit={10} />
+          </div>
+          <SearchNoQueryPrompt compact />
+        </div>
       ) : (
         <>
           <SearchResultSection

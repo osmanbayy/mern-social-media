@@ -7,6 +7,7 @@ import {
   invalidateMessagesForConversation,
   invalidateNotifications,
   invalidatePostsFeed,
+  invalidateTrendingHashtags,
 } from "../utils/queryInvalidation";
 import {
   QK_CONVERSATIONS,
@@ -48,6 +49,7 @@ export const SocketProvider = ({ children }) => {
     });
     s.on("feed:new_post", () => {
       invalidatePostsFeed(queryClient);
+      invalidateTrendingHashtags(queryClient);
     });
     s.on("message:new", () => {
       invalidateKeys(queryClient, [QK_CONVERSATIONS, QK_MESSAGES_PREFIX]);

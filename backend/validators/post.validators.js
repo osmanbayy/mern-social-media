@@ -156,6 +156,19 @@ export const hashtagParamValidators = [
     .withMessage("Geçersiz etiket."),
 ];
 
+export const trendingHashtagsQueryValidators = [
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 15 })
+    .toInt()
+    .withMessage("Geçersiz limit."),
+  query("sinceDays")
+    .optional()
+    .isInt({ min: 1, max: 30 })
+    .toInt()
+    .withMessage("Geçersiz süre."),
+];
+
 export const paginationQueryValidators = [
   query("page").optional().isInt({ min: 1, max: LIMITS.PAGE_MAX }).toInt(),
   query("limit").optional().isInt({ min: 1, max: 100 }).toInt(),

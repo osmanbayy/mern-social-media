@@ -8,7 +8,12 @@ import {
   commentPost as commentPostAPI,
   pinPost as pinPostAPI,
 } from "../api/posts";
-import { invalidatePostById, invalidatePostsFeed, invalidateUserProfiles } from "../utils/queryInvalidation";
+import {
+  invalidatePostById,
+  invalidatePostsFeed,
+  invalidateTrendingHashtags,
+  invalidateUserProfiles,
+} from "../utils/queryInvalidation";
 
 /**
  * Hook for post detail page actions (like, save, delete, comment) with optimistic updates
@@ -118,6 +123,7 @@ const usePostDetailActions = (postId) => {
     onSuccess: () => {
       toast.success("Gönderi silindi.");
       invalidatePostsFeed(queryClient);
+      invalidateTrendingHashtags(queryClient);
     },
     onError: (error) => {
       toast.error(error.message);

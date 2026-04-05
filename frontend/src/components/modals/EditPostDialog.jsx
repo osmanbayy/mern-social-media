@@ -12,7 +12,11 @@ import EmojiMartPicker from "../common/EmojiMartPicker";
 
 import LoadingSpinner from "../common/LoadingSpinner";
 import { editPost } from "../../api/posts";
-import { invalidatePostById, invalidatePostsFeed } from "../../utils/queryInvalidation";
+import {
+  invalidatePostById,
+  invalidatePostsFeed,
+  invalidateTrendingHashtags,
+} from "../../utils/queryInvalidation";
 import useMention from "../../hooks/useMention";
 import MentionDropdown from "../common/MentionDropdown";
 import { useAuth } from "../../contexts/AuthContext";
@@ -170,6 +174,7 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
     onSuccess: () => {
       toast.success("Gönderi güncellendi.");
       invalidatePostsFeed(queryClient);
+      invalidateTrendingHashtags(queryClient);
       invalidatePostById(queryClient, post._id);
       closeAndNotify();
     },

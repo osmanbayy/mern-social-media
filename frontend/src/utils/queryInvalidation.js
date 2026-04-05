@@ -6,9 +6,10 @@ import {
   QK_FOLLOWERS,
   QK_FOLLOWINGS,
   QK_MESSAGE_REQUESTS,
-  QK_MESSAGES_PREFIX,
   QK_NOTIFICATIONS,
   QK_POSTS,
+  QK_TRENDING_HASHTAGS,
+  QK_HASHTAG_POSTS,
   QK_USER_PREFIX,
   SUGGESTED_USERS_QUERY_KEYS,
   qkMessages,
@@ -31,6 +32,13 @@ export function invalidateAuthUser(queryClient) {
 export function invalidatePostsFeed(queryClient) {
   inv(queryClient, QK_POSTS);
   requestPostsFeedResync();
+}
+
+/**
+ * Yeni gönderi / retweet / düzenleme / silme / feed soketi sonrası gündem + etiket sayfası akışları.
+ */
+export function invalidateTrendingHashtags(queryClient) {
+  return Promise.all([inv(queryClient, QK_TRENDING_HASHTAGS), inv(queryClient, QK_HASHTAG_POSTS)]);
 }
 
 export function invalidateNotifications(queryClient) {

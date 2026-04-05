@@ -6,6 +6,7 @@ import * as postSocial from "../services/post/post.social.service.js";
 import * as postComments from "../services/post/post.comments.service.js";
 import * as postRetweet from "../services/post/post.retweet.service.js";
 import * as postPoll from "../services/post/post.poll.service.js";
+import * as postHashtagTrend from "../services/post/post.hashtagTrend.service.js";
 
 export const create_post = asyncHandler("post.create_post", async (req, res) => {
   const { text, img, poll, location } = req.body;
@@ -125,6 +126,19 @@ export const get_posts_by_hashtag = asyncHandler("post.get_posts_by_hashtag", as
     tag,
     page: req.query.page,
     limit: req.query.limit,
+  });
+  return sendServiceResult(res, result);
+});
+
+export const get_trending_hashtags = asyncHandler("post.get_trending_hashtags", async (req, res) => {
+  res.set({
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+  });
+  const result = await postHashtagTrend.getTrendingHashtags({
+    limit: req.query.limit,
+    sinceDays: req.query.sinceDays,
   });
   return sendServiceResult(res, result);
 });

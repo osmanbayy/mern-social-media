@@ -9,7 +9,11 @@ import {
   unhidePost as unhidePostAPI,
   pinPost as pinPostAPI,
 } from "../api/posts";
-import { invalidatePostsFeed, invalidateUserProfiles } from "../utils/queryInvalidation";
+import {
+  invalidatePostsFeed,
+  invalidateTrendingHashtags,
+  invalidateUserProfiles,
+} from "../utils/queryInvalidation";
 
 /**
  * Hook for post actions (like, save, delete, hide, unhide) with optimistic updates
@@ -147,6 +151,7 @@ const usePostActions = (postId, updatedPost) => {
     onSuccess: () => {
       toast.success("Gönderi silindi.");
       invalidatePostsFeed(queryClient);
+      invalidateTrendingHashtags(queryClient);
     },
     onError: (error) => {
       toast.error(error.message);

@@ -260,6 +260,25 @@ export const getPostsByHashtag = async (tag, page = 1, limit = 10) => {
   return handleResponse(response);
 };
 
+/** @param {{ limit?: number, sinceDays?: number }} [options] */
+export const getTrendingHashtags = async (options = {}) => {
+  const limit = options.limit ?? 10;
+  const sinceDays = options.sinceDays ?? 7;
+  const t = Date.now();
+  const response = await fetch(
+    `${API_BASE}/trending/hashtags?limit=${limit}&sinceDays=${sinceDays}&t=${t}`,
+    {
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+      },
+    }
+  );
+  return handleResponse(response);
+};
+
 // Search posts
 export const searchPosts = async (query, page = 1, limit = 5) => {
   if (!query || query.trim().length === 0) {

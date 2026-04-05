@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getPostsByHashtag } from "../api/posts";
 import { HASHTAG_PAGE_SIZE } from "../constants/hashtagConstants";
+import { QK_HASHTAG_POSTS } from "../constants/queryKeys";
 
 const nextPageParam = (lastPage) => {
   if (!lastPage?.hasMore) return undefined;
@@ -14,7 +15,7 @@ export function useHashtagPosts(normalizedTag) {
   const enabled = Boolean(normalizedTag && normalizedTag.length > 0);
 
   const query = useInfiniteQuery({
-    queryKey: ["hashtagPosts", normalizedTag],
+    queryKey: [...QK_HASHTAG_POSTS, normalizedTag],
     queryFn: ({ pageParam }) => getPostsByHashtag(normalizedTag, pageParam, HASHTAG_PAGE_SIZE),
     initialPageParam: 1,
     getNextPageParam: nextPageParam,

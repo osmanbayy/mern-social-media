@@ -9,6 +9,12 @@ export const QK_AUTH_USER = ["authUser"];
 /** Ana akış gönderileri (sayfalama: ["posts", feedType, ...] eşleşir) */
 export const QK_POSTS = ["posts"];
 
+/** Gündem etiketleri — prefix: ["trendingHashtags", limit, sinceDays] */
+export const QK_TRENDING_HASHTAGS = ["trendingHashtags"];
+
+/** Etiket gönderi listesi — prefix: ["hashtagPosts", tag] */
+export const QK_HASHTAG_POSTS = ["hashtagPosts"];
+
 export const QK_NOTIFICATIONS = ["notifications"];
 
 export const QK_CONVERSATIONS = ["conversations"];

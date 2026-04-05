@@ -11,6 +11,7 @@ import { useSuggestedUsersQuery } from "../../hooks/useSuggestedUsersQuery";
 import { useFollowSuggestedUserMutation } from "../../hooks/useFollowSuggestedUserMutation";
 import SearchBar from "./SearchBar";
 import SuggestedUserRow from "./SuggestedUserRow";
+import TrendingHashtagsCard from "../trending/TrendingHashtagsCard";
 
 const RightPanel = () => {
   const navigate = useNavigate();
@@ -124,6 +125,8 @@ const RightPanel = () => {
             )}
           </section>
         )}
+
+        <TrendingHashtagsCard variant="panel" limit={10} />
       </div>
     </div>
   );
