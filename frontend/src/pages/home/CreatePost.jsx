@@ -7,6 +7,10 @@ import defaultProfilePicture from "../../assets/avatar-placeholder.png";
 import { useNavigate } from "react-router-dom";
 import MentionDropdown from "../../components/common/MentionDropdown";
 import EmojiPickerButton from "../../components/common/EmojiPickerButton";
+import NearbyPlacePicker from "../../components/common/NearbyPlacePicker";
+import PostComposerPollFields, {
+  PostComposerPollToggleButton,
+} from "../../components/common/PostComposerPollFields";
 import { useCreatePostForm } from "../../hooks/useCreatePostForm";
 
 const CreatePost = () => {
@@ -35,19 +39,27 @@ const CreatePost = () => {
     isError,
     error,
     disabledSubmit,
+    selectedPlace,
+    setSelectedPlace,
+    pollEnabled,
+    setPollEnabled,
+    pollQuestion,
+    setPollQuestion,
+    pollOptions,
+    setPollOptions,
   } = useCreatePostForm();
 
   return (
     <div className="border-b border-base-300/40 bg-gradient-to-b from-base-100 via-base-100 to-base-200/30 backdrop-blur-md">
       <div className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-4">
-        <div className="relative overflow-visible rounded-2xl border border-base-300/45 bg-gradient-to-b from-base-100 to-base-200/40 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-4px_rgba(0,0,0,0.06)] transition-[box-shadow,border-color] duration-300 hover:border-primary/20 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_16px_40px_-8px_rgba(0,0,0,0.08)] dark:from-base-200/90 dark:to-base-300/50 dark:shadow-[0_1px_0_rgba(255,255,255,0.05)_inset] dark:hover:border-primary/30">
+        <div className="relative z-[8] overflow-visible rounded-2xl border border-base-300/45 bg-gradient-to-b from-base-100 to-base-200/40 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-4px_rgba(0,0,0,0.06)] transition-[box-shadow,border-color] duration-300 hover:border-primary/20 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_16px_40px_-8px_rgba(0,0,0,0.08)] dark:from-base-200/90 dark:to-base-300/50 dark:shadow-[0_1px_0_rgba(255,255,255,0.05)_inset] dark:hover:border-primary/30">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
           <form
             onSubmit={handleSubmit}
             className="relative flex flex-col gap-3 p-4 sm:flex-row sm:gap-4 sm:p-5"
           >
-            <div className="flex shrink-0 justify-center sm:block">
+            <div className="hidden shrink-0 sm:block">
               <button
                 type="button"
                 className="group/avatar relative"
@@ -107,7 +119,7 @@ const CreatePost = () => {
               )}
 
               <div className="mt-3 flex flex-col gap-3 border-t border-base-300/35 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <input
                     type="file"
                     accept="image/*"
@@ -117,19 +129,32 @@ const CreatePost = () => {
                   />
                   <button
                     type="button"
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-base-200/60 text-base-content/70 transition-colors hover:bg-primary/15 hover:text-primary dark:bg-base-300/40"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-base-200/60 text-base-content/70 transition-colors hover:bg-primary/15 hover:text-primary dark:bg-base-300/40"
                     onClick={() => imgRef.current?.click()}
                     aria-label="Görsel ekle"
                   >
                     <CiImageOn className="h-5 w-5" />
                   </button>
 
+                  <NearbyPlacePicker
+                    iconOnly
+                    value={selectedPlace}
+                    onChange={setSelectedPlace}
+                    disabled={isPending}
+                  />
+
+                  <PostComposerPollToggleButton
+                    enabled={pollEnabled}
+                    disabled={isPending}
+                    onToggle={setPollEnabled}
+                  />
+
                   <EmojiPickerButton
                     theme={theme}
                     onEmojiClick={handleEmojiSelect}
                     showPicker={showPicker}
                     setShowPicker={setShowPicker}
-                    buttonClassName="flex h-10 w-10 items-center justify-center rounded-xl bg-base-200/60 transition-colors hover:bg-primary/15 dark:bg-base-300/40"
+                    buttonClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-base-200/60 transition-colors hover:bg-primary/15 dark:bg-base-300/40"
                     iconClassName={theme === "dark" ? "fill-amber-400/95" : "fill-sky-500"}
                   />
                 </div>
@@ -149,6 +174,16 @@ const CreatePost = () => {
                   )}
                 </button>
               </div>
+
+              {pollEnabled && (
+                <PostComposerPollFields
+                  question={pollQuestion}
+                  onQuestionChange={setPollQuestion}
+                  options={pollOptions}
+                  onOptionsChange={setPollOptions}
+                  disabled={isPending}
+                />
+              )}
 
               {isError && (
                 <p className="mt-2 text-sm text-error" role="alert">

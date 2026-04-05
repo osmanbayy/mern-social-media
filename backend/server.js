@@ -12,6 +12,7 @@ import postRoutes from "./routes/post_routes.js";
 import notificationRoutes from "./routes/notification_routes.js";
 import uploadRoutes from "./routes/upload_routes.js";
 import messageRoutes from "./routes/message_routes.js";
+import placesRoutes from "./routes/places_routes.js";
 import cookieParser from "cookie-parser";
 import connect_mongodb from "./database/connect_mongodb.js";
 import { v2 as cloudinary } from "cloudinary";
@@ -124,6 +125,7 @@ app.get("/api", (req, res) => {
       notifications: "/api/notifications",
       upload: "/api/upload",
       messages: "/api/messages",
+      places: "/api/places",
     },
   });
 });
@@ -147,6 +149,7 @@ app.use("/api/post", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/places", placesRoutes);
 // Vercel serverless bazen isteği /api öneki olmadan iletir; aynı router'ı kök path ile de bağla
 app.use("/messages", messageRoutes);
 

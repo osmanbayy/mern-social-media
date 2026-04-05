@@ -17,6 +17,8 @@ import usePostActions from "../../hooks/usePostActions";
 import MentionText from "./MentionText";
 import { useTheme } from "../../contexts/ThemeContext";
 import VerifiedBadge from "./VerifiedBadge";
+import PostLocationLine from "./PostLocationLine";
+import PostPollBlock from "./PostPollBlock";
 
 const Post = ({ post, isHidden = false }) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -255,6 +257,16 @@ const Post = ({ post, isHidden = false }) => {
                     <MentionText text={updatedPost.text} />
                   </p>
                 )}
+                {updatedPost.location?.name && (
+                  <PostLocationLine
+                    name={updatedPost.location.name}
+                    lat={updatedPost.location.lat}
+                    lon={updatedPost.location.lon}
+                  />
+                )}
+                {updatedPost.poll?.options?.length >= 2 && (
+                  <PostPollBlock post={updatedPost} authUserId={authUser?._id} />
+                )}
                 {updatedPost.img && (
                   <img
                     src={updatedPost.img}
@@ -280,6 +292,19 @@ const Post = ({ post, isHidden = false }) => {
                 {originalPost.text && (
                   <p className="text-sm mb-2">{originalPost.text}</p>
                 )}
+                {originalPost.location?.name && (
+                  <PostLocationLine
+                    name={originalPost.location.name}
+                    lat={originalPost.location.lat}
+                    lon={originalPost.location.lon}
+                    className="!mb-2"
+                  />
+                )}
+                {originalPost.poll?.options?.length >= 2 && (
+                  <div className="mb-2">
+                    <PostPollBlock post={originalPost} authUserId={authUser?._id} />
+                  </div>
+                )}
                 {originalPost.img && (
                   <img
                     src={originalPost.img}
@@ -289,23 +314,49 @@ const Post = ({ post, isHidden = false }) => {
                 )}
               </div>
             )}
-            {/* Direct retweet or regular post text */}
+            {/* Direct retweet or regular post */}
             {isRetweet && !updatedPost.isQuoteRetweet ? (
-              // Direct retweet - show original post text
-              <p 
-                className="text-sm md:text-base leading-relaxed cursor-pointer"
-                onClick={handlePostClick}
-              >
-                <MentionText text={originalPost?.text || ""} />
-              </p>
+              <>
+                {originalPost?.text ? (
+                  <p
+                    className="text-sm md:text-base leading-relaxed cursor-pointer"
+                    onClick={handlePostClick}
+                  >
+                    <MentionText text={originalPost.text} />
+                  </p>
+                ) : null}
+                {originalPost?.location?.name && (
+                  <PostLocationLine
+                    name={originalPost.location.name}
+                    lat={originalPost.location.lat}
+                    lon={originalPost.location.lon}
+                  />
+                )}
+                {originalPost?.poll?.options?.length >= 2 && (
+                  <PostPollBlock post={originalPost} authUserId={authUser?._id} />
+                )}
+              </>
             ) : !isRetweet ? (
-              // Regular post
-              <p 
-                className="text-sm md:text-base leading-relaxed cursor-pointer"
-                onClick={handlePostClick}
-              >
-                <MentionText text={updatedPost.text} />
-              </p>
+              <>
+                {updatedPost.text ? (
+                  <p
+                    className="text-sm md:text-base leading-relaxed cursor-pointer"
+                    onClick={handlePostClick}
+                  >
+                    <MentionText text={updatedPost.text} />
+                  </p>
+                ) : null}
+                {updatedPost.location?.name && (
+                  <PostLocationLine
+                    name={updatedPost.location.name}
+                    lat={updatedPost.location.lat}
+                    lon={updatedPost.location.lon}
+                  />
+                )}
+                {updatedPost.poll?.options?.length >= 2 && (
+                  <PostPollBlock post={updatedPost} authUserId={authUser?._id} />
+                )}
+              </>
             ) : null}
             {(isRetweet && !updatedPost.isQuoteRetweet ? originalPost?.img : updatedPost.img) && (
               <div 

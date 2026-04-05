@@ -15,6 +15,11 @@ export const LIMITS = {
   PAGE_MAX: 500,
   /** Base64 görsel üst sınırı (yaklaşık ~10MB metin) */
   IMG_BASE64_MAX_CHARS: 12 * 1024 * 1024,
+  POLL_QUESTION_MAX: 300,
+  POLL_OPTION_TEXT_MAX: 100,
+  POLL_OPTIONS_MIN: 2,
+  POLL_OPTIONS_MAX: 4,
+  LOCATION_NAME_MAX: 200,
 };
 
 export const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;

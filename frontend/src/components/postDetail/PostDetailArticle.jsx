@@ -5,6 +5,9 @@ import MentionText from "../common/MentionText";
 import PostActions from "../common/PostActions";
 import PostOptions from "../postOptions/PostOptions";
 import VerifiedBadge from "../common/VerifiedBadge";
+import PostLocationLine from "../common/PostLocationLine";
+import PostPollBlock from "../common/PostPollBlock";
+import { useAuth } from "../../contexts/AuthContext";
 
 const stopPropagation = (e) => e.stopPropagation();
 
@@ -25,6 +28,8 @@ export default function PostDetailArticle({
   onPinPost,
   onOpenImage,
 }) {
+  const { authUser } = useAuth();
+
   return (
     <div className="border-b border-base-300/50">
       <div className="flex items-start gap-4 p-5">
@@ -119,9 +124,26 @@ export default function PostDetailArticle({
             </div>
           </div>
 
-          <p className="mb-3 text-[15px] leading-relaxed text-base-content">
-            <MentionText text={post.text} />
-          </p>
+          {post.text ? (
+            <p className="mb-3 text-[15px] leading-relaxed text-base-content">
+              <MentionText text={post.text} />
+            </p>
+          ) : null}
+
+          {post.location?.name && (
+            <PostLocationLine
+              name={post.location.name}
+              lat={post.location.lat}
+              lon={post.location.lon}
+              className="mb-3"
+            />
+          )}
+
+          {post.poll?.options?.length >= 2 && (
+            <div className="mb-3">
+              <PostPollBlock post={post} authUserId={authUser?._id} />
+            </div>
+          )}
 
           {post.img && (
             <button

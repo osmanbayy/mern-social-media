@@ -108,6 +108,25 @@ const postSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    location: {
+      name: { type: String, trim: true },
+      lat: { type: Number },
+      lon: { type: Number },
+    },
+    poll: {
+      question: { type: String, trim: true },
+      options: [
+        {
+          text: { type: String, required: true, trim: true },
+          votes: [
+            {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "User",
+            },
+          ],
+        },
+      ],
+    },
   },
   { timestamps: true }
 );

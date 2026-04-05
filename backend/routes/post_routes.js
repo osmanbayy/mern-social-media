@@ -26,6 +26,7 @@ import {
   search_posts,
   retweet_post,
   quote_retweet,
+  vote_poll,
 } from "../controllers/post_controller.js";
 import * as pv from "../validators/post.validators.js";
 
@@ -113,6 +114,15 @@ router.put(
   pv.editCommentValidators,
   validateRequest,
   edit_comment
+);
+
+router.post(
+  "/:id/poll/vote",
+  protect_route,
+  postWriteLimiter,
+  pv.votePollValidators,
+  validateRequest,
+  vote_poll
 );
 
 router.get("/:id", protect_route, pv.postIdParam, validateRequest, get_single_post);

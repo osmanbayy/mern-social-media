@@ -258,6 +258,19 @@ export const retweetPost = async (postId) => {
   return handleResponse(response);
 };
 
+// Vote on post poll
+export const votePoll = async (postId, optionIndex) => {
+  const response = await fetch(`${API_BASE}/${postId}/poll/vote`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ optionIndex }),
+  });
+  return handleResponse(response);
+};
+
 // Quote retweet
 export const quoteRetweet = async (postId, postData) => {
   const response = await fetch(`${API_BASE}/quote/${postId}`, {

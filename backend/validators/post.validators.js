@@ -1,14 +1,27 @@
 import { body, param, query } from "express-validator";
 import { LIMITS } from "../lib/securityConstants.js";
 
-/** Metin veya görselden en az biri dolu olmalı */
+/** Metin, görsel, anket veya konum etiketinden en az biri dolu olmalı */
 export function requirePostContent(req, res, next) {
   const t = req.body?.text;
   const img = req.body?.img;
+  const poll = req.body?.poll;
+  const loc = req.body?.location;
   const hasT = typeof t === "string" && t.trim().length > 0;
   const hasI = typeof img === "string" && img.trim().length > 0;
-  if (!hasT && !hasI) {
-    return res.status(400).json({ message: "Gönderi metni veya görsel gerekli." });
+  const hasPoll =
+    poll &&
+    typeof poll === "object" &&
+    Array.isArray(poll.options) &&
+    poll.options.length >= 2 &&
+    poll.options.some((o) => typeof o?.text === "string" && o.text.trim().length > 0);
+  const hasLoc =
+    loc &&
+    typeof loc === "object" &&
+    typeof loc.name === "string" &&
+    loc.name.trim().length > 0;
+  if (!hasT && !hasI && !hasPoll && !hasLoc) {
+    return res.status(400).json({ message: "Gönderi metni, görsel, anket veya konum gerekli." });
   }
   next();
 }
@@ -25,6 +38,8 @@ export const createPostValidators = [
     .isString()
     .isLength({ max: LIMITS.IMG_BASE64_MAX_CHARS })
     .withMessage("Görsel verisi çok büyük."),
+  body("poll").optional().isObject().withMessage("Geçersiz anket."),
+  body("location").optional().isObject().withMessage("Geçersiz konum."),
 ];
 
 export const editPostValidators = [
@@ -40,6 +55,13 @@ export const editPostValidators = [
     .isString()
     .isLength({ max: LIMITS.IMG_BASE64_MAX_CHARS })
     .withMessage("Görsel verisi çok büyük."),
+  body("location")
+    .optional({ nullable: true })
+    .custom((value) => {
+      if (value === null || value === undefined) return true;
+      return typeof value === "object" && !Array.isArray(value);
+    })
+    .withMessage("Geçersiz konum."),
 ];
 
 export const postIdParam = [param("id").isMongoId().withMessage("Geçersiz gönderi ID.")];
@@ -95,6 +117,16 @@ export const quoteRetweetValidators = [
     .optional()
     .isString()
     .isLength({ max: LIMITS.IMG_BASE64_MAX_CHARS }),
+  body("poll").optional().isObject().withMessage("Geçersiz anket."),
+  body("location").optional().isObject().withMessage("Geçersiz konum."),
+];
+
+export const votePollValidators = [
+  param("id").isMongoId().withMessage("Geçersiz gönderi ID."),
+  body("optionIndex")
+    .isInt({ min: 0, max: LIMITS.POLL_OPTIONS_MAX - 1 })
+    .toInt()
+    .withMessage("Geçersiz seçenek."),
 ];
 
 export const searchPostsValidators = [

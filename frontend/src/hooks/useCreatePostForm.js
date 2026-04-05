@@ -13,6 +13,10 @@ export function useCreatePostForm(options = {}) {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [pollEnabled, setPollEnabled] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
 
   const imgRef = useRef(null);
   const textareaRef = useRef(null);
@@ -27,21 +31,36 @@ export function useCreatePostForm(options = {}) {
     closeMentionDropdown,
   } = useMention(text, setText, textareaRef);
 
+  const buildPollPayload = () => {
+    if (!pollEnabled) return undefined;
+    const opts = pollOptions.map((s) => s.trim()).filter(Boolean);
+    if (opts.length < 2) return undefined;
+    const payload = { options: opts.map((t) => ({ text: t })) };
+    const q = pollQuestion.trim();
+    if (q) payload.question = q;
+    return payload;
+  };
+
   const {
     mutate: createPostMutation,
     isPending,
     isError,
     error,
   } = useMutation({
-    mutationFn: ({ text: t, img: image }) => {
-      // Backend: img optional + isString — null JSON alanı hataya düşer; sadece varsa gönder
+    mutationFn: ({ text: t, img: image, location, poll }) => {
       const payload = { text: t };
       if (image) payload.img = image;
+      if (poll) payload.poll = poll;
+      if (location) payload.location = location;
       return createPost(payload);
     },
     onSuccess: () => {
       setText("");
       setImg(null);
+      setSelectedPlace(null);
+      setPollEnabled(false);
+      setPollQuestion("");
+      setPollOptions(["", ""]);
       toast.success("Gönderi paylaşıldı.");
       invalidatePostsFeed(queryClient);
       onPosted?.();
@@ -54,7 +73,13 @@ export function useCreatePostForm(options = {}) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createPostMutation({ text, img });
+    const poll = buildPollPayload();
+    createPostMutation({
+      text,
+      img,
+      poll,
+      location: selectedPlace || undefined,
+    });
   };
 
   const handleImgChange = async (e) => {
@@ -80,7 +105,13 @@ export function useCreatePostForm(options = {}) {
     if (imgRef.current) imgRef.current.value = null;
   };
 
-  const canSubmit = Boolean(text.trim() || img);
+  const pollPayloadOk = buildPollPayload();
+  const canSubmit = Boolean(
+    text.trim() ||
+      img ||
+      selectedPlace?.name ||
+      pollPayloadOk
+  );
   const disabledSubmit = isPending || !canSubmit;
 
   return {
@@ -105,5 +136,13 @@ export function useCreatePostForm(options = {}) {
     isError,
     error,
     disabledSubmit,
+    selectedPlace,
+    setSelectedPlace,
+    pollEnabled,
+    setPollEnabled,
+    pollQuestion,
+    setPollQuestion,
+    pollOptions,
+    setPollOptions,
   };
 }

@@ -3,13 +3,29 @@ import User from "../../models/user_model.js";
 import { v2 as cloudinary } from "cloudinary";
 import { ok, fail } from "../../lib/httpResult.js";
 import { destroyCloudinaryImageByUrl } from "../../lib/cloudinaryPost.js";
+import { normalizeLocationInput, normalizePollInput } from "../../lib/postPollLocationNormalize.js";
 import { parseMentions, sendMentionNotifications } from "./mention.service.js";
 import { emitToUser } from "../../lib/socket_emit.js";
 
-export async function createPost({ userId, text, img }) {
+export async function createPost({ userId, text, img, poll: pollRaw, location: locationRaw }) {
   const user = await User.findById(userId);
   if (!user) return fail(404, "Kullanıcı bulunamadı.");
-  if (!text && !img) return fail(400, "Gönderiniz boş olamaz.");
+
+  const poll = normalizePollInput(pollRaw);
+  const location = normalizeLocationInput(locationRaw);
+  if (pollRaw != null && typeof pollRaw === "object" && !poll) {
+    return fail(400, "Anket 2–4 geçerli seçenek içermelidir.");
+  }
+  if (locationRaw != null && typeof locationRaw === "object" && !location) {
+    return fail(400, "Geçersiz konum bilgisi.");
+  }
+
+  const textStr = typeof text === "string" ? text : "";
+  const hasText = textStr.trim().length > 0;
+  const hasImg = typeof img === "string" && img.trim().length > 0;
+  if (!hasText && !hasImg && !poll && !location) {
+    return fail(400, "Gönderiniz boş olamaz.");
+  }
 
   let imgUrl = img;
   if (img) {
@@ -17,12 +33,14 @@ export async function createPost({ userId, text, img }) {
     imgUrl = uploadedResponse.secure_url;
   }
 
-  const mentions = await parseMentions(text, userId);
+  const mentions = await parseMentions(textStr, userId);
   const newPost = new Post({
     user: userId,
-    text,
+    text: textStr || undefined,
     img: imgUrl,
     mentions,
+    ...(poll ? { poll } : {}),
+    ...(location ? { location } : {}),
   });
   await newPost.save();
   await sendMentionNotifications(mentions, userId, newPost._id);
@@ -65,15 +83,26 @@ export async function deletePost({ userId, postId }) {
   return ok(200, { message: "Gönderi silindi." });
 }
 
-export async function editPost({ userId, postId, text, img }) {
-  if (!text && !img) return fail(400, "Gönderiniz boş olamaz.");
-
+export async function editPost({ userId, postId, text, img, location: locationBody, hasLocationField }) {
   const post = await Post.findById(postId);
   if (!post) {
     return fail(404, "Gönderiye ulaşılamıyor. Silinmiş veya arşivlenmiş olabilir.");
   }
   if (post.user.toString() !== userId.toString()) {
     return fail(401, "Gönderiyi düzenlemek için yetkiniz yok.");
+  }
+
+  let nextLocation = post.location;
+  if (hasLocationField) {
+    if (locationBody === null) {
+      nextLocation = null;
+    } else {
+      const n = normalizeLocationInput(locationBody);
+      if (!n) {
+        return fail(400, "Geçersiz konum bilgisi.");
+      }
+      nextLocation = n;
+    }
   }
 
   let nextImg = post.img;
@@ -94,21 +123,32 @@ export async function editPost({ userId, postId, text, img }) {
     }
   }
 
+  const resolvedTextForEmpty = typeof text === "string" ? text : post.text ?? "";
+  const hasText = resolvedTextForEmpty.trim().length > 0;
+  const hasImg = nextImg && String(nextImg).trim().length > 0;
+  const hasPoll = Array.isArray(post.poll?.options) && post.poll.options.length >= 2;
+  const hasLocName = Boolean(nextLocation?.name);
+  if (!hasText && !hasImg && !hasPoll && !hasLocName) {
+    return fail(400, "Gönderiniz boş olamaz.");
+  }
+
+  const resolvedText = typeof text === "string" ? text : post.text ?? "";
+
   let mentions = post.mentions;
-  if (text) {
-    mentions = await parseMentions(text, userId);
+  if (text !== undefined) {
+    mentions = await parseMentions(resolvedText, userId);
   }
 
   const updatedPost = await Post.findByIdAndUpdate(
     postId,
-    { text, img: nextImg, mentions },
+    { text: resolvedText, img: nextImg, mentions, location: nextLocation },
     { new: true }
   )
     .populate({ path: "user", select: "-password" })
     .populate({ path: "comments.user", select: "-password" });
 
   if (
-    text &&
+    resolvedText &&
     JSON.stringify(mentions.sort()) !==
       JSON.stringify(post.mentions.map((m) => m.toString()).sort())
   ) {

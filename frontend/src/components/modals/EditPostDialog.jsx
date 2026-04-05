@@ -18,10 +18,14 @@ import MentionDropdown from "../common/MentionDropdown";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import defaultProfilePicture from "../../assets/avatar-placeholder.png";
+import NearbyPlacePicker from "../common/NearbyPlacePicker";
 
 const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   const [text, setText] = useState(post.text || "");
   const [img, setImg] = useState(post.img || "");
+  const [location, setLocation] = useState(
+    post.location?.name ? { name: post.location.name, lat: post.location.lat, lon: post.location.lon } : null
+  );
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -161,7 +165,7 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
   }, [isOpen, closeAndNotify]);
 
   const { mutate: editPostMutation, isPending: isEditing } = useMutation({
-    mutationFn: () => editPost(post._id, { text, img }),
+    mutationFn: () => editPost(post._id, { text, img, location }),
     onSuccess: () => {
       toast.success("Gönderi güncellendi.");
       invalidatePostsFeed(queryClient);
@@ -202,7 +206,8 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!text.trim() && !img) {
+    const hasPoll = Array.isArray(post.poll?.options) && post.poll.options.length >= 2;
+    if (!text.trim() && !img && !location?.name && !hasPoll) {
       toast.error("Gönderi boş olamaz.");
       return;
     }
@@ -331,6 +336,13 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
                   )}
                 </button>
 
+                <NearbyPlacePicker
+                  value={location}
+                  onChange={setLocation}
+                  disabled={isEditing}
+                  buttonClassName="!rounded-full !p-2 !min-h-0 !h-10 !w-auto"
+                />
+
                 <div className="relative">
                   <button
                     type="button"
@@ -386,7 +398,13 @@ const EditPostDialog = ({ post, onClose, modalId = "edit_post_modal" }) => {
                 <button
                   type="submit"
                   className="btn btn-accent btn-sm gap-1.5 rounded-full px-5 font-semibold shadow-md transition hover:shadow-lg disabled:opacity-50"
-                  disabled={isEditing || (!text.trim() && !img)}
+                  disabled={
+                    isEditing ||
+                    (!text.trim() &&
+                      !img &&
+                      !location?.name &&
+                      !(Array.isArray(post.poll?.options) && post.poll.options.length >= 2))
+                  }
                 >
                   {isEditing ? (
                     <span className="loading loading-spinner loading-sm" />

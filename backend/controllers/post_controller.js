@@ -5,13 +5,16 @@ import * as postFeed from "../services/post/post.feed.service.js";
 import * as postSocial from "../services/post/post.social.service.js";
 import * as postComments from "../services/post/post.comments.service.js";
 import * as postRetweet from "../services/post/post.retweet.service.js";
+import * as postPoll from "../services/post/post.poll.service.js";
 
 export const create_post = asyncHandler("post.create_post", async (req, res) => {
-  const { text, img } = req.body;
+  const { text, img, poll, location } = req.body;
   const result = await postCrud.createPost({
     userId: req.user._id.toString(),
     text,
     img,
+    poll,
+    location,
   });
   return sendServiceResult(res, result);
 });
@@ -25,12 +28,24 @@ export const delete_post = asyncHandler("post.delete_post", async (req, res) => 
 });
 
 export const edit_post = asyncHandler("post.edit_post", async (req, res) => {
-  const { text, img } = req.body;
+  const { text, img, location } = req.body;
   const result = await postCrud.editPost({
     userId: req.user._id.toString(),
     postId: req.params.id,
     text,
     img,
+    location,
+    hasLocationField: Object.prototype.hasOwnProperty.call(req.body, "location"),
+  });
+  return sendServiceResult(res, result);
+});
+
+export const vote_poll = asyncHandler("post.vote_poll", async (req, res) => {
+  const { optionIndex } = req.body;
+  const result = await postPoll.votePoll({
+    userId: req.user._id,
+    postId: req.params.id,
+    optionIndex,
   });
   return sendServiceResult(res, result);
 });
@@ -196,12 +211,14 @@ export const retweet_post = asyncHandler(
 export const quote_retweet = asyncHandler(
   "post.quote_retweet",
   async (req, res) => {
-    const { text, img } = req.body;
+    const { text, img, poll, location } = req.body;
     const result = await postRetweet.quoteRetweet({
       userId: req.user._id.toString(),
       postId: req.params.id,
       text,
       img,
+      poll,
+      location,
     });
     return sendServiceResult(res, result);
   },
