@@ -67,7 +67,7 @@ export default function PostDetailArticle({
             </div>
           )}
 
-          <div className="relative z-10 mb-1 flex flex-wrap items-start gap-2">
+          <div className="mb-1 flex flex-wrap items-start gap-2">
             <div className="flex min-w-0 flex-1 items-start gap-2">
               {postOwner ? (
                 <>

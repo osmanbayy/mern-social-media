@@ -38,7 +38,7 @@ const VerifiedBadge = ({ user, verified: verifiedProp, size = "md", className = 
     <span ref={wrapRef} className={`inline-flex shrink-0 items-center ${className}`}>
       <button
         type="button"
-        className={`tooltip tooltip-bottom z-10 inline-flex shrink-0 items-center justify-center rounded-full p-0.5 text-sky-500 outline-none transition hover:bg-sky-500/10 focus-visible:ring-2 focus-visible:ring-sky-500/35 dark:text-sky-400 ${open ? "tooltip-open" : ""}`}
+        className={`tooltip tooltip-bottom inline-flex shrink-0 items-center justify-center rounded-full p-0.5 text-sky-500 outline-none transition hover:bg-sky-500/10 focus-visible:ring-2 focus-visible:ring-sky-500/35 dark:text-sky-400 ${open ? "tooltip-open" : ""}`}
         data-tip={VERIFIED_PROFILE_TOOLTIP}
         aria-label={VERIFIED_PROFILE_TOOLTIP}
         onClick={(e) => {
